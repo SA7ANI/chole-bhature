@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chole Bhature Configuration</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Pacifico&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #09090b;
+            --bg-card: rgba(24, 24, 27, 0.7);
+            --bg-input: #18181b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #6366f1;
+            --accent-hover: #4f46e5;
+            --border-color: rgba(255, 255, 255, 0.05);
+            --gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+        }
+        
+        * {
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(168, 85, 247, 0.15) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .brand h1 {
+            margin: 0;
+            font-size: 34px;
+            font-family: 'Pacifico', cursive;
+            font-weight: 400;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .brand h1 span.logo {
+            font-size: 36px;
+            -webkit-text-fill-color: initial; /* Don't apply gradient to emoji */
+        }
+        
+        .brand p {
+            margin: 5px 0 0 0;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .install-all-btn {
+            background: var(--gradient);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: opacity 0.2s, transform 0.2s;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+            white-space: nowrap;
+        }
+
+        .install-all-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .section-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 30px 0 15px 0;
+        }
+
+        .card {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            margin-bottom: 20px;
+            transition: transform 0.2s;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 12px;
+        }
+
+        input[type="url"], input[type="text"] {
+            flex-grow: 1;
+            background-color: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: white;
+            padding: 14px 16px;
+            border-radius: 12px;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s;
+            min-width: 0;
+        }
+
+        input[type="url"]:focus, input[type="text"]:focus {
+            border-color: var(--accent);
+        }
+
+        button.submit-btn {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+
+        button.submit-btn:hover { background-color: var(--accent-hover); }
+
+        .repo-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .repo-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .repo-info h3 {
+            margin: 0 0 5px 0;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .repo-info p.url {
+            margin: 0;
+            color: var(--text-muted);
+            font-size: 13px;
+            word-break: break-all;
+        }
+        
+        .repo-actions {
+            display: flex;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .delete-btn {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        
+        .delete-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        .provider-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .provider-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .provider-header {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .provider-icon {
+            width: 48px;
+            height: 48px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+        
+        .provider-icon img {
+            width: 32px;
+            height: 32px;
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+
+        .provider-info { flex-grow: 1; min-width: 0; }
+        
+        .provider-repo-name {
+            font-size: 12px;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .provider-name {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0 0 4px 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .provider-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+
+        /* Settings Checkbox Switch */
+        .toggle-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .toggle-group:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .toggle-label {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .toggle-label span {
+            font-weight: 500;
+            font-size: 15px;
+        }
+        
+        .toggle-label small {
+            color: var(--text-muted);
+            font-size: 13px;
+            margin-top: 4px;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--border-color);
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--accent);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 600px) {
+            .header {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+                gap: 20px;
+            }
+            
+            .install-all-btn {
+                width: 100%;
+                text-align: center;
+                padding: 14px 20px;
+            }
+            
+            .input-group {
+                flex-direction: column;
+            }
+            
+            .repo-card {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .repo-actions {
+                width: 100%;
+            }
+            
+            .repo-actions .install-all-btn {
+                flex: 1;
+            }
+
+            .provider-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="brand">
+                <h1>Chole Bhature</h1>
+                <p>Advanced Meta-Sorter for Nuvio</p>
+            </div>
+            <button class="install-all-btn" onclick="installStremio()">Install Master Addon</button>
+        </div>
+
+        <div class="section-title">Settings</div>
+        <div class="card">
+            <div class="toggle-group">
+                <div class="toggle-label">
+                    <span>Auto-Hide Dead & Slow Streams</span>
+                    <small>Remove streams tagged with 💀 or 🐢 instead of moving them to the bottom.</small>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="hideSlowDead" onchange="saveSettings()">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="toggle-group">
+                <div class="toggle-label">
+                    <span>Prioritize Quality (4K/1080p)</span>
+                    <small>Sort streams by resolution first, then by ping speed.</small>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="prioritizeQuality" onchange="saveSettings()">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <div class="section-title">Provider Analytics</div>
+        <div class="card">
+            <div id="analytics-container">
+                <div class="empty-state" style="padding: 10px;">Loading analytics...</div>
+            </div>
+            <button class="install-all-btn" style="margin-top: 15px; width: 100%;" onclick="fetchAnalytics()">Refresh Analytics</button>
+        </div>
+
+        <div class="section-title">Add Repository</div>
+        <div class="card">
+            <form id="install-form">
+                <div class="input-group">
+                    <input type="url" id="manifestUrl" placeholder="Enter Nuvio manifest URL (e.g. https://.../manifest.json)" required>
+                    <button type="submit" class="submit-btn">Add</button>
+                </div>
+            </form>
+            
+            <div id="fallbackLink" style="display: none; margin-top: 20px;">
+                <div class="section-title" style="margin-top: 0;">Manual Link</div>
+                <div class="input-group">
+                    <input type="text" id="generatedUrl" readonly>
+                    <button type="button" onclick="copyLink()" class="submit-btn">Copy</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-title">Repositories</div>
+        <div id="installed-repos">
+            <div class="empty-state">No repositories added yet.</div>
+        </div>
+
+        <div class="section-title">Providers</div>
+        <div id="providers-list" class="provider-grid">
+            <div class="empty-state" style="grid-column: 1 / -1;">No providers found.</div>
+        </div>
+    </div>
+
+    <script>
+        let repos = JSON.parse(localStorage.getItem('nuvio_repos') || '[]');
+        let settings = JSON.parse(localStorage.getItem('nuvio_settings') || '{"hideSlowDead": false, "prioritizeQuality": false}');
+        let allProvidersData = [];
+
+        // Load Settings UI
+        document.getElementById('hideSlowDead').checked = settings.hideSlowDead;
+        document.getElementById('prioritizeQuality').checked = settings.prioritizeQuality;
+
+        function saveSettings() {
+            settings.hideSlowDead = document.getElementById('hideSlowDead').checked;
+            settings.prioritizeQuality = document.getElementById('prioritizeQuality').checked;
+            localStorage.setItem('nuvio_settings', JSON.stringify(settings));
+        }
+
+        async function fetchRepos() {
+            const reposContainer = document.getElementById('installed-repos');
+            const providersContainer = document.getElementById('providers-list');
+            
+            if (repos.length === 0) {
+                reposContainer.innerHTML = '<div class="empty-state">No repositories added yet.</div>';
+                providersContainer.innerHTML = '<div class="empty-state" style="grid-column: 1 / -1;">Add a repository to discover providers.</div>';
+                return;
+            }
+
+            let reposHtml = '';
+            allProvidersData = [];
+
+            for (let i = 0; i < repos.length; i++) {
+                const url = repos[i];
+                try {
+                    const res = await fetch(url);
+                    const manifest = await res.json();
+                    const name = manifest.name || 'Unknown Repo';
+                    // Nuvio uses "scrapers" or "providers" array
+                    const providersArray = manifest.scrapers || manifest.providers || [];
+
+                    providersArray.forEach(p => {
+                        p.repoName = name;
+                        p.logo = p.logo || '';
+                        allProvidersData.push(p);
+                    });
+                    
+                    const safeName = name.replace(/'/g, "\\'");
+
+                    reposHtml += `
+                        <div class="card repo-card">
+                            <div class="repo-info">
+                                <h3>${name}</h3>
+                                <p class="url">${url}</p>
+                            </div>
+                            <div class="repo-actions">
+                                <button class="install-all-btn" onclick="installRepoTab('${safeName}', '${url}')">Install Repo Tab</button>
+                                <button class="delete-btn" title="Remove Repository" onclick="removeRepo(${i})">🗑</button>
+                            </div>
+                        </div>
+                    `;
+                } catch (err) {
+                    reposHtml += `
+                        <div class="card repo-card">
+                            <div class="repo-info">
+                                <h3>Failed to load</h3>
+                                <p class="url">${url}</p>
+                            </div>
+                            <div class="repo-actions">
+                                <button class="delete-btn" title="Remove Repository" onclick="removeRepo(${i})">🗑</button>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            
+            reposContainer.innerHTML = reposHtml;
+            renderProviders();
+        }
+
+        function renderProviders() {
+            const providersContainer = document.getElementById('providers-list');
+            if (allProvidersData.length === 0) {
+                providersContainer.innerHTML = '<div class="empty-state" style="grid-column: 1 / -1;">No providers found in the added repositories.</div>';
+                return;
+            }
+
+            let html = '';
+            allProvidersData.forEach(p => {
+                const iconHtml = p.logo ? `<img src="${p.logo}" alt="logo" onerror="this.outerHTML='🧩'">` : '🧩';
+                
+                html += `
+                    <div class="provider-card">
+                        <div class="provider-header">
+                            <div class="provider-icon">${iconHtml}</div>
+                            <div class="provider-info">
+                                <div class="provider-repo-name">${p.repoName}</div>
+                                <h4 class="provider-name">${p.name}</h4>
+                                <p class="provider-desc">${p.description || 'Nuvio stream provider'}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            providersContainer.innerHTML = html;
+        }
+
+        function removeRepo(index) {
+            repos.splice(index, 1);
+            localStorage.setItem('nuvio_repos', JSON.stringify(repos));
+            fetchRepos();
+        }
+
+        document.getElementById('install-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const url = document.getElementById('manifestUrl').value.trim();
+            if (!url) return;
+            
+            if (!repos.includes(url)) {
+                repos.push(url);
+                localStorage.setItem('nuvio_repos', JSON.stringify(repos));
+            }
+            
+            document.getElementById('manifestUrl').value = '';
+            fetchRepos();
+        });
+
+        function buildStremioUrl(configObj) {
+            // Include settings in the config payload
+            configObj.hideSlowDead = settings.hideSlowDead;
+            configObj.prioritizeQuality = settings.prioritizeQuality;
+            
+            const encodedConfig = encodeURIComponent(JSON.stringify(configObj));
+            const currentUrl = new URL(window.location.href);
+            let host = currentUrl.host;
+            let protocol = currentUrl.protocol === 'https:' ? 'https://' : 'http://';
+            const manifestPath = `/${encodedConfig}/manifest.json`;
+            return {
+                stremioUrl: `stremio://${host}${manifestPath}`,
+                httpUrl: `${protocol}${host}${manifestPath}`
+            };
+        }
+
+        function installStremio() {
+            if (repos.length === 0) {
+                alert("Please add at least one repository first.");
+                return;
+            }
+            const urls = buildStremioUrl({ urls: repos });
+            showFallback(urls.httpUrl);
+            window.location.href = urls.stremioUrl;
+        }
+        
+        function installRepoTab(repoName, repoUrl) {
+            const urls = buildStremioUrl({ repoName: repoName, repoUrl: repoUrl });
+            showFallback(urls.httpUrl);
+            window.location.href = urls.stremioUrl;
+        }
+
+        function showFallback(httpUrl) {
+            const fallbackDiv = document.getElementById('fallbackLink');
+            const linkInput = document.getElementById('generatedUrl');
+            linkInput.value = httpUrl;
+            fallbackDiv.style.display = 'block';
+        }
+        
+        function copyLink() {
+            const copyText = document.getElementById("generatedUrl");
+            copyText.select();
+            document.execCommand("copy");
+            alert("Copied link to clipboard!");
+        }
+
+        async function fetchAnalytics() {
+            try {
+                const res = await fetch('/api/analytics');
+                const data = await res.json();
+                const container = document.getElementById('analytics-container');
+                
+                if (Object.keys(data).length === 0) {
+                    container.innerHTML = '<div class="empty-state" style="padding: 10px;">No analytics data yet. Test some streams in Nuvio first!</div>';
+                    return;
+                }
+
+                let html = '<div style="display: flex; flex-direction: column; gap: 10px;">';
+                for (const [provider, stats] of Object.entries(data)) {
+                    html += `
+                        <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                            <strong style="font-size: 14px;">${provider}</strong>
+                            <div style="display: flex; gap: 15px; font-size: 13px;">
+                                <span style="color: #4ade80;">⚡ ${stats.fast}</span>
+                                <span style="color: #facc15;">🐢 ${stats.slow}</span>
+                                <span style="color: #f87171;">💀 ${stats.dead}</span>
+                            </div>
+                        </div>
+                    `;
+                }
+                html += '</div>';
+                container.innerHTML = html;
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // Initialize
+        fetchRepos();
+        fetchAnalytics();
+    </script>
+</body>
+</html>
