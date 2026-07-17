@@ -14,5 +14,11 @@
       "src": "/(.*)",
       "dest": "index.js"
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/wakeup",
+      "schedule": "*/10 * * * *"
+    }
   ]
 }
