@@ -412,7 +412,7 @@
             <div class="toggle-group">
                 <div class="toggle-label">
                     <span>Auto-Hide Dead & Slow Streams</span>
-                    <small>Remove streams tagged with 💀 or 🐢 instead of moving them to the bottom.</small>
+                    <small>Remove streams tagged with 🔴 or 🟡 instead of moving them to the bottom.</small>
                 </div>
                 <label class="switch">
                     <input type="checkbox" id="hideSlowDead" onchange="saveSettings()">
@@ -670,9 +670,9 @@
                         <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
                             <strong style="font-size: 14px;">${provider}</strong>
                             <div style="display: flex; gap: 15px; font-size: 13px;">
-                                <span style="color: #4ade80;">⚡ ${stats.fast}</span>
-                                <span style="color: #facc15;">🐢 ${stats.slow}</span>
-                                <span style="color: #f87171;">💀 ${stats.dead}</span>
+                                <span style="color: #4ade80;">🟢 ${stats.fast}</span>
+                                <span style="color: #facc15;">🟡 ${stats.slow}</span>
+                                <span style="color: #f87171;">🔴 ${stats.dead}</span>
                             </div>
                         </div>
                     `;
