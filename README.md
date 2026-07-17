@@ -24,30 +24,13 @@ Instead of dealing with endless buffering and dead links, this addon intercepts 
 
 ---
 
-## 🚀 How to Host on Render (Free 24/7 Cloud Hosting)
+## 🚀 How to Run Locally
 
-The easiest way to run this addon without keeping your computer turned on is to host it on [Render](https://render.com).
-
-1. **Fork or Push** this repository to your own GitHub account.
-2. Sign up for a free account at [Render.com](https://render.com).
-3. Click **New** -> **Web Service**.
-4. Choose **Build and deploy from a Git repository** and select this repo.
-5. Fill out the settings:
-   - **Environment:** `Node`
-   - **Build Command:** `npm install`
-   - **Start Command:** `npm start`
-6. Click **Create Web Service**. 
-7. Once deployed, open the URL Render gives you to access the Configuration Page and install it into Nuvio!
-
----
-
-## 💻 Local Development
-
-Want to run it locally on your own machine?
+You can run the Meta-Sorter directly on your own computer.
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/chole_bhature-metasorter-addon.git
+   git clone https://github.com/SA7ANI/chole-bhature.git
    ```
 2. Install dependencies:
    ```bash
