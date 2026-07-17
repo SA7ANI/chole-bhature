@@ -231,10 +231,12 @@ app.use('/:configJSON', (req, res, next) => {
 });
 
 const PORT = process.env.PORT || 7000;
-app.listen(PORT, () => {
-    console.log(`Stremio Nuvio Meta-Sorter Addon running at http://localhost:${PORT}`);
-    console.log(`Configure at http://localhost:${PORT}/configure`);
-});
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`Stremio Nuvio Meta-Sorter Addon running at http://localhost:${PORT}`);
+        console.log(`Configure at http://localhost:${PORT}/configure`);
+    });
+}
 
 // Export the app for Vercel Serverless Functions
 module.exports = app;
