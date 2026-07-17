@@ -46,6 +46,21 @@ app.get('/api/analytics', (req, res) => {
     res.json(stats);
 });
 
+// Automated Vercel Cron Job to keep providers awake
+app.get('/api/wakeup', async (req, res) => {
+    try {
+        // The user's main repository
+        const repoUrl = 'https://raw.githubusercontent.com/D3adlyRocket/All-in-One-Nuvio/refs/heads/main/manifest.json';
+        // Loading the providers automatically pings their external servers (Render/Koyeb) to keep them awake!
+        await providerLoader.loadProviders(repoUrl);
+        console.log('[Cron] Wakeup ping completed successfully.');
+        res.status(200).send('Wakeup successful');
+    } catch (err) {
+        console.error('[Cron] Wakeup failed:', err.message);
+        res.status(500).send('Wakeup failed');
+    }
+});
+
 // TMDB API KEY (borrowed from 4khdhub for converting IMDB to TMDB, or we can use TMDB public APIs)
 // A better way is using Stremio's cinemeta or just TMDB API directly.
 const TMDB_API_KEY = '439c478a771f35c05022f9feabcca01c'; // From Nuvio provider
