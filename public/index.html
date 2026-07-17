@@ -431,8 +431,11 @@
             </div>
         </div>
 
-        <div class="section-title">Provider Analytics</div>
-        <div class="card">
+        <div class="section-title" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;" onclick="toggleAnalytics()">
+            <span>Provider Analytics</span>
+            <span id="analytics-toggle-icon">▼</span>
+        </div>
+        <div class="card" id="analytics-card" style="display: none;">
             <div id="analytics-container">
                 <div class="empty-state" style="padding: 10px;">Loading analytics...</div>
             </div>
@@ -635,6 +638,19 @@
             copyText.select();
             document.execCommand("copy");
             alert("Copied link to clipboard!");
+        }
+
+        function toggleAnalytics() {
+            const card = document.getElementById('analytics-card');
+            const icon = document.getElementById('analytics-toggle-icon');
+            if (card.style.display === 'none') {
+                card.style.display = 'block';
+                icon.innerText = '▲';
+                fetchAnalytics();
+            } else {
+                card.style.display = 'none';
+                icon.innerText = '▼';
+            }
         }
 
         async function fetchAnalytics() {
