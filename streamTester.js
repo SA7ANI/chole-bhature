@@ -49,11 +49,11 @@ async function testStream(stream) {
         let statusCategory = 'fast';
         if (latency < 800) {
             tag = 'FAST';
-            emoji = '⚡';
+            emoji = '🟢';
             statusCategory = 'fast';
         } else {
             tag = 'SLOW';
-            emoji = '🐢';
+            emoji = '🟡';
             statusCategory = 'slow';
         }
         
@@ -61,7 +61,7 @@ async function testStream(stream) {
         
         return {
             ...stream,
-            name: `${originalName} | ${emoji} ${tag} | ${latency}ms`,
+            name: `${emoji} ${tag} | ${latency}ms • ${originalName}`,
             title: stream.title || stream.quality || '',
             latency: latency,
             isDead: false,
@@ -73,7 +73,7 @@ async function testStream(stream) {
         const originalName = stream.name || 'Unknown';
         return {
             ...stream,
-            name: `${originalName} | 💀 DEAD`,
+            name: `🔴 DEAD | TIMEOUT • ${originalName}`,
             title: stream.title || stream.quality || '',
             latency: 99999, // push to bottom
             isDead: true,
@@ -128,3 +128,4 @@ async function sortAndTagStreams(streams, config, providerAnalytics) {
 }
 
 module.exports = { sortAndTagStreams };
+`
