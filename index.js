@@ -231,7 +231,7 @@ app.use('/:configJSON', (req, res, next) => {
 });
 
 const PORT = process.env.PORT || 7000;
-if (require.main === module) {
+if (!process.env.VERCEL) {
     app.listen(PORT, () => {
         console.log(`Stremio Nuvio Meta-Sorter Addon running at http://localhost:${PORT}`);
         console.log(`Configure at http://localhost:${PORT}/configure`);
