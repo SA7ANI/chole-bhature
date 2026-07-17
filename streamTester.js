@@ -128,4 +128,3 @@ async function sortAndTagStreams(streams, config, providerAnalytics) {
 }
 
 module.exports = { sortAndTagStreams };
-`
