@@ -32,7 +32,7 @@ You can run the Meta-Sorter directly on your own computer.
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/chole_bhature-metasorter-addon.git
+   git clone https://github.com/SA7ANI/chole-bhature.git
    ```
 2. Install dependencies:
    ```bash
