@@ -120,11 +120,8 @@ function createAddon(config) {
         name: addonName,
         description: 'Dynamically loads Nuvio providers, tests stream speed, and sorts them.',
         logo: 'https://em-content.zobj.net/source/twitter/376/shallow-pan-of-food_1f958.png',
-        catalogs: [
-            { type: 'movie', id: 'chole_bhature_trending_movies', name: 'Fastest Streams Today' },
-            { type: 'series', id: 'chole_bhature_trending_series', name: 'Fastest Streams Today' }
-        ],
-        resources: ['stream', 'catalog'],
+        catalogs: [],
+        resources: ['stream'],
         types: ['movie', 'series', 'anime', 'tv', 'other'],
         idPrefixes: ['tt', 'tmdb:', 'kitsu:'],
         behaviorHints: { configurable: true, configurationRequired: true }
@@ -240,23 +237,7 @@ function createAddon(config) {
         return { streams: frStream ? [frStream, ...sortedAndTaggedStreams] : sortedAndTaggedStreams };
     });
 
-    builder.defineCatalogHandler(async ({ type, id }) => {
-        console.log(`[Stremio] Catalog request for ${type} ${id}`);
-        if (id.startsWith('chole_bhature_trending')) {
-            try {
-                // Fetch top trending from Stremio Cinemeta
-                const cinemetaType = type === 'series' ? 'series' : 'movie';
-                const cinemetaUrl = `https://v3-cinemeta.strem.io/catalog/${cinemetaType}/top/skip=0.json`;
-                const response = await axios.get(cinemetaUrl, { timeout: 5000 });
-                if (response.data && response.data.metas) {
-                    return { metas: response.data.metas };
-                }
-            } catch (err) {
-                console.error('[Catalog] Error fetching Cinemeta:', err.message);
-            }
-        }
-        return { metas: [] };
-    });
+    // No catalogs defined
 
     return builder.getInterface();
 }
