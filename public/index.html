@@ -273,11 +273,49 @@
         .provider-desc {
             font-size: 13px;
             color: var(--text-muted);
-            margin: 0;
+            margin: 0 0 12px 0;
             line-height: 1.4;
         }
 
-        .empty-state {
+        .provider-tags {
+            display: flex;
+            gap: 8px;
+            margin-top: auto;
+        }
+
+        .tag {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .provider-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+
+        .gear-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 18px;
+            cursor: pointer;
+            transition: color 0.2s;
+            padding: 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .gear-btn:hover {
+            color: white;
+        }
             text-align: center;
             padding: 40px 20px;
             color: var(--text-muted);
@@ -525,6 +563,9 @@
                     providersArray.forEach(p => {
                         p.repoName = name;
                         p.logo = p.logo || '';
+                        p.version = p.version || '1.0.0';
+                        p.supportedTypes = p.supportedTypes || ['movie', 'tv'];
+                        p.hasSettings = p.hasSettings || false;
                         allProvidersData.push(p);
                     });
                     
@@ -534,7 +575,8 @@
                         <div class="card repo-card">
                             <div class="repo-info">
                                 <h3>${name}</h3>
-                                <p class="url">${url}</p>
+                                <p class="url" style="margin-bottom: 8px;">${url}</p>
+                                <span class="tag" style="background: rgba(99, 102, 241, 0.1); color: #818cf8;">${providersArray.length} providers</span>
                             </div>
                             <div class="repo-actions">
                                 <button class="install-all-btn" onclick="installRepoTab('${safeName}', '${url}')">Install Repo Tab</button>
@@ -569,23 +611,56 @@
             }
 
             let html = '';
-            allProvidersData.forEach(p => {
+            allProvidersData.forEach((p, idx) => {
                 const iconHtml = p.logo ? `<img src="${p.logo}" alt="logo" onerror="this.outerHTML='🧩'">` : '🧩';
+                const typesStr = p.supportedTypes.join(' | ');
+                const gearIcon = p.hasSettings ? `<button class="gear-btn" title="Settings" onclick="openProviderSettings('${p.name}')">⚙️</button>` : '';
+                
+                // Check if disabled in settings
+                const isDisabled = settings.disabledProviders && settings.disabledProviders.includes(p.name);
                 
                 html += `
-                    <div class="provider-card">
-                        <div class="provider-header">
+                    <div class="provider-card" style="opacity: ${isDisabled ? '0.5' : '1'}; transition: opacity 0.3s;">
+                        <div class="provider-actions">
+                            ${gearIcon}
+                            <label class="switch" style="transform: scale(0.85); transform-origin: right center;">
+                                <input type="checkbox" onchange="toggleProvider('${p.name}', this.checked)" ${!isDisabled ? 'checked' : ''}>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="provider-header" style="margin-bottom: 12px; padding-right: 70px;">
                             <div class="provider-icon">${iconHtml}</div>
                             <div class="provider-info">
                                 <div class="provider-repo-name">${p.repoName}</div>
                                 <h4 class="provider-name">${p.name}</h4>
-                                <p class="provider-desc">${p.description || 'Nuvio stream provider'}</p>
                             </div>
+                        </div>
+                        <p class="provider-desc">${p.description || 'Nuvio stream provider'}</p>
+                        <div class="provider-tags">
+                            <span class="tag">${typesStr}</span>
+                            <span class="tag">v${p.version}</span>
                         </div>
                     </div>
                 `;
             });
             providersContainer.innerHTML = html;
+        }
+
+        function toggleProvider(name, isEnabled) {
+            settings.disabledProviders = settings.disabledProviders || [];
+            if (isEnabled) {
+                settings.disabledProviders = settings.disabledProviders.filter(p => p !== name);
+            } else {
+                if (!settings.disabledProviders.includes(name)) {
+                    settings.disabledProviders.push(name);
+                }
+            }
+            saveSettings();
+            renderProviders();
+        }
+
+        function openProviderSettings(name) {
+            alert(`Settings for ${name}\\n\\nSince Chole Bhature is a Meta-Sorter that bypasses the Nuvio backend, provider-specific settings (like API keys) must be hardcoded in the provider's Github file directly. UI configuration for encrypted Nuvio providers is coming soon!`);
         }
 
         function removeRepo(index) {
@@ -613,6 +688,7 @@
             configObj.hideDead = settings.hideDead;
             configObj.hideSlow = settings.hideSlow;
             configObj.prioritizeQuality = settings.prioritizeQuality;
+            configObj.disabled = settings.disabledProviders || [];
             
             const encodedConfig = encodeURIComponent(JSON.stringify(configObj));
             const currentUrl = new URL(window.location.href);
