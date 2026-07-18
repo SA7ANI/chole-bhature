@@ -33,7 +33,7 @@ app.get('/:configJSON', (req, res, next) => {
 });
 
 const streamCache = new Map();
-const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 // Analytics tracker
 const providerAnalytics = new Map();
@@ -224,7 +224,17 @@ function createAddon(config) {
         // Save to cache
         streamCache.set(cacheKey, { timestamp: Date.now(), streams: sortedAndTaggedStreams });
 
-        return { streams: sortedAndTaggedStreams };
+        let finalStreams = sortedAndTaggedStreams;
+        if (config.addonHost) {
+            const forceRefreshStream = {
+                name: '🔄 FORCE REFRESH',
+                title: 'Click here to clear the cache, then click Stremio Refresh!',
+                externalUrl: `${config.addonProtocol}://${config.addonHost}/${encodeURIComponent(JSON.stringify(config))}/clear-cache/${type}/${id}`
+            };
+            finalStreams = [forceRefreshStream, ...sortedAndTaggedStreams];
+        }
+
+        return { streams: finalStreams };
     });
 
     builder.defineCatalogHandler(async ({ type, id }) => {
@@ -250,11 +260,57 @@ function createAddon(config) {
 
 const { getRouter } = require('stremio-addon-sdk');
 
+app.get('/:configJSON/clear-cache/:type/:id', (req, res) => {
+    const { configJSON, type, id } = req.params;
+    try {
+        const config = JSON.parse(decodeURIComponent(configJSON));
+        config.addonHost = req.headers.host;
+        const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+        config.addonProtocol = protocol.split(',')[0].trim();
+        
+        const cacheKey = `${type}:${id}:${JSON.stringify(config)}`;
+        streamCache.delete(cacheKey);
+        console.log(`[Cache] Cleared via browser link for ${type} ${id}`);
+        
+        const html = `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Cache Cleared</title>
+            <style>
+                body { background-color: #09090b; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+                h1 { color: #4ade80; }
+                p { color: #94a3b8; }
+            </style>
+        </head>
+        <body>
+            <h1>✅ Cache Cleared!</h1>
+            <p>Closing automatically...</p>
+            <script>
+                setTimeout(() => {
+                    window.close();
+                }, 1500);
+            </script>
+        </body>
+        </html>
+        `;
+        res.status(200).send(html);
+    } catch (e) {
+        res.status(500).send('Error clearing cache.');
+    }
+});
+
 app.use('/:configJSON', (req, res, next) => {
     // Only intercept Stremio API routes
     if (req.path === '/manifest.json' || req.path.startsWith('/stream/')) {
         try {
             const config = JSON.parse(decodeURIComponent(req.params.configJSON));
+            config.addonHost = req.headers.host;
+            const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+            config.addonProtocol = protocol.split(',')[0].trim();
+            
             const addonInterface = createAddon(config);
             const router = getRouter(addonInterface);
             
