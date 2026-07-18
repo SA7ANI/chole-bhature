@@ -33,7 +33,7 @@ app.get('/:configJSON', (req, res, next) => {
 });
 
 const streamCache = new Map();
-const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
 // Analytics tracker
 const providerAnalytics = new Map();
