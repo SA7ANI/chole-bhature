@@ -111,7 +111,17 @@ async function sortAndTagStreams(streams, config, providerAnalytics) {
     }
 
     // Sort
+    const categoryRank = { 'fast': 1, 'slow': 2, 'dead': 3 };
+
     filteredStreams.sort((a, b) => {
+        // 1. ALWAYS sort by Status Category first (Fast -> Slow -> Dead)
+        const rankA = categoryRank[a.statusCategory];
+        const rankB = categoryRank[b.statusCategory];
+        if (rankA !== rankB) {
+            return rankA - rankB;
+        }
+
+        // 2. If they are in the same category (e.g. both are FAST), sort by Quality (if enabled)
         if (config && config.prioritizeQuality) {
             const scoreA = getQualityScore(a.title);
             const scoreB = getQualityScore(b.title);
@@ -119,7 +129,8 @@ async function sortAndTagStreams(streams, config, providerAnalytics) {
                 return scoreB - scoreA; // Higher quality first
             }
         }
-        // Fallback to latency sort (Fast -> Slow -> Dead)
+        
+        // 3. Finally, sort by exact latency
         return a.latency - b.latency;
     });
 
