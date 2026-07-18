@@ -103,8 +103,11 @@ async function sortAndTagStreams(streams, config, providerAnalytics) {
 
     // Filter
     let filteredStreams = testedStreams;
-    if (config && config.hideSlowDead) {
-        filteredStreams = testedStreams.filter(s => s.statusCategory === 'fast');
+    if (config && config.hideDead) {
+        filteredStreams = filteredStreams.filter(s => s.statusCategory !== 'dead');
+    }
+    if (config && config.hideSlow) {
+        filteredStreams = filteredStreams.filter(s => s.statusCategory !== 'slow');
     }
 
     // Sort
