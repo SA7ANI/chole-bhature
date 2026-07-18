@@ -135,9 +135,21 @@ function createAddon(config) {
         
         const cacheKey = `${type}:${id}:${JSON.stringify(config)}`;
         const cached = streamCache.get(cacheKey);
+        
+        // Helper to generate the force refresh stream
+        const getForceRefreshStream = () => {
+            if (!config.addonHost) return null;
+            return {
+                name: '🔄 FORCE REFRESH',
+                title: 'Click here to clear the cache, then click Nuvio Refresh!',
+                externalUrl: `${config.addonProtocol}://${config.addonHost}/${encodeURIComponent(JSON.stringify(config))}/clear-cache/${type}/${id}`
+            };
+        };
+
         if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
             console.log(`[Stremio] Serving cached results for ${type} ${id}`);
-            return { streams: cached.streams };
+            const frStream = getForceRefreshStream();
+            return { streams: frStream ? [frStream, ...cached.streams] : cached.streams };
         }
 
         let imdbId = id;
@@ -224,17 +236,8 @@ function createAddon(config) {
         // Save to cache
         streamCache.set(cacheKey, { timestamp: Date.now(), streams: sortedAndTaggedStreams });
 
-        let finalStreams = sortedAndTaggedStreams;
-        if (config.addonHost) {
-            const forceRefreshStream = {
-                name: '🔄 FORCE REFRESH',
-                title: 'Click here to clear the cache, then click Stremio Refresh!',
-                externalUrl: `${config.addonProtocol}://${config.addonHost}/${encodeURIComponent(JSON.stringify(config))}/clear-cache/${type}/${id}`
-            };
-            finalStreams = [forceRefreshStream, ...sortedAndTaggedStreams];
-        }
-
-        return { streams: finalStreams };
+        const frStream = getForceRefreshStream();
+        return { streams: frStream ? [frStream, ...sortedAndTaggedStreams] : sortedAndTaggedStreams };
     });
 
     builder.defineCatalogHandler(async ({ type, id }) => {
