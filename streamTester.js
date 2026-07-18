@@ -2,13 +2,21 @@ const axios = require('axios');
 
 const TIMEOUT_MS = 3000;
 
-function getQualityScore(title) {
-    if (!title) return 0;
-    const t = title.toLowerCase();
-    if (t.includes('4k') || t.includes('2160p')) return 4;
-    if (t.includes('1080p')) return 3;
-    if (t.includes('720p')) return 2;
-    if (t.includes('480p')) return 1;
+function getQualityScore(stream) {
+    if (!stream) return 0;
+    // Combine all possible fields where resolution might be mentioned
+    const text = [
+        stream.name || '',
+        stream.title || '',
+        stream.description || '',
+        stream.quality || '',
+        (stream.behaviorHints && stream.behaviorHints.videoSize) ? stream.behaviorHints.videoSize : ''
+    ].join(' ').toLowerCase();
+
+    if (text.includes('4k') || text.includes('2160p') || text.includes('uhd')) return 4;
+    if (text.includes('1080p') || text.includes('fhd')) return 3;
+    if (text.includes('720p') || text.includes('hd')) return 2;
+    if (text.includes('480p') || text.includes('sd')) return 1;
     return 0; // Unknown or CAM
 }
 
@@ -123,8 +131,8 @@ async function sortAndTagStreams(streams, config, providerAnalytics) {
 
         // 2. If they are in the same category (e.g. both are FAST), sort by Quality (if enabled)
         if (config && config.prioritizeQuality) {
-            const scoreA = getQualityScore(a.title);
-            const scoreB = getQualityScore(b.title);
+            const scoreA = getQualityScore(a);
+            const scoreB = getQualityScore(b);
             if (scoreA !== scoreB) {
                 return scoreB - scoreA; // Higher quality first
             }
