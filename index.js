@@ -141,7 +141,7 @@ function createAddon(config) {
             if (!config.addonHost) return null;
             return {
                 name: '🔄 FORCE REFRESH',
-                title: 'Click here to clear the cache, then click Nuvio Refresh!',
+                title: 'Click here to clear the cache, then click Stremio Refresh!',
                 externalUrl: `${config.addonProtocol}://${config.addonHost}/${encodeURIComponent(JSON.stringify(config))}/clear-cache/${type}/${id}`
             };
         };
@@ -307,7 +307,7 @@ app.get('/:configJSON/clear-cache/:type/:id', (req, res) => {
 
 app.use('/:configJSON', (req, res, next) => {
     // Only intercept Stremio API routes
-    if (req.path === '/manifest.json' || req.path.startsWith('/stream/')) {
+    if (req.path === '/manifest.json' || req.path.startsWith('/stream/') || req.path.startsWith('/catalog/')) {
         try {
             const config = JSON.parse(decodeURIComponent(req.params.configJSON));
             config.addonHost = req.headers.host;
