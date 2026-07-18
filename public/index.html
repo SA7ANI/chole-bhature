@@ -316,6 +316,8 @@
         .gear-btn:hover {
             color: white;
         }
+
+        .empty-state {
             text-align: center;
             padding: 40px 20px;
             color: var(--text-muted);
@@ -614,7 +616,6 @@
             allProvidersData.forEach((p, idx) => {
                 const iconHtml = p.logo ? `<img src="${p.logo}" alt="logo" onerror="this.outerHTML='🧩'">` : '🧩';
                 const typesStr = p.supportedTypes.join(' | ');
-                const gearIcon = p.hasSettings ? `<button class="gear-btn" title="Settings" onclick="openProviderSettings('${p.name}')">⚙️</button>` : '';
                 
                 // Check if disabled in settings
                 const isDisabled = settings.disabledProviders && settings.disabledProviders.includes(p.name);
@@ -622,7 +623,6 @@
                 html += `
                     <div class="provider-card" style="opacity: ${isDisabled ? '0.5' : '1'}; transition: opacity 0.3s;">
                         <div class="provider-actions">
-                            ${gearIcon}
                             <label class="switch" style="transform: scale(0.85); transform-origin: right center;">
                                 <input type="checkbox" onchange="toggleProvider('${p.name}', this.checked)" ${!isDisabled ? 'checked' : ''}>
                                 <span class="slider"></span>
