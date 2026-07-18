@@ -215,7 +215,11 @@ function createAddon(config) {
         }));
 
         console.log(`[Stremio] Collected ${allStreams.length} total streams. Testing speeds...`);
-        const sortedAndTaggedStreams = await sortAndTagStreams(allStreams, config, providerAnalytics);
+        const sortedAndTaggedStreams = await sortAndTagStreams(allStreams, {
+            hideDead: config.hideDead,
+            hideSlow: config.hideSlow,
+            prioritizeQuality: config.prioritizeQuality
+        }, providerAnalytics);
 
         // Save to cache
         streamCache.set(cacheKey, { timestamp: Date.now(), streams: sortedAndTaggedStreams });
