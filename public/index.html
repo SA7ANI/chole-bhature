@@ -414,10 +414,22 @@
                     <span>Auto-Hide Dead & Slow Streams</span>
                     <small>Remove streams tagged with 🔴 or 🟡 instead of moving them to the bottom.</small>
                 </div>
-                <label class="switch">
-                    <input type="checkbox" id="hideSlowDead" onchange="saveSettings()">
-                    <span class="slider"></span>
-                </label>
+                <div style="display: flex; align-items: center; gap: 15px; flex-shrink: 0;">
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;" title="Hide Dead Streams">
+                        <span style="font-size: 13px; font-weight: 500;">🔴 Dead</span>
+                        <div class="switch">
+                            <input type="checkbox" id="hideDead" onchange="saveSettings()">
+                            <span class="slider"></span>
+                        </div>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;" title="Hide Slow Streams">
+                        <span style="font-size: 13px; font-weight: 500;">🟡 Slow</span>
+                        <div class="switch">
+                            <input type="checkbox" id="hideSlow" onchange="saveSettings()">
+                            <span class="slider"></span>
+                        </div>
+                    </label>
+                </div>
             </div>
             <div class="toggle-group">
                 <div class="toggle-label">
@@ -473,15 +485,17 @@
 
     <script>
         let repos = JSON.parse(localStorage.getItem('nuvio_repos') || '[]');
-        let settings = JSON.parse(localStorage.getItem('nuvio_settings') || '{"hideSlowDead": false, "prioritizeQuality": false}');
+        let settings = JSON.parse(localStorage.getItem('nuvio_settings') || '{"hideDead": false, "hideSlow": false, "prioritizeQuality": false}');
         let allProvidersData = [];
 
         // Load Settings UI
-        document.getElementById('hideSlowDead').checked = settings.hideSlowDead;
-        document.getElementById('prioritizeQuality').checked = settings.prioritizeQuality;
+        document.getElementById('hideDead').checked = settings.hideDead || false;
+        document.getElementById('hideSlow').checked = settings.hideSlow || false;
+        document.getElementById('prioritizeQuality').checked = settings.prioritizeQuality || false;
 
         function saveSettings() {
-            settings.hideSlowDead = document.getElementById('hideSlowDead').checked;
+            settings.hideDead = document.getElementById('hideDead').checked;
+            settings.hideSlow = document.getElementById('hideSlow').checked;
             settings.prioritizeQuality = document.getElementById('prioritizeQuality').checked;
             localStorage.setItem('nuvio_settings', JSON.stringify(settings));
         }
@@ -596,7 +610,8 @@
 
         function buildStremioUrl(configObj) {
             // Include settings in the config payload
-            configObj.hideSlowDead = settings.hideSlowDead;
+            configObj.hideDead = settings.hideDead;
+            configObj.hideSlow = settings.hideSlow;
             configObj.prioritizeQuality = settings.prioritizeQuality;
             
             const encodedConfig = encodeURIComponent(JSON.stringify(configObj));
