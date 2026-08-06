@@ -3,451 +3,415 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chole Bhature Configuration</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Pacifico&display=swap" rel="stylesheet">
+    <title>Chole Bhature • Nuvio Meta-Sorter</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-main: #09090b;
-            --bg-card: rgba(24, 24, 27, 0.7);
-            --bg-input: #18181b;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --accent: #6366f1;
-            --accent-hover: #4f46e5;
-            --border-color: rgba(255, 255, 255, 0.05);
-            --gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            --bg-base: #08090d;
+            --bg-card: rgba(17, 20, 29, 0.75);
+            --bg-card-hover: rgba(24, 28, 41, 0.85);
+            --bg-input: #10131e;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-primary: #6366f1;
+            --accent-secondary: #a855f7;
+            --accent-emerald: #10b981;
+            --border-subtle: rgba(255, 255, 255, 0.07);
+            --border-hover: rgba(99, 102, 241, 0.4);
+            --gradient-brand: linear-gradient(135deg, #818cf8 0%, #c084fc 100%);
+            --gradient-accent: linear-gradient(135deg, #6366f1 0%, #9333ea 100%);
+            --gradient-emerald: linear-gradient(135deg, #10b981 0%, #059669 100%);
         }
         
         * {
             box-sizing: border-box;
-            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
         body {
-            background-color: var(--bg-main);
+            background-color: var(--bg-base);
             background-image: 
-                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
-                radial-gradient(at 100% 0%, rgba(168, 85, 247, 0.15) 0px, transparent 50%);
+                radial-gradient(circle at 15% 10%, rgba(99, 102, 241, 0.12) 0%, transparent 45%),
+                radial-gradient(circle at 85% 15%, rgba(168, 85, 247, 0.1) 0%, transparent 45%),
+                radial-gradient(circle at 50% 80%, rgba(16, 185, 129, 0.05) 0%, transparent 50%);
             background-attachment: fixed;
-            color: var(--text-main);
-            margin: 0;
-            padding: 40px 20px;
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 40px 20px 80px;
             display: flex;
             justify-content: center;
-            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
         }
 
         .container {
-            max-width: 800px;
+            max-width: 860px;
             width: 100%;
         }
 
+        /* Top Header */
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 40px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 32px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border-subtle);
+            gap: 20px;
+            flex-wrap: wrap;
         }
 
-        .brand h1 {
-            margin: 0;
-            font-size: 34px;
-            font-family: 'Pacifico', cursive;
-            font-weight: 400;
-            background: var(--gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: 1px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        
-        .brand h1 span.logo {
-            font-size: 36px;
-            -webkit-text-fill-color: initial; /* Don't apply gradient to emoji */
-        }
-        
-        .brand p {
-            margin: 5px 0 0 0;
-            color: var(--text-muted);
-            font-size: 14px;
-        }
-
-        .header-buttons {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .save-btn {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: white;
-            border: none;
-            padding: 10px 18px;
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            text-decoration: none;
-            transition: all 0.2s;
-            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
-            white-space: nowrap;
+        .brand-wrapper {
             display: flex;
             flex-direction: column;
+            gap: 6px;
+        }
+
+        .brand-title-row {
+            display: flex;
             align-items: center;
-            justify-content: center;
+            gap: 12px;
         }
 
-        .save-btn:hover {
-            opacity: 0.9;
-            transform: translateY(-1px);
-            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        .brand-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 32px;
+            font-weight: 800;
+            background: var(--gradient-brand);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
         }
 
-        .save-btn.unsaved {
-            animation: pulse-border 1.8s infinite;
+        .brand-badge {
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            color: #a5b4fc;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
         }
 
-        @keyframes pulse-border {
-            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-            70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        .brand-subtitle {
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .sync-badge {
+        .sync-pill {
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            background: rgba(16, 185, 129, 0.1);
+            background: rgba(16, 185, 129, 0.08);
             border: 1px solid rgba(16, 185, 129, 0.25);
             color: #34d399;
             padding: 3px 10px;
             border-radius: 20px;
             font-size: 11px;
             font-weight: 600;
-            margin-top: 6px;
+            margin-top: 4px;
+            width: fit-content;
         }
 
         .pulse-dot {
-            width: 7px;
-            height: 7px;
+            width: 6px;
+            height: 6px;
             background-color: #34d399;
             border-radius: 50%;
             display: inline-block;
             box-shadow: 0 0 8px #34d399;
+            animation: pulse-glow 2s infinite;
         }
 
-        .toast {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%) translateY(100px);
-            background: #18181b;
-            color: #f8fafc;
-            padding: 14px 24px;
-            border-radius: 12px;
-            border: 1px solid rgba(16, 185, 129, 0.4);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 20px rgba(16, 185, 129, 0.2);
-            font-size: 14px;
-            font-weight: 500;
-            z-index: 1000;
-            opacity: 0;
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            pointer-events: none;
-            max-width: 90%;
-            text-align: center;
+        @keyframes pulse-glow {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.3); opacity: 0.6; }
         }
 
-        .toast.show {
-            transform: translateX(-50%) translateY(0);
-            opacity: 1;
+        /* Action Buttons */
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
-        .install-all-btn {
-            background: var(--gradient);
-            color: white;
-            border: none;
-            padding: 12px 20px;
+        .btn {
+            height: 44px;
+            padding: 0 20px;
             border-radius: 12px;
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
             text-decoration: none;
-            transition: opacity 0.2s, transform 0.2s;
-            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+            user-select: none;
             white-space: nowrap;
         }
 
-        .install-all-btn:hover {
-            opacity: 0.9;
+        .btn-save {
+            background: rgba(16, 185, 129, 0.12);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            box-shadow: 0 2px 10px rgba(16, 185, 129, 0.1);
+        }
+
+        .btn-save:hover {
+            background: rgba(16, 185, 129, 0.2);
+            border-color: rgba(16, 185, 129, 0.5);
             transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(16, 185, 129, 0.2);
+        }
+
+        .btn-save.unsaved {
+            background: var(--gradient-emerald);
+            color: #ffffff;
+            border: none;
+            box-shadow: 0 4px 18px rgba(16, 185, 129, 0.35);
+            animation: pulse-save 2s infinite;
+        }
+
+        @keyframes pulse-save {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); }
+            70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        .btn-install {
+            background: var(--gradient-accent);
+            color: white;
+            box-shadow: 0 4px 18px rgba(99, 102, 241, 0.35);
+        }
+
+        .btn-install:hover {
+            opacity: 0.95;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 24px rgba(99, 102, 241, 0.45);
+        }
+
+        /* Section Headings */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 28px 0 14px;
         }
 
         .section-title {
-            font-size: 13px;
-            font-weight: 600;
+            font-size: 12px;
+            font-weight: 700;
             color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 1px;
-            margin: 30px 0 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
+        /* Cards */
         .card {
             background: var(--bg-card);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--border-color);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-subtle);
             border-radius: 16px;
-            padding: 24px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            padding: 22px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
             margin-bottom: 20px;
-            transition: transform 0.2s;
+            transition: border-color 0.2s ease;
         }
 
-        .input-group {
-            display: flex;
-            gap: 12px;
-        }
-
-        input[type="url"], input[type="text"] {
-            flex-grow: 1;
-            background-color: var(--bg-input);
-            border: 1px solid var(--border-color);
-            color: white;
-            padding: 14px 16px;
-            border-radius: 12px;
-            font-size: 15px;
-            outline: none;
-            transition: border-color 0.2s;
-            min-width: 0;
-        }
-
-        input[type="url"]:focus, input[type="text"]:focus {
-            border-color: var(--accent);
-        }
-
-        button.submit-btn {
-            background-color: var(--accent);
-            color: white;
-            border: none;
-            padding: 14px 24px;
-            border-radius: 12px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s;
-            white-space: nowrap;
-        }
-
-        button.submit-btn:hover { background-color: var(--accent-hover); }
-
-        .repo-card {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .repo-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .repo-info h3 {
-            margin: 0 0 5px 0;
-            font-size: 18px;
-            font-weight: 600;
-        }
-        
-        .repo-info p.url {
-            margin: 0;
-            color: var(--text-muted);
-            font-size: 13px;
-            word-break: break-all;
-        }
-        
-        .repo-actions {
-            display: flex;
-            gap: 10px;
-            flex-shrink: 0;
-        }
-
-        .delete-btn {
-            background: rgba(239, 68, 68, 0.1);
-            color: #ef4444;
-            border: none;
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: background 0.2s;
-            font-size: 18px;
-            flex-shrink: 0;
-        }
-        
-        .delete-btn:hover {
-            background: rgba(239, 68, 68, 0.2);
-        }
-
-        .provider-grid {
+        /* Sorting Mode Grid */
+        .sort-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-            gap: 20px;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-top: 14px;
         }
 
-        .provider-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 20px;
+        .sort-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1.5px solid var(--border-subtle);
+            border-radius: 14px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            user-select: none;
             position: relative;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
         }
 
-        .provider-header {
-            display: flex;
-            gap: 16px;
-            margin-bottom: 20px;
+        .sort-card:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(99, 102, 241, 0.35);
+            transform: translateY(-1px);
         }
 
-        .provider-icon {
-            width: 48px;
-            height: 48px;
-            background: rgba(255, 255, 255, 0.05);
+        .sort-card.active {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 24px rgba(99, 102, 241, 0.2);
+        }
+
+        .sort-icon-box {
+            width: 44px;
+            height: 44px;
             border-radius: 12px;
+            background: rgba(255, 255, 255, 0.04);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
+            font-size: 20px;
             flex-shrink: 0;
-            overflow: hidden;
-        }
-        
-        .provider-icon img {
-            width: 32px;
-            height: 32px;
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.2s;
         }
 
-        .provider-info { flex-grow: 1; min-width: 0; }
-        
-        .provider-repo-name {
+        .sort-card.active .sort-icon-box {
+            background: rgba(99, 102, 241, 0.2);
+            border-color: rgba(99, 102, 241, 0.4);
+            color: #a5b4fc;
+        }
+
+        .sort-info {
+            flex-grow: 1;
+            min-width: 0;
+        }
+
+        .sort-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 3px;
+        }
+
+        .sort-desc {
             font-size: 12px;
-            color: var(--accent);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-        
-        .provider-name {
-            font-size: 18px;
-            font-weight: 600;
-            margin: 0 0 4px 0;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        
-        .provider-desc {
-            font-size: 13px;
-            color: var(--text-muted);
-            margin: 0 0 12px 0;
-            line-height: 1.4;
+            color: var(--text-secondary);
+            line-height: 1.35;
         }
 
-        .provider-tags {
-            display: flex;
-            gap: 8px;
-            margin-top: auto;
-        }
-
-        .tag {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 11px;
-            color: var(--text-muted);
-            font-weight: 500;
-        }
-
-        .provider-actions {
+        .radio-dot {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 2px solid var(--text-muted);
+            flex-shrink: 0;
             display: flex;
             align-items: center;
-            gap: 12px;
-            position: absolute;
-            top: 20px;
-            right: 20px;
+            justify-content: center;
+            transition: all 0.2s;
         }
 
-        .gear-btn {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            font-size: 18px;
-            cursor: pointer;
-            transition: color 0.2s;
-            padding: 0;
-            display: flex;
-            align-items: center;
+        .sort-card.active .radio-dot {
+            border-color: var(--accent-primary);
+            background: var(--accent-primary);
+            box-shadow: inset 0 0 0 3.5px var(--bg-base);
         }
 
-        .gear-btn:hover {
-            color: white;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--text-muted);
-        }
-
-        /* Settings Checkbox Switch */
-        .toggle-group {
+        /* Settings Rows */
+        .setting-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 12px 0;
-            border-bottom: 1px solid var(--border-color);
+            padding: 16px 0;
+            border-bottom: 1px solid var(--border-subtle);
+            gap: 16px;
         }
 
-        .toggle-group:last-child {
+        .setting-row:first-child {
+            padding-top: 0;
+        }
+
+        .setting-row:last-child {
             border-bottom: none;
             padding-bottom: 0;
         }
 
-        .toggle-label {
+        .setting-meta {
             display: flex;
             flex-direction: column;
+            gap: 4px;
         }
 
-        .toggle-label span {
-            font-weight: 500;
-            font-size: 15px;
-        }
-        
-        .toggle-label small {
-            color: var(--text-muted);
-            font-size: 13px;
-            margin-top: 4px;
+        .setting-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
+        .setting-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        .badge-pill {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #cbd5e1;
+            padding: 2px 7px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        /* Dual Pill Filters */
+        .filter-pill-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .filter-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-subtle);
+            padding: 6px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .filter-pill:hover {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .filter-pill-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        /* Switches */
         .switch {
             position: relative;
             display: inline-block;
-            width: 48px;
-            height: 24px;
+            width: 44px;
+            height: 22px;
             flex-shrink: 0;
         }
 
@@ -464,235 +428,371 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: var(--border-color);
-            transition: .4s;
-            border-radius: 24px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: .3s cubic-bezier(0.16, 1, 0.3, 1);
+            border-radius: 22px;
         }
 
         .slider:before {
             position: absolute;
             content: "";
-            height: 18px;
-            width: 18px;
-            left: 3px;
-            bottom: 3px;
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
             background-color: white;
-            transition: .4s;
+            transition: .3s cubic-bezier(0.16, 1, 0.3, 1);
             border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
 
         input:checked + .slider {
-            background-color: var(--accent);
+            background-color: var(--accent-primary);
+            border-color: var(--accent-primary);
         }
 
         input:checked + .slider:before {
-            transform: translateX(24px);
+            transform: translateX(22px);
         }
 
-        /* Sorting Mode Selector */
-        .sort-options-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-top: 10px;
-        }
-
-        .sort-option {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--border-color);
-            border-radius: 14px;
-            padding: 14px 16px;
+        /* Inputs & Form */
+        .input-group {
             display: flex;
-            align-items: center;
-            gap: 12px;
-            cursor: pointer;
-            transition: all 0.25s ease;
-            user-select: none;
-            position: relative;
+            gap: 10px;
         }
 
-        .sort-option:hover {
-            background: rgba(255, 255, 255, 0.06);
-            border-color: rgba(99, 102, 241, 0.4);
-            transform: translateY(-1px);
-        }
-
-        .sort-option.active {
-            background: rgba(99, 102, 241, 0.12);
-            border-color: var(--accent);
-            box-shadow: 0 0 20px rgba(99, 102, 241, 0.25);
-        }
-
-        .sort-icon {
-            font-size: 22px;
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 38px;
-            height: 38px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-        }
-
-        .sort-option.active .sort-icon {
-            background: rgba(99, 102, 241, 0.25);
-        }
-
-        .sort-details {
+        input[type="url"], input[type="text"] {
             flex-grow: 1;
-            display: flex;
-            flex-direction: column;
+            background-color: var(--bg-input);
+            border: 1px solid var(--border-subtle);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s;
             min-width: 0;
         }
 
-        .sort-details strong {
+        input[type="url"]:focus, input[type="text"]:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 16px rgba(99, 102, 241, 0.25);
+        }
+
+        .btn-submit {
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            padding: 0 20px;
+            border-radius: 12px;
             font-size: 14px;
             font-weight: 600;
-            color: var(--text-main);
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
         }
 
-        .sort-details small {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-top: 3px;
-            line-height: 1.3;
+        .btn-submit:hover {
+            background: #4f46e5;
         }
 
-        .sort-radio-indicator {
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            border: 2px solid var(--text-muted);
-            flex-shrink: 0;
+        /* Repositories */
+        .repo-card {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            justify-content: center;
+            gap: 16px;
+            padding: 18px 20px;
+            background: rgba(17, 20, 29, 0.6);
+            border: 1px solid var(--border-subtle);
+            border-radius: 14px;
+            margin-bottom: 12px;
             transition: all 0.2s;
         }
 
-        .sort-option.active .sort-radio-indicator {
-            border-color: var(--accent);
-            background: var(--accent);
-            box-shadow: inset 0 0 0 3px var(--bg-main);
+        .repo-card:hover {
+            background: rgba(24, 28, 41, 0.7);
+            border-color: rgba(255, 255, 255, 0.12);
         }
 
-        /* Mobile Adjustments */
-        @media (max-width: 600px) {
-            .header {
-                flex-direction: column;
-                align-items: center;
-                text-align: center;
-                gap: 20px;
-            }
-            
-            .install-all-btn {
-                width: 100%;
-                text-align: center;
-                padding: 14px 20px;
-            }
-            
-            .input-group {
-                flex-direction: column;
-            }
-            
-            .repo-card {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            
-            .repo-actions {
-                width: 100%;
-            }
-            
-            .repo-actions .install-all-btn {
-                flex: 1;
-            }
+        .repo-info h3 {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
 
-            .provider-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .toggle-group {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 12px;
-            }
-            
-            .toggle-group > div:last-child {
-                width: 100%;
-                justify-content: flex-start;
-                margin-top: 4px;
-            }
+        .repo-info p.url {
+            color: var(--text-muted);
+            font-size: 12px;
+            word-break: break-all;
+            margin-bottom: 8px;
+        }
+
+        .repo-tag {
+            display: inline-block;
+            background: rgba(99, 102, 241, 0.12);
+            border: 1px solid rgba(99, 102, 241, 0.25);
+            color: #a5b4fc;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .btn-icon-delete {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: rgba(239, 68, 68, 0.1);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+            font-size: 15px;
+        }
+
+        .btn-icon-delete:hover {
+            background: rgba(239, 68, 68, 0.25);
+            border-color: rgba(239, 68, 68, 0.4);
+            transform: scale(1.05);
+        }
+
+        /* Providers Grid */
+        .provider-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            gap: 16px;
+        }
+
+        .provider-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 18px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.2s ease;
+        }
+
+        .provider-card:hover {
+            border-color: rgba(255, 255, 255, 0.12);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        .provider-header {
+            display: flex;
+            gap: 14px;
+            margin-bottom: 12px;
+            padding-right: 50px;
+        }
+
+        .provider-icon {
+            width: 44px;
+            height: 44px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        .provider-icon img {
+            width: 28px;
+            height: 28px;
+            object-fit: contain;
+        }
+
+        .provider-repo-badge {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--accent-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+
+        .provider-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .provider-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+            margin-bottom: 14px;
+        }
+
+        .provider-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: auto;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .provider-tags {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .tag-pill {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .provider-toggle-wrap {
+            position: absolute;
+            top: 18px;
+            right: 18px;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(16, 20, 31, 0.95);
+            backdrop-filter: blur(16px);
+            color: var(--text-primary);
+            padding: 12px 24px;
+            border-radius: 14px;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            box-shadow: 0 10px 35px rgba(0,0,0,0.6), 0 0 20px rgba(16, 185, 129, 0.2);
+            font-size: 13px;
+            font-weight: 600;
+            z-index: 10000;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 32px 16px;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        /* Mobile */
+        @media (max-width: 680px) {
+            body { padding: 24px 16px 60px; }
+            .header { flex-direction: column; align-items: flex-start; gap: 16px; }
+            .header-actions { width: 100%; }
+            .header-actions .btn { flex: 1; }
+            .sort-grid { grid-template-columns: 1fr; }
+            .provider-grid { grid-template-columns: 1fr; }
+            .setting-row { flex-direction: column; align-items: flex-start; gap: 12px; }
+            .filter-pill-group { width: 100%; justify-content: flex-start; }
         }
     </style>
 </head>
 <body>
     <div id="toast" class="toast"></div>
     <div class="container">
-        <div class="header">
-            <div class="brand">
-                <h1>Chole Bhature</h1>
-                <p>Advanced Meta-Sorter for Nuvio & Stremio</p>
-                <div id="sync-badge" class="sync-badge" style="display: none;">
+        <!-- Header -->
+        <header class="header">
+            <div class="brand-wrapper">
+                <div class="brand-title-row">
+                    <h1 class="brand-title">Chole Bhature</h1>
+                    <span class="brand-badge">Nuvio Sorter</span>
+                </div>
+                <p class="brand-subtitle">Ultra-Fast Stream Meta-Sorter & Priority Engine</p>
+                <div id="sync-badge" class="sync-pill" style="display: none;">
                     <span class="pulse-dot"></span>
-                    <span id="sync-text">⚡ Instant Sync Active</span>
+                    <span id="sync-text">Live Synced</span>
                 </div>
             </div>
-            <div class="header-buttons">
-                <button class="save-btn" id="save-btn" onclick="saveConfigurationToServer(true)" title="Save settings and update Stremio & Nuvio instantly without reinstalling">
+            <div class="header-actions">
+                <button class="btn btn-save" id="save-btn" onclick="saveConfigurationToServer(true)" title="Save settings and push updates live without reinstalling">
                     <span>💾 Save Changes</span>
-                    <small style="display: block; font-size: 10px; opacity: 0.85; font-weight: normal; margin-top: 2px;">Instant Sync (No Reinstall)</small>
                 </button>
-                <button class="install-all-btn" onclick="installStremio()">
+                <button class="btn btn-install" onclick="installStremio()">
                     <span>🚀 Install Addon</span>
                 </button>
             </div>
-        </div>
+        </header>
 
-        <div class="section-title">Settings</div>
+        <!-- Settings Section -->
+        <div class="section-header">
+            <span class="section-title">⚙️ Stream Optimization Settings</span>
+        </div>
         <div class="card">
-            <!-- Stream Sorting Priority -->
-            <div style="padding-bottom: 16px; border-bottom: 1px solid var(--border-color);">
-                <div class="toggle-label" style="margin-bottom: 12px;">
-                    <span>Stream Sorting Mode</span>
-                    <small>Choose whether streams are prioritized by fastest speed/ping or highest video resolution.</small>
+            <!-- Sort Mode Selector -->
+            <div style="margin-bottom: 20px;">
+                <div class="setting-meta" style="margin-bottom: 12px;">
+                    <div class="setting-title">Stream Priority & Sorting Mode</div>
+                    <div class="setting-desc">Choose whether streams are prioritized by ultra-low response latency or maximum 4K video quality.</div>
                 </div>
-                <div class="sort-options-grid">
-                    <div class="sort-option active" id="sort-speed" onclick="setSortMode('speed')">
-                        <div class="sort-icon">⚡</div>
-                        <div class="sort-details">
-                            <strong>Sort by Speed & Ping</strong>
-                            <small>Lowest latency (fastest response) first</small>
+                <div class="sort-grid">
+                    <div class="sort-card active" id="sort-speed" onclick="setSortMode('speed')">
+                        <div class="sort-icon-box">⚡</div>
+                        <div class="sort-info">
+                            <div class="sort-title">Speed & Low Latency First</div>
+                            <div class="sort-desc">Fastest responding streams prioritized at the top</div>
                         </div>
-                        <div class="sort-radio-indicator"></div>
+                        <div class="radio-dot"></div>
                     </div>
-                    <div class="sort-option" id="sort-quality" onclick="setSortMode('quality')">
-                        <div class="sort-icon">🎬</div>
-                        <div class="sort-details">
-                            <strong>Sort by Quality (4K → FHD → HD)</strong>
-                            <small>4K UHD first, then 1080p, then 720p (by ping)</small>
+                    <div class="sort-card" id="sort-quality" onclick="setSortMode('quality')">
+                        <div class="sort-icon-box">🎬</div>
+                        <div class="sort-info">
+                            <div class="sort-title">Maximum Quality (4K UHD First)</div>
+                            <div class="sort-desc">4K UHD → 1080p FHD → 720p (sorted by speed)</div>
                         </div>
-                        <div class="sort-radio-indicator"></div>
+                        <div class="radio-dot"></div>
                     </div>
                 </div>
             </div>
 
-            <div class="toggle-group" style="padding-top: 16px;">
-                <div class="toggle-label">
-                    <span>Auto-Hide Dead & Slow Streams</span>
-                    <small>Remove streams tagged with 🔴 or 🟡 instead of moving them to the bottom.</small>
+            <div class="setting-row">
+                <div class="setting-meta">
+                    <div class="setting-title">Auto-Hide Problematic Links</div>
+                    <div class="setting-desc">Instantly strip broken or lagging streams from your results list.</div>
                 </div>
-                <div style="display: flex; align-items: center; gap: 15px; flex-shrink: 0;">
-                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;" title="Hide Dead Streams">
-                        <span style="font-size: 13px; font-weight: 500;">🔴 Dead</span>
+                <div class="filter-pill-group">
+                    <label class="filter-pill" title="Filter out completely offline or broken streams">
+                        <span class="filter-pill-label">🔴 Dead Links</span>
                         <div class="switch">
                             <input type="checkbox" id="hideDead" onchange="onSettingChanged()">
                             <span class="slider"></span>
                         </div>
                     </label>
-                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;" title="Hide Slow Streams">
-                        <span style="font-size: 13px; font-weight: 500;">🟡 Slow</span>
+                    <label class="filter-pill" title="Filter out streams taking longer than 1.5s to respond">
+                        <span class="filter-pill-label">🟡 Slow Links</span>
                         <div class="switch">
                             <input type="checkbox" id="hideSlow" onchange="onSettingChanged()">
                             <span class="slider"></span>
@@ -700,10 +800,14 @@
                     </label>
                 </div>
             </div>
-            <div class="toggle-group">
-                <div class="toggle-label">
-                    <span>Prioritize Hindi / Dual Audio 🇮🇳</span>
-                    <small>Boost Hindi, Dual Audio, and Multi-Audio streams to the top.</small>
+
+            <div class="setting-row">
+                <div class="setting-meta">
+                    <div class="setting-title">
+                        Prioritize Hindi & Dual Audio Streams
+                        <span class="badge-pill">🇮🇳 Hindi / Dual</span>
+                    </div>
+                    <div class="setting-desc">Pin Hindi dubbed, Dual-Audio, and multi-language audio streams to the top.</div>
                 </div>
                 <label class="switch">
                     <input type="checkbox" id="prioritizeHindi" onchange="onSettingChanged()">
@@ -712,41 +816,51 @@
             </div>
         </div>
 
-        <div class="section-title" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;" onclick="toggleAnalytics()">
-            <span>Provider Analytics</span>
-            <span id="analytics-toggle-icon">▼</span>
+        <!-- Provider Analytics Accordion -->
+        <div class="section-header" style="cursor: pointer; user-select: none;" onclick="toggleAnalytics()">
+            <span class="section-title">📊 Live Provider Analytics & Health</span>
+            <span id="analytics-toggle-icon" style="color: var(--text-muted); font-size: 12px;">▼</span>
         </div>
         <div class="card" id="analytics-card" style="display: none;">
             <div id="analytics-container">
-                <div class="empty-state" style="padding: 10px;">Loading analytics...</div>
+                <div class="empty-state">Loading real-time health metrics...</div>
             </div>
-            <button class="install-all-btn" style="margin-top: 15px; width: 100%;" onclick="fetchAnalytics()">Refresh Analytics</button>
+            <button class="btn btn-save" style="margin-top: 16px; width: 100%;" onclick="fetchAnalytics()">🔄 Refresh Health Metrics</button>
         </div>
 
-        <div class="section-title">Add Repository</div>
+        <!-- Add Repository Section -->
+        <div class="section-header">
+            <span class="section-title">➕ Add Nuvio Repository</span>
+        </div>
         <div class="card">
             <form id="install-form">
                 <div class="input-group">
-                    <input type="url" id="manifestUrl" placeholder="Enter Nuvio manifest URL (e.g. https://.../manifest.json)" required>
-                    <button type="submit" class="submit-btn">Add</button>
+                    <input type="url" id="manifestUrl" placeholder="Enter repository manifest URL (e.g. https://.../manifest.json)" required>
+                    <button type="submit" class="btn-submit">Add Repo</button>
                 </div>
             </form>
             
-            <div id="fallbackLink" style="display: none; margin-top: 20px;">
-                <div class="section-title" style="margin-top: 0;">Manifest Link</div>
+            <div id="fallbackLink" style="display: none; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border-subtle);">
+                <div class="section-title" style="margin-bottom: 8px;">🔗 Manual Manifest URL (Copy & Paste to Stremio/Nuvio)</div>
                 <div class="input-group">
                     <input type="text" id="generatedUrl" readonly>
-                    <button type="button" onclick="copyLink()" class="submit-btn">Copy</button>
+                    <button type="button" onclick="copyLink()" class="btn-submit">Copy URL</button>
                 </div>
             </div>
         </div>
 
-        <div class="section-title">Repositories</div>
+        <!-- Repositories List -->
+        <div class="section-header">
+            <span class="section-title">📦 Installed Repositories</span>
+        </div>
         <div id="installed-repos">
             <div class="empty-state">No repositories added yet.</div>
         </div>
 
-        <div class="section-title">Providers</div>
+        <!-- Active Providers List -->
+        <div class="section-header">
+            <span class="section-title">🧩 Scrapers & Providers</span>
+        </div>
         <div id="providers-list" class="provider-grid">
             <div class="empty-state" style="grid-column: 1 / -1;">No providers found.</div>
         </div>
@@ -760,7 +874,7 @@
 
         function showToast(message) {
             const toast = document.getElementById('toast');
-            toast.innerText = message;
+            toast.innerHTML = message;
             toast.classList.add('show');
             setTimeout(() => {
                 toast.classList.remove('show');
@@ -852,16 +966,16 @@
                     const saveBtn = document.getElementById('save-btn');
                     if (saveBtn) saveBtn.classList.remove('unsaved');
                     
-                    showSyncBadge(`⚡ Cloud Synced: Config #${configId}`);
+                    showSyncBadge(`⚡ Cloud Synced (ID: ${configId})`);
                     
                     if (showToastMsg) {
-                        showToast("✅ Settings Saved! Stremio & Nuvio will use your changes immediately without reinstalling.");
+                        showToast("✨ <b>Settings Saved!</b> Nuvio & Stremio updated instantly without reinstalling.");
                     }
                 }
             } catch (err) {
                 console.error('Save error', err);
                 if (showToastMsg) {
-                    showToast("❌ Error saving settings to server.");
+                    showToast("❌ <b>Error:</b> Could not save settings to server.");
                 }
             }
         }
@@ -905,7 +1019,7 @@
                     const data = await res.json();
                     if (data && data.config) {
                         loadConfigIntoUI(data.config);
-                        showSyncBadge(`⚡ Linked to Stremio: Config #${configId}`);
+                        showSyncBadge(`⚡ Linked to Stremio (ID: ${configId})`);
                         return;
                     }
                 } catch (e) {}
@@ -934,7 +1048,7 @@
             document.getElementById('prioritizeHindi').checked = settings.prioritizeHindi || false;
             updateSortModeUI(settings.sortBy || 'speed');
             
-            showSyncBadge(`⚡ Instant Sync Active (ID: ${configId})`);
+            showSyncBadge(`⚡ Cloud Synced (ID: ${configId})`);
             fetchRepos();
         }
 
@@ -943,7 +1057,6 @@
             const providersContainer = document.getElementById('providers-list');
             
             if (repos.length === 0) {
-                // If default empty, add the official repository automatically
                 const defaultRepo = 'https://raw.githubusercontent.com/D3adlyRocket/All-in-One-Nuvio/refs/heads/main/manifest.json';
                 repos.push(defaultRepo);
                 localStorage.setItem('nuvio_repos', JSON.stringify(repos));
@@ -968,30 +1081,28 @@
                         p.hasSettings = p.hasSettings || false;
                         allProvidersData.push(p);
                     });
-                    
-                    const safeName = name.replace(/'/g, "\\'");
 
                     reposHtml += `
-                        <div class="card repo-card">
+                        <div class="repo-card">
                             <div class="repo-info">
                                 <h3>${name}</h3>
-                                <p class="url" style="margin-bottom: 8px;">${url}</p>
-                                <span class="tag" style="background: rgba(99, 102, 241, 0.1); color: #818cf8;">${providersArray.length} providers</span>
+                                <p class="url">${url}</p>
+                                <span class="repo-tag">${providersArray.length} active providers</span>
                             </div>
-                            <div class="repo-actions">
-                                <button class="delete-btn" title="Remove Repository" onclick="removeRepo(${i})">🗑</button>
+                            <div>
+                                <button class="btn-icon-delete" title="Remove Repository" onclick="removeRepo(${i})">✕</button>
                             </div>
                         </div>
                     `;
                 } catch (err) {
                     reposHtml += `
-                        <div class="card repo-card">
+                        <div class="repo-card">
                             <div class="repo-info">
-                                <h3>Failed to load</h3>
+                                <h3>Failed to load repository</h3>
                                 <p class="url">${url}</p>
                             </div>
-                            <div class="repo-actions">
-                                <button class="delete-btn" title="Remove Repository" onclick="removeRepo(${i})">🗑</button>
+                            <div>
+                                <button class="btn-icon-delete" title="Remove Repository" onclick="removeRepo(${i})">✕</button>
                             </div>
                         </div>
                     `;
@@ -1005,37 +1116,37 @@
         function renderProviders() {
             const providersContainer = document.getElementById('providers-list');
             if (allProvidersData.length === 0) {
-                providersContainer.innerHTML = '<div class="empty-state" style="grid-column: 1 / -1;">No providers found in the added repositories.</div>';
+                providersContainer.innerHTML = '<div class="empty-state" style="grid-column: 1 / -1;">No providers found in repositories.</div>';
                 return;
             }
 
             let html = '';
             allProvidersData.forEach((p) => {
                 const iconHtml = p.logo ? `<img src="${p.logo}" alt="logo" onerror="this.outerHTML='🧩'">` : '🧩';
-                const typesStr = p.supportedTypes.join(' | ');
-                
-                // Check if disabled in settings
+                const typesStr = p.supportedTypes.join(' • ');
                 const isDisabled = settings.disabledProviders && settings.disabledProviders.includes(p.name);
                 
                 html += `
-                    <div class="provider-card" style="opacity: ${isDisabled ? '0.5' : '1'}; transition: opacity 0.3s;">
-                        <div class="provider-actions">
-                            <label class="switch" style="transform: scale(0.85); transform-origin: right center;">
+                    <div class="provider-card" style="opacity: ${isDisabled ? '0.45' : '1'};">
+                        <div class="provider-toggle-wrap">
+                            <label class="switch">
                                 <input type="checkbox" onchange="toggleProvider('${p.name}', this.checked)" ${!isDisabled ? 'checked' : ''}>
                                 <span class="slider"></span>
                             </label>
                         </div>
-                        <div class="provider-header" style="margin-bottom: 12px; padding-right: 70px;">
+                        <div class="provider-header">
                             <div class="provider-icon">${iconHtml}</div>
-                            <div class="provider-info">
-                                <div class="provider-repo-name">${p.repoName}</div>
+                            <div style="min-width: 0;">
+                                <div class="provider-repo-badge">${p.repoName}</div>
                                 <h4 class="provider-name">${p.name}</h4>
                             </div>
                         </div>
-                        <p class="provider-desc">${p.description || 'Nuvio stream provider'}</p>
-                        <div class="provider-tags">
-                            <span class="tag">${typesStr}</span>
-                            <span class="tag">v${p.version}</span>
+                        <p class="provider-desc">${p.description || 'Nuvio high-speed stream provider'}</p>
+                        <div class="provider-footer">
+                            <div class="provider-tags">
+                                <span class="tag-pill">${typesStr}</span>
+                                <span class="tag-pill">v${p.version}</span>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -1095,9 +1206,7 @@
                 return;
             }
             
-            // Save to server first
             await saveConfigurationToServer(false);
-            
             const urls = buildStremioUrl();
             showFallback(urls.httpUrl);
             window.location.href = urls.stremioUrl;
@@ -1114,7 +1223,7 @@
             const copyText = document.getElementById("generatedUrl");
             copyText.select();
             document.execCommand("copy");
-            showToast("📋 Copied manifest URL to clipboard!");
+            showToast("📋 <b>Copied:</b> Manifest URL copied to clipboard!");
         }
 
         function toggleAnalytics() {
@@ -1137,19 +1246,19 @@
                 const container = document.getElementById('analytics-container');
                 
                 if (Object.keys(data).length === 0) {
-                    container.innerHTML = '<div class="empty-state" style="padding: 10px;">No analytics data yet. Test some streams in Nuvio first!</div>';
+                    container.innerHTML = '<div class="empty-state" style="padding: 10px;">No analytics data recorded yet. Test streams in Nuvio or Stremio!</div>';
                     return;
                 }
 
                 let html = '<div style="display: flex; flex-direction: column; gap: 10px;">';
                 for (const [provider, stats] of Object.entries(data)) {
                     html += `
-                        <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
-                            <strong style="font-size: 14px;">${provider}</strong>
-                            <div style="display: flex; gap: 15px; font-size: 13px;">
-                                <span style="color: #4ade80;">🟢 ${stats.fast}</span>
-                                <span style="color: #facc15;">🟡 ${stats.slow}</span>
-                                <span style="color: #f87171;">🔴 ${stats.dead}</span>
+                        <div style="background: rgba(0,0,0,0.3); padding: 12px 16px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.05);">
+                            <strong style="font-size: 14px; font-weight: 600;">${provider}</strong>
+                            <div style="display: flex; gap: 14px; font-size: 12px; font-weight: 600;">
+                                <span style="color: #4ade80;">🟢 ${stats.fast || 0} Fast</span>
+                                <span style="color: #facc15;">🟡 ${stats.slow || 0} Slow</span>
+                                <span style="color: #f87171;">🔴 ${stats.dead || 0} Dead</span>
                             </div>
                         </div>
                     `;
@@ -1161,7 +1270,7 @@
             }
         }
 
-        // Initialize on load
+        // Init
         initConfig();
         fetchAnalytics();
     </script>
