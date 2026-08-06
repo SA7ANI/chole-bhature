@@ -493,6 +493,16 @@
                     <span class="slider"></span>
                 </label>
             </div>
+            <div class="toggle-group">
+                <div class="toggle-label">
+                    <span>Prioritize Hindi / Dual Audio 🇮🇳</span>
+                    <small>Boost Hindi, Dual Audio, and Multi-Audio streams to the top.</small>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="prioritizeHindi" onchange="saveSettings()">
+                    <span class="slider"></span>
+                </label>
+            </div>
         </div>
 
         <div class="section-title" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;" onclick="toggleAnalytics()">
@@ -544,11 +554,13 @@
         document.getElementById('hideDead').checked = settings.hideDead || false;
         document.getElementById('hideSlow').checked = settings.hideSlow || false;
         document.getElementById('prioritizeQuality').checked = settings.prioritizeQuality || false;
+        document.getElementById('prioritizeHindi').checked = settings.prioritizeHindi || false;
 
         function saveSettings() {
             settings.hideDead = document.getElementById('hideDead').checked;
             settings.hideSlow = document.getElementById('hideSlow').checked;
             settings.prioritizeQuality = document.getElementById('prioritizeQuality').checked;
+            settings.prioritizeHindi = document.getElementById('prioritizeHindi').checked;
             localStorage.setItem('nuvio_settings', JSON.stringify(settings));
         }
 
@@ -700,6 +712,7 @@
             configObj.hideDead = settings.hideDead;
             configObj.hideSlow = settings.hideSlow;
             configObj.prioritizeQuality = settings.prioritizeQuality;
+            configObj.prioritizeHindi = settings.prioritizeHindi;
             configObj.disabled = settings.disabledProviders || [];
             
             const encodedConfig = encodeURIComponent(JSON.stringify(configObj));
