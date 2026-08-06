@@ -5,8 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <meta name="description" content="High-Performance Stream Meta-Sorter & Priority Engine for Nuvio & Stremio. Sort by speed, quality, language. Supports HDR, Dolby Vision, Atmos badges.">
     <meta name="theme-color" content="#6366f1">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="application-name" content="Chole Bhature">
+    <meta name="apple-mobile-web-app-title" content="Chole Bhature">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png">
     <link rel="apple-touch-icon" sizes="512x512" href="/icon-512.png">
@@ -1119,6 +1122,9 @@
                 </div>
             </div>
             <div class="action-group">
+                <button class="action-btn action-btn-pwa" id="pwa-install-btn" style="display: none;" onclick="triggerPwaInstall()" title="Install Chole Bhature directly to your home screen">
+                    <span>📲 Install App</span>
+                </button>
                 <button class="action-btn action-btn-save" id="save-btn" onclick="saveConfigurationToServer(true)" title="Save settings and push updates live without reinstalling">
                     <span>💾 Save Changes</span>
                 </button>
@@ -1884,11 +1890,54 @@
         initConfig();
         fetchAnalytics();
 
-        // Register PWA Service Worker
+        // PWA Install Prompt & Service Worker Management
+        let deferredPrompt = null;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const pwaBtn = document.getElementById('pwa-install-btn');
+            if (pwaBtn) {
+                pwaBtn.style.display = 'inline-flex';
+            }
+            console.log('[PWA] beforeinstallprompt captured and ready');
+        });
+
+        window.addEventListener('appinstalled', () => {
+            deferredPrompt = null;
+            const pwaBtn = document.getElementById('pwa-install-btn');
+            if (pwaBtn) {
+                pwaBtn.style.display = 'none';
+            }
+            showToast('🎉 Chole Bhature app installed successfully!', 'success');
+            console.log('[PWA] App successfully installed');
+        });
+
+        function triggerPwaInstall() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('[PWA] User accepted install prompt');
+                        showToast('Installing application...', 'info');
+                    } else {
+                        console.log('[PWA] User dismissed install prompt');
+                    }
+                    deferredPrompt = null;
+                });
+            } else {
+                showToast('To install: tap your browser menu (⋮) and choose "Install app" or "Add to Home screen".', 'info');
+            }
+        }
+
+        // Register Service Worker
         if ('serviceWorker' in navigator) {
             const registerSW = () => {
                 navigator.serviceWorker.register('/sw.js', { scope: '/' })
-                    .then(reg => console.log('[PWA] Service Worker registered with scope:', reg.scope))
+                    .then(reg => {
+                        console.log('[PWA] Service Worker registered with scope:', reg.scope);
+                        reg.update();
+                    })
                     .catch(err => console.warn('[PWA] Service Worker registration failed:', err));
             };
             if (document.readyState === 'complete') {

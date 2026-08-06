@@ -44,18 +44,29 @@ function saveUserConfig(configId, configData) {
 }
 loadUserConfigs();
 
-// PWA Core Endpoints with explicit headers
+// PWA Core Endpoints with explicit headers & CORS for WebAPK minting
 app.get('/sw.js', (req, res) => {
     res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
     res.setHeader('Service-Worker-Allowed', '/');
+    res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.sendFile(path.join(__dirname, 'public', 'sw.js'));
 });
 
 app.get('/manifest.json', (req, res) => {
     res.setHeader('Content-Type', 'application/manifest+json; charset=utf-8');
+    res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Cache-Control', 'public, max-age=3600');
     res.sendFile(path.join(__dirname, 'public', 'manifest.json'));
+});
+
+['icon-192.png', 'icon-512.png', 'icon-maskable-192.png', 'icon-maskable-512.png'].forEach((iconFile) => {
+    app.get(`/${iconFile}`, (req, res) => {
+        res.setHeader('Content-Type', 'image/png');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+        res.sendFile(path.join(__dirname, 'public', iconFile));
+    });
 });
 
 // Serve static assets

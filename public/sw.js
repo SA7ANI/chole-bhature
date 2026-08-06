@@ -1,11 +1,12 @@
-const CACHE_NAME = 'chole-bhature-v5';
+const CACHE_NAME = 'chole-bhature-v6';
 const STATIC_ASSETS = [
+  '/',
   '/configure',
+  '/manifest.json',
   '/icon-192.png',
   '/icon-512.png',
   '/icon-maskable-192.png',
-  '/icon-maskable-512.png',
-  '/manifest.json'
+  '/icon-maskable-512.png'
 ];
 
 // Install — cache static shell
@@ -33,15 +34,16 @@ self.addEventListener('activate', (event) => {
 
 // Fetch — network-first for API & streams, cache-fallback for app shell
 self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
+
   const url = new URL(event.request.url);
 
-  // Always go to network for API, proxy, and dynamic routes
+  // Always go to network for API, proxy, and dynamic stream routes
   if (
     url.pathname.startsWith('/api/') ||
     url.pathname.startsWith('/proxy/') ||
     url.pathname.startsWith('/c/') ||
-    url.pathname.endsWith('.json') && url.pathname !== '/manifest.json' ||
-    event.request.method !== 'GET'
+    (url.pathname.endsWith('.json') && url.pathname !== '/manifest.json')
   ) {
     return;
   }
@@ -61,7 +63,7 @@ self.addEventListener('fetch', (event) => {
         return caches.match(event.request).then((cached) => {
           if (cached) return cached;
           if (event.request.mode === 'navigate') {
-            return caches.match('/configure');
+            return caches.match('/configure').then((c) => c || caches.match('/'));
           }
           return new Response('Offline', { status: 503, statusText: 'Offline' });
         });

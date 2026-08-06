@@ -2,11 +2,10 @@
   "name": "Chole Bhature",
   "short_name": "Chole Bhature",
   "description": "High-Performance Stream Meta-Sorter & Priority Engine for Nuvio & Stremio",
-  "id": "/configure",
+  "id": "/",
   "start_url": "/configure",
   "scope": "/",
   "display": "standalone",
-  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "background_color": "#07080c",
   "theme_color": "#6366f1",
   "orientation": "any",
@@ -19,16 +18,16 @@
       "purpose": "any"
     },
     {
-      "src": "/icon-maskable-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
       "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/icon-maskable-512.png",
