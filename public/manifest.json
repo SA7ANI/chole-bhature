@@ -3,7 +3,7 @@
   "short_name": "Chole Bhature",
   "description": "High-Performance Stream Meta-Sorter & Priority Engine for Nuvio & Stremio",
   "id": "/",
-  "start_url": "/configure",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#07080c",

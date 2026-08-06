@@ -72,11 +72,8 @@ app.get('/manifest.json', (req, res) => {
 // Serve static assets
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.get('/', (req, res) => {
-    res.redirect('/configure');
-});
-
-app.get('/configure', (req, res) => {
+app.get(['/', '/configure', '/index.html'], (req, res) => {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
