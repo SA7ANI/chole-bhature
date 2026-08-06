@@ -227,7 +227,9 @@ function createAddon(config) {
         const sortedAndTaggedStreams = await sortAndTagStreams(allStreams, {
             hideDead: config.hideDead,
             hideSlow: config.hideSlow,
-            prioritizeQuality: config.prioritizeQuality,
+            sortBy: config.sortBy || (config.prioritizeQuality ? 'quality' : 'speed'),
+            sortMode: config.sortMode || config.sortBy,
+            prioritizeQuality: config.sortBy === 'quality' || config.prioritizeQuality,
             prioritizeHindi: config.prioritizeHindi
         }, providerAnalytics);
 
