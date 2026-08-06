@@ -52,9 +52,15 @@ function parseStreamMetadata(stream) {
     if (/\b(?:imax[\s._-]?enhanced)\b/i.test(fullText)) metadata.special.push('IMAX Enhanced');
     else if (/\bimax\b/i.test(fullText)) metadata.special.push('IMAX');
 
-    if (/\b(?:dv|dovi|dolby[\s._-]?vision)\b/i.test(fullText)) metadata.hdr.push('DV');
-    if (/\bhdr[\s._-]?10[\s._-]?(?:\+|plus)\b/i.test(fullText)) metadata.hdr.push('HDR10+');
-    else if (/\bhdr(?:10)?\b/i.test(fullText) && !metadata.hdr.includes('DV')) metadata.hdr.push('HDR');
+    const hasDV = /\b(?:dv|dovi|dolby[\s._-]?vision)\b/i.test(fullText);
+    const hasHDR10Plus = /\bhdr[\s._-]?10[\s._-]?(?:\+|plus)\b/i.test(fullText);
+    const hasHDR10 = /\bhdr[\s._-]?10\b/i.test(fullText) && !hasHDR10Plus;
+    const hasHDR = /\bhdr\b/i.test(fullText) && !hasHDR10Plus && !hasHDR10;
+
+    if (hasDV) metadata.hdr.push('DV');
+    if (hasHDR10Plus) metadata.hdr.push('HDR10+');
+    if (hasHDR10) metadata.hdr.push('HDR10');
+    if (hasHDR) metadata.hdr.push('HDR');
 
     if (/\b10[\s._-]?bit\b/i.test(fullText) || /\bhevc[\s._-]?10\b/i.test(fullText)) metadata.special.push('10bit');
 
@@ -342,16 +348,15 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
 
     // Sort
     const categoryRank = { 'fast': 1, 'slow': 2, 'dead': 3 };
+    const isQualityFirst = config && (config.sortBy === 'quality' || config.sortMode === 'quality' || config.prioritizeQuality);
 
     filteredStreams.sort((a, b) => {
-        // 1. Status Category (Fast -> Slow -> Dead)
-        const rankA = categoryRank[a.statusCategory];
-        const rankB = categoryRank[b.statusCategory];
-        if (rankA !== rankB) {
-            return rankA - rankB;
+        // Dead streams always go to the bottom
+        if (a.isDead !== b.isDead) {
+            return a.isDead ? 1 : -1;
         }
 
-        // 2. Hindi / Audio prioritization (if configured)
+        // Hindi / Audio prioritization (if configured)
         if (config && config.prioritizeHindi) {
             const audioA = getAudioScore(a);
             const audioB = getAudioScore(b);
@@ -360,17 +365,42 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
             }
         }
 
-        // 3. Quality (if configured)
-        if (config && config.prioritizeQuality) {
+        if (isQualityFirst) {
+            // Sort by Resolution: 4K (4) -> 1080p (3) -> 720p (2) -> 480p (1) -> Unknown (0)
             const scoreA = getQualityScore(a);
             const scoreB = getQualityScore(b);
             if (scoreA !== scoreB) {
                 return scoreB - scoreA;
             }
+
+            // Within same resolution: Fast -> Slow -> Dead
+            const rankA = categoryRank[a.statusCategory] || 2;
+            const rankB = categoryRank[b.statusCategory] || 2;
+            if (rankA !== rankB) {
+                return rankA - rankB;
+            }
+
+            // Within same status: Lowest latency / fastest ping first
+            return a.latency - b.latency;
+        } else {
+            // Sort by Speed (Default):
+            // 1. Status Category (Fast -> Slow -> Dead)
+            const rankA = categoryRank[a.statusCategory] || 2;
+            const rankB = categoryRank[b.statusCategory] || 2;
+            if (rankA !== rankB) {
+                return rankA - rankB;
+            }
+
+            // 2. Exact latency (lowest ms first)
+            if (a.latency !== b.latency) {
+                return a.latency - b.latency;
+            }
+
+            // 3. Higher quality as tie breaker
+            const scoreA = getQualityScore(a);
+            const scoreB = getQualityScore(b);
+            return scoreB - scoreA;
         }
-        
-        // 4. Exact latency
-        return a.latency - b.latency;
     });
 
     // Clean up internal properties before sending to Stremio
@@ -380,4 +410,8 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
     });
 }
 
-module.exports = { sortAndTagStreams };
+module.exports = { 
+    sortAndTagStreams,
+    parseStreamMetadata,
+    formatStreamLabels
+};
