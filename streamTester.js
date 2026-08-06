@@ -49,15 +49,25 @@ function parseStreamMetadata(stream) {
     else if (/\b(?:cam|camrip|hdcam|telesync|ts|hdts)\b/i.test(fullText)) metadata.quality = 'CAM';
 
     // 3. Visual / HDR / IMAX / Bit-depth
-    if (/\b(?:imax[\s._-]?enhanced)\b/i.test(fullText)) metadata.special.push('IMAX Enhanced');
-    else if (/\bimax\b/i.test(fullText)) metadata.special.push('IMAX');
+    const hasIMAXEnhanced = /\b(?:imax[\s._-]?enhanced)\b/i.test(fullText);
+    const hasIMAX = hasIMAXEnhanced || /\bimax\b/i.test(fullText) || /(?:^|[\s._\-\[/])imax(?:[\s._\-\]\/]|$)/i.test(fullText);
+    if (hasIMAXEnhanced) metadata.special.push('IMAX Enhanced');
+    else if (hasIMAX) metadata.special.push('IMAX');
 
-    const hasDV = /\b(?:dv|dovi|dolby[\s._-]?vision)\b/i.test(fullText);
+    const hasDV = /\b(?:dv|dovi|dvision|dolby[\s._-]?vision)\b/i.test(fullText)
+        || /(?:^|[\s._\-\[/])(?:dv|dovi)(?:[\s._\-\]\/]|$)/i.test(fullText)
+        || /\bprofile[\s._-]?[578]\b/i.test(fullText)
+        || /\b(?:dv[\s._-]?(?:hdr|hdr10|hdr10\+|hevc|remux|bluray|web|p\d+))\b/i.test(fullText)
+        || /\b(?:hdr10[\s._-]?dv|hdr[\s._-]?dv)\b/i.test(fullText);
+
     const hasHDR10Plus = /\bhdr[\s._-]?10[\s._-]?(?:\+|plus)\b/i.test(fullText);
     const hasHDR10 = /\bhdr[\s._-]?10\b/i.test(fullText) && !hasHDR10Plus;
-    const hasHDR = /\bhdr\b/i.test(fullText) && !hasHDR10Plus && !hasHDR10;
+    const hasHDR = (/\bhdr\b/i.test(fullText) || /(?:^|[\s._\-\[/])hdr(?:[\s._\-\]\/]|$)/i.test(fullText)) && !hasHDR10Plus && !hasHDR10;
 
-    if (hasDV) metadata.hdr.push('DV');
+    if (hasDV) {
+        metadata.hdr.push('Dolby Vision');
+        metadata.hdr.push('DV');
+    }
     if (hasHDR10Plus) metadata.hdr.push('HDR10+');
     if (hasHDR10) metadata.hdr.push('HDR10');
     if (hasHDR) metadata.hdr.push('HDR');
@@ -71,9 +81,14 @@ function parseStreamMetadata(stream) {
     else if (/\b(?:xvid|divx)\b/i.test(fullText)) metadata.codec = 'XviD';
 
     // 5. Audio Formats & Atmos
-    const hasAtmos = /\batmos\b/i.test(fullText) || /dolby[\s._-]?atmos/i.test(fullText);
+    const hasAtmos = /\b(?:atmos|dolby[\s._-]?atmos|ddpa|ddpa[\s._-]?[57]\.?1)\b/i.test(fullText)
+        || /(?:^|[\s._\-\[/])atmos(?:[\s._\-\]\/]|$)/i.test(fullText)
+        || /\b(?:ddp|dd\+|e[\s._-]?ac[\s._-]?3|true[\s._-]?hd)[\s._-]?atmos\b/i.test(fullText)
+        || /\batmos[\s._-]?(?:ddp|dd\+|true[\s._-]?hd)\b/i.test(fullText)
+        || /\b(?:e[\s._-]?ac[\s._-]?3[\s._-]?joc|joc)\b/i.test(fullText);
+
     const hasTrueHD = /\btrue[\s._-]?hd\b/i.test(fullText);
-    const hasDDP = /(?:\bddp|\bdd\+|e[\s._-]?ac[\s._-]?3|dolby[\s._-]?digital[\s._-]?plus)/i.test(fullText);
+    const hasDDP = /(?:\bddpa?|\bdd\+|e[\s._-]?ac[\s._-]?3|dolby[\s._-]?digital[\s._-]?plus)/i.test(fullText);
     const hasDD = /(?:\bdd|ac[\s._-]?3|dolby[\s._-]?digital)/i.test(fullText) && !hasDDP;
     const hasDTSX = /\bdts[\s._-]?x\b/i.test(fullText);
     const hasDTSHD = /\bdts[\s._-]?(?:hd|ma)\b/i.test(fullText);
@@ -81,7 +96,10 @@ function parseStreamMetadata(stream) {
     const hasFLAC = /\bflac\b/i.test(fullText);
     const hasAAC = /\baac\b/i.test(fullText);
 
-    if (hasAtmos) metadata.audio.push('Atmos');
+    if (hasAtmos) {
+        metadata.audio.push('Dolby Atmos');
+        metadata.audio.push('Atmos');
+    }
     if (hasTrueHD) metadata.audio.push('TrueHD');
     if (hasDDP) metadata.audio.push('DDP');
     else if (hasDD) metadata.audio.push('DD');
