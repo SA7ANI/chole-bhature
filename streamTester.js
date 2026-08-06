@@ -189,6 +189,21 @@ async function testStream(stream) {
     const originalName = stream.name || 'Stream';
     const providerName = cleanProviderName(originalName);
 
+    // Normalize headers for players (ExoPlayer, Nuvio, Stremio)
+    const customHeaders = {
+        ...(stream.headers || {}),
+        ...(stream.behaviorHints?.proxyHeaders?.request || {})
+    };
+
+    if (Object.keys(customHeaders).length > 0) {
+        stream.behaviorHints = stream.behaviorHints || {};
+        stream.behaviorHints.proxyHeaders = stream.behaviorHints.proxyHeaders || {};
+        stream.behaviorHints.proxyHeaders.request = {
+            ...(stream.behaviorHints.proxyHeaders.request || {}),
+            ...customHeaders
+        };
+    }
+
     // Handle P2P Magnet streams (e.g. Torrentio)
     if ((stream.url && stream.url.startsWith('magnet:')) || stream.infoHash) {
         const labels = formatStreamLabels(stream, 150, true, false);
@@ -197,6 +212,20 @@ async function testStream(stream) {
             name: labels.name,
             title: labels.title,
             latency: 150,
+            isDead: false,
+            statusCategory: 'fast',
+            originalProvider: providerName
+        };
+    }
+
+    // Handle external links or YouTube links
+    if (stream.externalUrl || stream.ytId) {
+        const labels = formatStreamLabels(stream, 100, true, false);
+        return {
+            ...stream,
+            name: labels.name,
+            title: labels.title,
+            latency: 100,
             isDead: false,
             statusCategory: 'fast',
             originalProvider: providerName
@@ -220,12 +249,18 @@ async function testStream(stream) {
         const urlObj = new URL(stream.url);
         const origin = urlObj.origin;
 
+        const probeHeaders = {
+            'User-Agent': customHeaders['User-Agent'] || customHeaders['user-agent'] || USER_AGENT,
+            ...(customHeaders['Referer'] || customHeaders['referer'] ? { 'Referer': customHeaders['Referer'] || customHeaders['referer'] } : {}),
+            ...(customHeaders['Origin'] || customHeaders['origin'] ? { 'Origin': customHeaders['Origin'] || customHeaders['origin'] } : {})
+        };
+
         // Specific check for HubCloud links (detect if file was removed)
         if (stream.url.includes('hubcloud.')) {
             try {
                 const hcRes = await axios.get(stream.url, { 
                     timeout: TIMEOUT_MS, 
-                    headers: { 'User-Agent': USER_AGENT },
+                    headers: probeHeaders,
                     validateStatus: () => true 
                 });
                 const data = typeof hcRes.data === 'string' ? hcRes.data.toLowerCase() : '';
@@ -251,7 +286,7 @@ async function testStream(stream) {
         try {
             await axios.head(origin, {
                 timeout: TIMEOUT_MS,
-                headers: { 'User-Agent': USER_AGENT },
+                headers: probeHeaders,
                 validateStatus: (status) => status < 500
             });
             latency = Date.now() - startTime;
@@ -260,7 +295,7 @@ async function testStream(stream) {
                 await axios.get(stream.url, {
                     timeout: TIMEOUT_MS,
                     headers: { 
-                        'User-Agent': USER_AGENT,
+                        ...probeHeaders,
                         'Range': 'bytes=0-10'
                     },
                     validateStatus: (status) => status < 500
@@ -302,20 +337,21 @@ async function testStream(stream) {
 async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
     if (!streams || streams.length === 0) return [];
 
-    // Deduplicate identical stream URLs
+    // Deduplicate identical stream URLs or infohashes
     const uniqueStreams = [];
     const urlMap = new Map();
 
     for (const stream of streams) {
-        if (!stream.url) continue;
-        if (urlMap.has(stream.url)) {
-            const existing = urlMap.get(stream.url);
+        const streamKey = stream.url || (stream.infoHash ? `magnet:${stream.infoHash}` : null) || stream.externalUrl || stream.ytId;
+        if (!streamKey) continue;
+        if (urlMap.has(streamKey)) {
+            const existing = urlMap.get(streamKey);
             if (!existing.name.includes(stream.name)) {
                 existing.name = `${existing.name} + ${stream.name}`;
             }
         } else {
             const copy = { ...stream };
-            urlMap.set(stream.url, copy);
+            urlMap.set(streamKey, copy);
             uniqueStreams.push(copy);
         }
     }
