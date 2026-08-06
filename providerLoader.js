@@ -37,7 +37,13 @@ class ProviderLoader {
                     const scriptRes = await axios.get(scriptUrl);
                     const scriptCode = scriptRes.data;
                     
-                    // Create a secure sandbox for the provider script
+                    // Create a comprehensive sandbox for the provider script
+                    const querystring = require('querystring');
+                    const crypto = require('crypto');
+                    const urlMod = require('url');
+
+                    const ch = cheerio.load ? cheerio : (cheerio.default || cheerio);
+
                     const sandbox = {
                         console: console,
                         fetch: fetch,
@@ -45,15 +51,35 @@ class ProviderLoader {
                         clearTimeout: clearTimeout,
                         setInterval: setInterval,
                         clearInterval: clearInterval,
+                        URL: URL,
+                        URLSearchParams: URLSearchParams,
+                        Buffer: Buffer,
+                        atob: (str) => Buffer.from(str, 'base64').toString('binary'),
+                        btoa: (str) => Buffer.from(str, 'binary').toString('base64'),
+                        TextEncoder: typeof TextEncoder !== 'undefined' ? TextEncoder : class { encode(s) { return Buffer.from(s); } },
+                        TextDecoder: typeof TextDecoder !== 'undefined' ? TextDecoder : class { decode(b) { return Buffer.from(b).toString(); } },
+                        process: process,
+                        Headers: fetch.Headers || class {},
+                        Request: fetch.Request || class {},
+                        Response: fetch.Response || class {},
                         require: (moduleName) => {
                             if (moduleName === 'axios') return axios;
                             if (moduleName === 'crypto-js') return CryptoJS;
-                            if (moduleName === 'cheerio-without-node-native' || moduleName === 'cheerio') return cheerio;
+                            if (moduleName === 'cheerio-without-node-native' || moduleName === 'cheerio') return ch;
+                            if (moduleName === 'querystring' || moduleName === 'qs') return querystring;
+                            if (moduleName === 'crypto') return crypto;
+                            if (moduleName === 'url') return urlMod;
+                            if (moduleName === 'buffer') return { Buffer };
                             return null;
                         },
                         module: { exports: {} },
                         exports: {},
                     };
+
+                    sandbox.window = sandbox;
+                    sandbox.global = sandbox;
+                    sandbox.globalThis = sandbox;
+                    sandbox.self = sandbox;
 
                     vm.createContext(sandbox);
                     vm.runInContext(scriptCode, sandbox);
