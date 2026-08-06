@@ -4,7 +4,7 @@
 </h1>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.0.0-blue.svg?cacheSeconds=2592000" />
+  <img alt="Version" src="https://img.shields.io/badge/version-2.1.0-blue.svg?cacheSeconds=2592000" />
   <img alt="License: ISC" src="https://img.shields.io/badge/License-ISC-yellow.svg" />
   <img alt="Node Version" src="https://img.shields.io/badge/node-%3E%3D14.0.0-brightgreen" />
   <br><br>
@@ -32,7 +32,7 @@ You can run the Meta-Sorter directly on your own computer.
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/SA7ANI/chole-bhature.git
+   git clone https://github.com/your-username/chole_bhature-metasorter-addon.git
    ```
 2. Install dependencies:
    ```bash
