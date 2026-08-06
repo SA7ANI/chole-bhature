@@ -101,9 +101,18 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 26px;
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
             flex-shrink: 0;
+            overflow: hidden;
+            padding: 3px;
+        }
+
+        .brand-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 11px;
+            display: block;
         }
 
         .brand-content {
@@ -1053,7 +1062,7 @@
 
         /* Very small phones (iPhone SE, Galaxy Fold) */
         @media (max-width: 380px) {
-            .brand-logo { width: 40px; height: 40px; font-size: 20px; border-radius: 10px; }
+            .brand-logo { width: 40px; height: 40px; border-radius: 10px; padding: 2px; }
             .brand-version { font-size: 9px; padding: 1px 5px; }
             .brand-tagline { font-size: 11px; }
             .sync-status-pill { font-size: 10px; padding: 2px 8px; }
@@ -1093,7 +1102,9 @@
         <!-- Top App Bar -->
         <header class="header-bar">
             <div class="brand-group">
-                <div class="brand-logo">🍲</div>
+                <div class="brand-logo">
+                    <img src="/icon-192.png" alt="Chole Bhature Icon">
+                </div>
                 <div class="brand-content">
                     <div class="brand-header-row">
                         <h1 class="brand-title">Chole Bhature</h1>

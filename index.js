@@ -195,12 +195,16 @@ function createAddon(config) {
         addonName = `Chole Bhature | ${config.repoName}`;
     }
 
+    const addonLogo = config.addonHost 
+        ? `${config.addonProtocol || 'http'}://${config.addonHost}/icon-512.png` 
+        : 'https://raw.githubusercontent.com/yoruix/nuvio-providers/main/public/icon-512.png';
+
     const builder = new addonBuilder({
         id: addonId,
         version: '2.1.0',
         name: addonName,
         description: 'Dynamically loads Nuvio providers, tests stream speed, and sorts them.',
-        logo: 'https://em-content.zobj.net/source/twitter/376/shallow-pan-of-food_1f958.png',
+        logo: addonLogo,
         catalogs: [],
         resources: ['stream'],
         types: ['movie', 'series', 'anime', 'tv', 'other'],

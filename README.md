@@ -1,5 +1,5 @@
 <h1 align="center">
-  🍲 Chole Bhature <br>
+  Chole Bhature <br>
   <span style="font-size: 20px; font-weight: 400;">Advanced Meta-Sorter Addon for Nuvio & Stremio</span>
 </h1>
 
