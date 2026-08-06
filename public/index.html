@@ -399,6 +399,94 @@
             transform: translateX(24px);
         }
 
+        /* Sorting Mode Selector */
+        .sort-options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .sort-option {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            user-select: none;
+            position: relative;
+        }
+
+        .sort-option:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(99, 102, 241, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .sort-option.active {
+            background: rgba(99, 102, 241, 0.12);
+            border-color: var(--accent);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.25);
+        }
+
+        .sort-icon {
+            font-size: 22px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 38px;
+            height: 38px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+
+        .sort-option.active .sort-icon {
+            background: rgba(99, 102, 241, 0.25);
+        }
+
+        .sort-details {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .sort-details strong {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .sort-details small {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 3px;
+            line-height: 1.3;
+        }
+
+        .sort-radio-indicator {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 2px solid var(--text-muted);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .sort-option.active .sort-radio-indicator {
+            border-color: var(--accent);
+            background: var(--accent);
+            box-shadow: inset 0 0 0 3px var(--bg-main);
+        }
+
         /* Mobile Adjustments */
         @media (max-width: 600px) {
             .header {
@@ -461,7 +549,33 @@
 
         <div class="section-title">Settings</div>
         <div class="card">
-            <div class="toggle-group">
+            <!-- Stream Sorting Priority -->
+            <div style="padding-bottom: 16px; border-bottom: 1px solid var(--border-color);">
+                <div class="toggle-label" style="margin-bottom: 12px;">
+                    <span>Stream Sorting Mode</span>
+                    <small>Choose whether streams are prioritized by fastest speed/ping or highest video resolution.</small>
+                </div>
+                <div class="sort-options-grid">
+                    <div class="sort-option active" id="sort-speed" onclick="setSortMode('speed')">
+                        <div class="sort-icon">⚡</div>
+                        <div class="sort-details">
+                            <strong>Sort by Speed & Ping</strong>
+                            <small>Lowest latency (fastest response) first</small>
+                        </div>
+                        <div class="sort-radio-indicator"></div>
+                    </div>
+                    <div class="sort-option" id="sort-quality" onclick="setSortMode('quality')">
+                        <div class="sort-icon">🎬</div>
+                        <div class="sort-details">
+                            <strong>Sort by Quality (4K → FHD → HD)</strong>
+                            <small>4K UHD first, then 1080p, then 720p (by ping)</small>
+                        </div>
+                        <div class="sort-radio-indicator"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="toggle-group" style="padding-top: 16px;">
                 <div class="toggle-label">
                     <span>Auto-Hide Dead & Slow Streams</span>
                     <small>Remove streams tagged with 🔴 or 🟡 instead of moving them to the bottom.</small>
@@ -482,16 +596,6 @@
                         </div>
                     </label>
                 </div>
-            </div>
-            <div class="toggle-group">
-                <div class="toggle-label">
-                    <span>Prioritize Quality (4K/1080p)</span>
-                    <small>Sort streams by resolution first, then by ping speed.</small>
-                </div>
-                <label class="switch">
-                    <input type="checkbox" id="prioritizeQuality" onchange="saveSettings()">
-                    <span class="slider"></span>
-                </label>
             </div>
             <div class="toggle-group">
                 <div class="toggle-label">
@@ -547,19 +651,44 @@
 
     <script>
         let repos = JSON.parse(localStorage.getItem('nuvio_repos') || '[]');
-        let settings = JSON.parse(localStorage.getItem('nuvio_settings') || '{"hideDead": false, "hideSlow": false, "prioritizeQuality": false}');
+        let settings = JSON.parse(localStorage.getItem('nuvio_settings') || '{"hideDead": false, "hideSlow": false, "sortBy": "speed", "prioritizeHindi": false}');
         let allProvidersData = [];
+
+        // Backwards compatibility for prioritizeQuality flag
+        if (!settings.sortBy) {
+            settings.sortBy = settings.prioritizeQuality ? 'quality' : 'speed';
+        }
 
         // Load Settings UI
         document.getElementById('hideDead').checked = settings.hideDead || false;
         document.getElementById('hideSlow').checked = settings.hideSlow || false;
-        document.getElementById('prioritizeQuality').checked = settings.prioritizeQuality || false;
         document.getElementById('prioritizeHindi').checked = settings.prioritizeHindi || false;
+        updateSortModeUI(settings.sortBy || 'speed');
+
+        function setSortMode(mode) {
+            settings.sortBy = mode;
+            settings.prioritizeQuality = (mode === 'quality');
+            updateSortModeUI(mode);
+            saveSettings();
+        }
+
+        function updateSortModeUI(mode) {
+            const speedCard = document.getElementById('sort-speed');
+            const qualityCard = document.getElementById('sort-quality');
+            if (!speedCard || !qualityCard) return;
+            if (mode === 'quality') {
+                speedCard.classList.remove('active');
+                qualityCard.classList.add('active');
+            } else {
+                speedCard.classList.add('active');
+                qualityCard.classList.remove('active');
+            }
+        }
 
         function saveSettings() {
             settings.hideDead = document.getElementById('hideDead').checked;
             settings.hideSlow = document.getElementById('hideSlow').checked;
-            settings.prioritizeQuality = document.getElementById('prioritizeQuality').checked;
+            settings.prioritizeQuality = (settings.sortBy === 'quality');
             settings.prioritizeHindi = document.getElementById('prioritizeHindi').checked;
             localStorage.setItem('nuvio_settings', JSON.stringify(settings));
         }
@@ -711,7 +840,9 @@
             // Include settings in the config payload
             configObj.hideDead = settings.hideDead;
             configObj.hideSlow = settings.hideSlow;
-            configObj.prioritizeQuality = settings.prioritizeQuality;
+            configObj.sortBy = settings.sortBy || 'speed';
+            configObj.sortMode = settings.sortBy || 'speed';
+            configObj.prioritizeQuality = settings.sortBy === 'quality';
             configObj.prioritizeHindi = settings.prioritizeHindi;
             configObj.disabled = settings.disabledProviders || [];
             
