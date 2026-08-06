@@ -777,25 +777,25 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics, hostUr
             // ⚡ MODE: SPEED & LOW LATENCY FIRST (DEFAULT)
             // =========================================================================
 
-            // 1. Multi-Language / Preferred Audio
-            if (hasAudioPref) {
-                const audioA = getAudioScore(a, prefLanguages, config?.prioritizeHindi);
-                const audioB = getAudioScore(b, prefLanguages, config?.prioritizeHindi);
-                if (audioA !== audioB) {
-                    return audioB - audioA;
-                }
-            }
-
-            // 2. Status Category (Fast < 800ms -> Slow -> Dead)
+            // 1. Status Category (Fast < 800ms -> Slow -> Dead)
             const rankA = categoryRank[a.statusCategory] || 2;
             const rankB = categoryRank[b.statusCategory] || 2;
             if (rankA !== rankB) {
                 return rankA - rankB;
             }
 
-            // 3. Exact latency (lowest ms first)
-            if (Math.abs(a.latency - b.latency) >= 60) {
+            // 2. Exact latency (lowest ms first) — PRIMARY sort in speed mode
+            if (Math.abs(a.latency - b.latency) >= 30) {
                 return a.latency - b.latency;
+            }
+
+            // 3. Multi-Language / Preferred Audio (tie-breaker for similar latency)
+            if (hasAudioPref) {
+                const audioA = getAudioScore(a, prefLanguages, config?.prioritizeHindi);
+                const audioB = getAudioScore(b, prefLanguages, config?.prioritizeHindi);
+                if (audioA !== audioB) {
+                    return audioB - audioA;
+                }
             }
 
             // 4. Higher resolution & quality as tie-breaker
