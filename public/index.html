@@ -821,28 +821,34 @@
             right: 18px;
         }
 
-        /* Toast Notification */
+        /* Toast Notification - Sleek Top Island Pill */
         .toast-bubble {
             position: fixed;
-            bottom: 30px;
+            top: 24px;
             left: 50%;
-            transform: translateX(-50%) translateY(100px);
-            background: rgba(16, 20, 31, 0.95);
-            backdrop-filter: blur(16px);
-            color: var(--text-primary);
-            padding: 12px 24px;
-            border-radius: 14px;
-            border: 1px solid rgba(16, 185, 129, 0.4);
-            box-shadow: 0 10px 35px rgba(0,0,0,0.6), 0 0 20px rgba(16, 185, 129, 0.2);
+            transform: translateX(-50%) translateY(-60px);
+            background: rgba(13, 17, 27, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            color: #ffffff;
+            padding: 10px 22px;
+            border-radius: 9999px;
+            border: 1px solid rgba(16, 185, 129, 0.5);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7), 0 0 25px rgba(16, 185, 129, 0.25);
             font-size: 13px;
             font-weight: 600;
             z-index: 10000;
             opacity: 0;
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
             pointer-events: none;
             display: flex;
             align-items: center;
-            gap: 10px;
+            justify-content: center;
+            text-align: center;
+            gap: 8px;
+            width: max-content;
+            max-width: calc(100vw - 32px);
+            box-sizing: border-box;
         }
 
         .toast-bubble.show {
@@ -879,17 +885,28 @@
                 align-items: flex-start;
                 gap: 10px;
             }
-            .setting-headline { font-size: 13px; }
+            .setting-headline { 
+                font-size: 13px; 
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 6px;
+            }
             .setting-description { font-size: 11px; }
             .dual-filter-group {
                 width: 100%;
+                display: flex;
                 flex-direction: row;
                 flex-wrap: wrap;
                 gap: 8px;
             }
             .filter-capsule {
-                padding: 6px 12px;
-                gap: 8px;
+                flex: 1 1 calc(50% - 6px);
+                min-width: 130px;
+                box-sizing: border-box;
+                justify-content: space-between;
+                padding: 6px 10px;
+                gap: 6px;
                 border-radius: 10px;
             }
             .filter-capsule-text { font-size: 12px; }
@@ -916,7 +933,7 @@
             .provider-avatar img { width: 22px; height: 22px; }
             .provider-title { font-size: 14px; }
             .provider-desc-text { font-size: 11px; margin-bottom: 8px; }
-            .toast-bubble { font-size: 12px; padding: 10px 18px; border-radius: 12px; }
+            .toast-bubble { font-size: 12px; padding: 9px 16px; }
             .input-bar-group { flex-direction: column; }
             .btn-submit-action { padding: 12px 20px; width: 100%; border-radius: 10px; }
             input[type="url"], input[type="text"] { font-size: 13px; padding: 11px 14px; border-radius: 10px; }
@@ -933,7 +950,11 @@
             .switch-slider:before { height: 12px; width: 12px; }
             input:checked + .switch-slider:before { transform: translateX(20px); }
             .lang-chip { padding: 4px 8px; font-size: 11px; }
-            .filter-capsule { padding: 5px 10px; }
+            .filter-capsule {
+                flex: 1 1 100%;
+                min-width: 0;
+                padding: 6px 10px;
+            }
             .filter-capsule-text { font-size: 11px; }
         }
 
@@ -1174,7 +1195,8 @@
 
     <script>
         let configId = null;
-        let repos = JSON.parse(localStorage.getItem('nuvio_repos') || '[]');
+        let storedRepos = localStorage.getItem('nuvio_repos');
+        let repos = storedRepos !== null ? JSON.parse(storedRepos) : ['https://raw.githubusercontent.com/D3adlyRocket/All-in-One-Nuvio/refs/heads/main/manifest.json'];
         let settings = JSON.parse(localStorage.getItem('nuvio_settings') || '{"hideDead": false, "hideSlow": false, "sortBy": "speed", "prioritizeHindi": false, "showSeeders": true, "enableProxy": false, "preferredLanguages": [], "disabledProviders": []}');
         let allProvidersData = [];
 
@@ -1227,13 +1249,16 @@
             onSettingChanged();
         }
 
+        let toastTimer = null;
         function showToast(message) {
             const toast = document.getElementById('toast');
+            if (!toast) return;
             toast.innerHTML = message;
             toast.classList.add('show');
-            setTimeout(() => {
+            if (toastTimer) clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
                 toast.classList.remove('show');
-            }, 3500);
+            }, 2200);
         }
 
         function showSyncBadge(text) {
@@ -1360,13 +1385,13 @@
                     showSyncBadge(`⚡ Cloud Synced (ID: ${configId})`);
                     
                     if (showToastMsg) {
-                        showToast("✨ <b>Settings Saved!</b> Nuvio & Stremio updated instantly without reinstalling.");
+                        showToast("✨ <b>Settings Saved & Synced Live!</b>");
                     }
                 }
             } catch (err) {
                 console.error('Save error', err);
                 if (showToastMsg) {
-                    showToast("❌ <b>Error:</b> Could not save settings to server.");
+                    showToast("❌ <b>Error:</b> Could not save settings.");
                 }
             }
         }
@@ -1463,9 +1488,11 @@
             const reposContainer = document.getElementById('installed-repos');
             
             if (repos.length === 0) {
-                const defaultRepo = 'https://raw.githubusercontent.com/D3adlyRocket/All-in-One-Nuvio/refs/heads/main/manifest.json';
-                repos.push(defaultRepo);
-                localStorage.setItem('nuvio_repos', JSON.stringify(repos));
+                reposContainer.innerHTML = '<div class="empty-placeholder">No repositories installed. Enter a manifest URL above to add scrapers.</div>';
+                allProvidersData = [];
+                renderProviders();
+                updateStatsBar();
+                return;
             }
 
             let reposHtml = '';
@@ -1535,11 +1562,12 @@
                 
                 html += `
                     <div class="provider-item-card" style="opacity: ${isDisabled ? '0.45' : '1'};">
-                        <div class="provider-switch-pos">
+                        <div class="provider-switch-pos" style="display: flex; align-items: center; gap: 8px;">
                             <label class="switch-toggle">
                                 <input type="checkbox" onchange="toggleProvider('${p.name}', this.checked)" ${!isDisabled ? 'checked' : ''}>
                                 <span class="switch-slider"></span>
                             </label>
+                            <button class="btn-delete-icon" style="width: 28px; height: 28px; font-size: 11px;" title="Remove / Disable Provider" onclick="removeProvider('${p.name}')">✕</button>
                         </div>
                         <div class="provider-header-row">
                             <div class="provider-avatar">${iconHtml}</div>
@@ -1553,6 +1581,7 @@
                             <div class="tag-list">
                                 <span class="format-tag">${typesStr}</span>
                                 <span class="format-tag">v${p.version}</span>
+                                ${isDisabled ? '<span class="format-tag" style="background: rgba(239, 68, 68, 0.2); color: #f87171; border-color: rgba(239, 68, 68, 0.4);">Disabled</span>' : ''}
                             </div>
                         </div>
                     </div>
@@ -1576,22 +1605,29 @@
             renderProviders();
         }
 
+        function removeProvider(name) {
+            settings.disabledProviders = settings.disabledProviders || [];
+            if (!settings.disabledProviders.includes(name)) {
+                settings.disabledProviders.push(name);
+            }
+            saveSettingsLocal();
+            saveConfigurationToServer(true);
+            updateStatsBar();
+            renderProviders();
+            showToast(`🗑️ <b>Provider Disabled:</b> ${name}`);
+        }
+
         function removeRepo(index) {
             if (index < 0 || index >= repos.length) return;
             const removedUrl = repos[index];
             repos.splice(index, 1);
             localStorage.setItem('nuvio_repos', JSON.stringify(repos));
-            
-            // Also clear providers from this repo
-            allProvidersData = allProvidersData.filter(p => {
-                // We'll re-fetch anyway, but clear stale data
-                return true;
-            });
+            allProvidersData = [];
             
             saveSettingsLocal();
             saveConfigurationToServer(true);
             fetchRepos();
-            showToast(`🗑️ <b>Removed:</b> Repository deleted and synced.`);
+            showToast(`🗑️ <b>Repository Removed & Synced!</b>`);
         }
 
         document.getElementById('install-form').addEventListener('submit', function(e) {

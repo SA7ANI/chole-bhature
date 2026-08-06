@@ -68,11 +68,15 @@ function parseStreamMetadata(stream) {
 
     if (hasDV) {
         metadata.hdr.push('Dolby Vision');
-        metadata.hdr.push('DV');
+        if (hasHDR10Plus) metadata.hdr.push('HDR10+');
+        else if (hasHDR10) metadata.hdr.push('HDR10');
+    } else if (hasHDR10Plus) {
+        metadata.hdr.push('HDR10+');
+    } else if (hasHDR10) {
+        metadata.hdr.push('HDR10');
+    } else if (hasHDR) {
+        metadata.hdr.push('HDR');
     }
-    if (hasHDR10Plus) metadata.hdr.push('HDR10+');
-    if (hasHDR10) metadata.hdr.push('HDR10');
-    if (hasHDR) metadata.hdr.push('HDR');
 
     if (/\b10[\s._-]?bit\b/i.test(fullText) || /\bhevc[\s._-]?10\b/i.test(fullText)) metadata.special.push('10bit');
 
@@ -100,15 +104,14 @@ function parseStreamMetadata(stream) {
 
     if (hasAtmos) {
         metadata.audio.push('Dolby Atmos');
-        metadata.audio.push('Atmos');
     }
     if (hasTrueHD) metadata.audio.push('TrueHD');
-    if (hasDDP) metadata.audio.push('DDP');
+    else if (hasDDP) metadata.audio.push('DDP');
     else if (hasDD) metadata.audio.push('DD');
-    if (hasDTSX) metadata.audio.push('DTS:X');
+    else if (hasDTSX) metadata.audio.push('DTS:X');
     else if (hasDTSHD) metadata.audio.push('DTS-HD MA');
     else if (hasDTS) metadata.audio.push('DTS');
-    if (hasFLAC) metadata.audio.push('FLAC');
+    else if (hasFLAC) metadata.audio.push('FLAC');
     else if (hasAAC && metadata.audio.length === 0) metadata.audio.push('AAC');
 
     // 6. Channels
@@ -117,8 +120,10 @@ function parseStreamMetadata(stream) {
     else if (/(?:^|[^0-9])2[. ]0(?![0-9])|\b2ch\b|\bstereo\b/i.test(fullText)) metadata.channels = '2.0';
 
     // 7. Languages (Indian & Global / Anime)
-    if (/\b(?:dual[\s._-]?audio|dual)\b/i.test(fullText)) metadata.languages.push('Dual-Audio');
-    if (/\b(?:multi[\s._-]?audio|multi[\s._-]?sub|multi)\b/i.test(fullText)) metadata.languages.push('Multi-Audio');
+    const hasMulti = /\b(?:multi[\s._-]?audio|multi[\s._-]?sub|multi)\b/i.test(fullText);
+    const hasDual = /\b(?:dual[\s._-]?audio|dual)\b/i.test(fullText) && !hasMulti;
+    if (hasMulti) metadata.languages.push('Multi-Audio');
+    else if (hasDual) metadata.languages.push('Dual-Audio');
     if (/\bhindi\b|\bhin\b/i.test(fullText)) metadata.languages.push('Hindi');
     if (/\btamil\b|\btam\b/i.test(fullText)) metadata.languages.push('Tamil');
     if (/\btelugu\b|\btel\b/i.test(fullText)) metadata.languages.push('Telugu');
@@ -178,7 +183,7 @@ function formatStreamLabels(stream, latency = 150, isP2P = false, isDead = false
         ...meta.special,
         meta.codec,
         ...meta.audio,
-        meta.channels ? (meta.audio.includes('DDP') || meta.audio.includes('DD') ? null : meta.channels) : null,
+        meta.channels,
         ...meta.languages,
         seederBadge
     ].filter(Boolean);
@@ -533,9 +538,31 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics, hostUr
         });
     }
 
-    // Clean up internal properties before sending to Stremio
+    // Clean up internal properties and ensure behaviorHints.filename is enriched for Nuvio Native Badges
     return filteredStreams.map(s => {
         const { latency, isDead, statusCategory, originalProvider, ...stremioStream } = s;
+        
+        // Enrich behaviorHints.filename for Nuvio Fusion badges
+        const meta = parseStreamMetadata(stremioStream);
+        const tokens = [
+            meta.resolution || '1080p',
+            meta.quality || 'WEB-DL',
+            ...meta.hdr,
+            ...meta.special,
+            meta.codec || 'HEVC',
+            ...meta.audio,
+            meta.channels,
+            ...meta.languages
+        ].filter(Boolean);
+
+        const baseTitle = (stremioStream.title || stremioStream.name || 'Video').split('\n')[0].replace(/[^a-zA-Z0-9]/g, '.');
+        const synthFilename = `${baseTitle}.${tokens.join('.')}.mkv`;
+
+        stremioStream.behaviorHints = {
+            ...(stremioStream.behaviorHints || {}),
+            filename: stremioStream.behaviorHints?.filename || synthFilename
+        };
+
         return stremioStream;
     });
 }
