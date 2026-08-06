@@ -30,7 +30,9 @@ function parseStreamMetadata(stream) {
         audio: [],
         channels: null,
         languages: [],
-        size: null
+        size: null,
+        seeders: null,
+        peers: null
     };
 
     // 1. Resolution
@@ -114,38 +116,60 @@ function parseStreamMetadata(stream) {
     else if (/(?:^|[^0-9])5[. ]1(?![0-9])|\b6ch\b/i.test(fullText)) metadata.channels = '5.1';
     else if (/(?:^|[^0-9])2[. ]0(?![0-9])|\b2ch\b|\bstereo\b/i.test(fullText)) metadata.channels = '2.0';
 
-    // 7. Languages
+    // 7. Languages (Indian & Global / Anime)
     if (/\b(?:dual[\s._-]?audio|dual)\b/i.test(fullText)) metadata.languages.push('Dual-Audio');
-    if (/\b(?:multi[\s._-]?audio|multi)\b/i.test(fullText)) metadata.languages.push('Multi-Audio');
-    if (/\bhindi\b/i.test(fullText)) metadata.languages.push('Hindi');
-    if (/\benglish\b/i.test(fullText)) metadata.languages.push('English');
-    if (/\btamil\b/i.test(fullText)) metadata.languages.push('Tamil');
-    if (/\btelugu\b/i.test(fullText)) metadata.languages.push('Telugu');
-    if (/\bmalayalam\b/i.test(fullText)) metadata.languages.push('Malayalam');
-    if (/\bkannada\b/i.test(fullText)) metadata.languages.push('Kannada');
-    if (/\bbengali|bangla\b/i.test(fullText)) metadata.languages.push('Bengali');
-    if (/\bpunjabi\b/i.test(fullText)) metadata.languages.push('Punjabi');
-    if (/\bjapanese|jap\b/i.test(fullText)) metadata.languages.push('Japanese');
+    if (/\b(?:multi[\s._-]?audio|multi[\s._-]?sub|multi)\b/i.test(fullText)) metadata.languages.push('Multi-Audio');
+    if (/\bhindi\b|\bhin\b/i.test(fullText)) metadata.languages.push('Hindi');
+    if (/\btamil\b|\btam\b/i.test(fullText)) metadata.languages.push('Tamil');
+    if (/\btelugu\b|\btel\b/i.test(fullText)) metadata.languages.push('Telugu');
+    if (/\bmalayalam\b|\bmal\b/i.test(fullText)) metadata.languages.push('Malayalam');
+    if (/\bkannada\b|\bkan\b/i.test(fullText)) metadata.languages.push('Kannada');
+    if (/\bbengali|bangla\b|\bben\b/i.test(fullText)) metadata.languages.push('Bengali');
+    if (/\bpunjabi\b|\bpun\b/i.test(fullText)) metadata.languages.push('Punjabi');
+    if (/\bjapanese|jap\b|\bjpn\b|\banime\b/i.test(fullText)) metadata.languages.push('Japanese');
+    if (/\benglish\b|\beng\b/i.test(fullText)) metadata.languages.push('English');
     if (/\bkorean|kor\b/i.test(fullText)) metadata.languages.push('Korean');
-    if (/\bspanish|latino\b/i.test(fullText)) metadata.languages.push('Spanish');
-    if (/\bportuguese\b/i.test(fullText)) metadata.languages.push('Portuguese');
-    if (/\bfrench\b/i.test(fullText)) metadata.languages.push('French');
-    if (/\bgerman\b/i.test(fullText)) metadata.languages.push('German');
-    if (/\bitalian\b/i.test(fullText)) metadata.languages.push('Italian');
-    if (/\brussian\b/i.test(fullText)) metadata.languages.push('Russian');
+    if (/\bspanish|espanol|latino\b|\besp\b/i.test(fullText)) metadata.languages.push('Spanish');
+    if (/\bportuguese\b|\bpor\b/i.test(fullText)) metadata.languages.push('Portuguese');
+    if (/\bfrench|vff|vfq\b|\bfre\b/i.test(fullText)) metadata.languages.push('French');
+    if (/\bgerman|deutsch\b|\bger\b/i.test(fullText)) metadata.languages.push('German');
+    if (/\bitalian\b|\bita\b/i.test(fullText)) metadata.languages.push('Italian');
+    if (/\brussian\b|\brus\b/i.test(fullText)) metadata.languages.push('Russian');
 
     // 8. Size
     const sizeMatch = fullText.match(/\b(\d+(?:\.\d+)?\s*(?:GB|MB|GiB|MiB))\b/i);
     if (sizeMatch) metadata.size = sizeMatch[1].toUpperCase();
 
+    // 9. Torrent Seeders & Peers
+    const seederMatch = fullText.match(/(?:👤|seeders?|seeds?|\bs:)\s*(\d+)/i)
+        || fullText.match(/\[\s*(\d+)\s*\/\s*\d+\s*\]/);
+    if (seederMatch) {
+        metadata.seeders = parseInt(seederMatch[1], 10);
+    }
+    const peerMatch = fullText.match(/(?:peers?|leechers?|leech|\bl:)\s*(\d+)/i);
+    if (peerMatch) {
+        metadata.peers = parseInt(peerMatch[1], 10);
+    }
+
     return metadata;
 }
 
-function formatStreamLabels(stream, latency = 150, isP2P = false, isDead = false) {
+function formatStreamLabels(stream, latency = 150, isP2P = false, isDead = false, showSeeders = true) {
     const originalName = stream.name || 'Stream';
     const originalTitle = stream.title || stream.description || stream.quality || '';
     const providerName = cleanProviderName(originalName);
     const meta = parseStreamMetadata(stream);
+
+    let seederBadge = null;
+    if (meta.seeders !== null && showSeeders !== false) {
+        if (meta.seeders >= 20) {
+            seederBadge = `🟢 ${meta.seeders} Seeders`;
+        } else if (meta.seeders >= 5) {
+            seederBadge = `🟡 ${meta.seeders} Seeders`;
+        } else {
+            seederBadge = `🔴 ${meta.seeders} Seeder${meta.seeders === 1 ? '' : 's'}`;
+        }
+    }
 
     const badgeTokens = [
         meta.resolution,
@@ -155,7 +179,8 @@ function formatStreamLabels(stream, latency = 150, isP2P = false, isDead = false
         meta.codec,
         ...meta.audio,
         meta.channels ? (meta.audio.includes('DDP') || meta.audio.includes('DD') ? null : meta.channels) : null,
-        ...meta.languages
+        ...meta.languages,
+        seederBadge
     ].filter(Boolean);
 
     const uniqueBadges = [...new Set(badgeTokens)];
@@ -194,15 +219,39 @@ function getQualityScore(stream) {
     return 0;
 }
 
-function getAudioScore(stream) {
+function getAudioScore(stream, preferredLanguages = [], prioritizeHindi = false) {
+    const meta = parseStreamMetadata(stream);
+    const langs = meta.languages || [];
     const text = [stream.name || '', stream.title || '', stream.description || ''].join(' ').toLowerCase();
-    if (text.includes('hindi') || text.includes('hin') || text.includes('dual') || text.includes('multi')) {
-        return 10;
+
+    let score = 0;
+    const list = Array.isArray(preferredLanguages) && preferredLanguages.length > 0
+        ? preferredLanguages
+        : (prioritizeHindi ? ['Hindi', 'Dual-Audio'] : []);
+
+    if (list.length === 0) return 0;
+
+    list.forEach((pref, index) => {
+        const weight = Math.max(10, (list.length - index) * 20);
+        const prefLower = pref.toLowerCase();
+        if (langs.some(l => l.toLowerCase() === prefLower) || text.includes(prefLower)) {
+            score += weight;
+        }
+    });
+
+    if (langs.includes('Dual-Audio') || langs.includes('Multi-Audio') || text.includes('dual') || text.includes('multi')) {
+        score += 15;
     }
-    return 0;
+
+    return score;
 }
 
-async function testStream(stream) {
+function getSeederScore(stream) {
+    const meta = parseStreamMetadata(stream);
+    return meta.seeders || 0;
+}
+
+async function testStream(stream, showSeeders = true) {
     const startTime = Date.now();
     const originalName = stream.name || 'Stream';
     const providerName = cleanProviderName(originalName);
@@ -224,7 +273,7 @@ async function testStream(stream) {
 
     // Handle P2P Magnet streams (e.g. Torrentio)
     if ((stream.url && stream.url.startsWith('magnet:')) || stream.infoHash) {
-        const labels = formatStreamLabels(stream, 150, true, false);
+        const labels = formatStreamLabels(stream, 150, true, false, showSeeders);
         return {
             ...stream,
             name: labels.name,
@@ -238,7 +287,7 @@ async function testStream(stream) {
 
     // Handle external links or YouTube links
     if (stream.externalUrl || stream.ytId) {
-        const labels = formatStreamLabels(stream, 100, true, false);
+        const labels = formatStreamLabels(stream, 100, true, false, showSeeders);
         return {
             ...stream,
             name: labels.name,
@@ -251,7 +300,7 @@ async function testStream(stream) {
     }
 
     if (!stream.url || !stream.url.startsWith('http')) {
-        const labels = formatStreamLabels(stream, 99999, false, true);
+        const labels = formatStreamLabels(stream, 99999, false, true, showSeeders);
         return {
             ...stream,
             name: labels.name,
@@ -283,7 +332,7 @@ async function testStream(stream) {
                 });
                 const data = typeof hcRes.data === 'string' ? hcRes.data.toLowerCase() : '';
                 if (data.includes('file deleted') || data.includes('file not found') || data.includes('file was deleted') || data.includes('page not found') || hcRes.status === 404) {
-                    const labels = formatStreamLabels(stream, 99999, false, true);
+                    const labels = formatStreamLabels(stream, 99999, false, true, showSeeders);
                     return {
                         ...stream,
                         name: labels.name,
@@ -326,7 +375,7 @@ async function testStream(stream) {
         }
 
         const statusCategory = latency < 800 ? 'fast' : 'slow';
-        const labels = formatStreamLabels(stream, latency, false, false);
+        const labels = formatStreamLabels(stream, latency, false, false, showSeeders);
 
         return {
             ...stream,
@@ -339,7 +388,7 @@ async function testStream(stream) {
         };
 
     } catch (err) {
-        const labels = formatStreamLabels(stream, 1200, false, false);
+        const labels = formatStreamLabels(stream, 1200, false, false, showSeeders);
         return {
             ...stream,
             name: labels.name,
@@ -352,8 +401,10 @@ async function testStream(stream) {
     }
 }
 
-async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
+async function sortAndTagStreams(streams, config = {}, providerAnalytics, hostUrl = '') {
     if (!streams || streams.length === 0) return [];
+
+    const showSeeders = config && config.showSeeders !== false;
 
     // Deduplicate identical stream URLs or infohashes
     const uniqueStreams = [];
@@ -376,7 +427,7 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
 
     // Run tests concurrently
     const testedStreams = await Promise.all(
-        uniqueStreams.map(stream => testStream(stream))
+        uniqueStreams.map(stream => testStream(stream, showSeeders))
     );
 
     // Record Analytics
@@ -403,6 +454,8 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
     // Sort
     const categoryRank = { 'fast': 1, 'slow': 2, 'dead': 3 };
     const isQualityFirst = config && (config.sortBy === 'quality' || config.sortMode === 'quality' || config.prioritizeQuality);
+    const prefLanguages = config.preferredLanguages || [];
+    const hasAudioPref = (Array.isArray(prefLanguages) && prefLanguages.length > 0) || config.prioritizeHindi;
 
     filteredStreams.sort((a, b) => {
         // Dead streams always go to the bottom
@@ -410,12 +463,21 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
             return a.isDead ? 1 : -1;
         }
 
-        // Hindi / Audio prioritization (if configured)
-        if (config && config.prioritizeHindi) {
-            const audioA = getAudioScore(a);
-            const audioB = getAudioScore(b);
+        // Multi-Language / Audio prioritization
+        if (hasAudioPref) {
+            const audioA = getAudioScore(a, prefLanguages, config.prioritizeHindi);
+            const audioB = getAudioScore(b, prefLanguages, config.prioritizeHindi);
             if (audioA !== audioB) {
                 return audioB - audioA;
+            }
+        }
+
+        // P2P Seeders Prioritization for torrent streams
+        const seederA = getSeederScore(a);
+        const seederB = getSeederScore(b);
+        if (seederA > 0 || seederB > 0) {
+            if (Math.abs(seederA - seederB) >= 10) {
+                return seederB - seederA;
             }
         }
 
@@ -457,6 +519,20 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
         }
     });
 
+    // Apply ISP Anti-Block Stream Proxy if enabled
+    if (config && (config.enableProxy || config.antiBlockProxy) && hostUrl) {
+        filteredStreams.forEach(stream => {
+            if (stream.url && stream.url.startsWith('http') && !stream.url.includes('/proxy/stream')) {
+                const targetData = {
+                    url: stream.url,
+                    headers: stream.behaviorHints?.proxyHeaders?.request || stream.headers || {}
+                };
+                const encodedPayload = Buffer.from(JSON.stringify(targetData)).toString('base64url');
+                stream.url = `${hostUrl}/proxy/stream?payload=${encodedPayload}`;
+            }
+        });
+    }
+
     // Clean up internal properties before sending to Stremio
     return filteredStreams.map(s => {
         const { latency, isDead, statusCategory, originalProvider, ...stremioStream } = s;
@@ -467,5 +543,7 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
 module.exports = { 
     sortAndTagStreams,
     parseStreamMetadata,
-    formatStreamLabels
+    formatStreamLabels,
+    getAudioScore,
+    getSeederScore
 };

@@ -540,6 +540,57 @@
             transform: translateX(22px);
         }
 
+        /* Multi-Language Chips */
+        .lang-chips-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            width: 100%;
+            margin-top: 8px;
+        }
+
+        .lang-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-subtle);
+            padding: 7px 13px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            user-select: none;
+        }
+
+        .lang-chip:hover {
+            background: rgba(255, 255, 255, 0.07);
+            color: var(--text-primary);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .lang-chip.active {
+            background: rgba(99, 102, 241, 0.16);
+            border-color: rgba(99, 102, 241, 0.55);
+            color: #ffffff;
+            box-shadow: 0 0 16px rgba(99, 102, 241, 0.22);
+        }
+
+        .lang-chip-check {
+            font-size: 11px;
+            opacity: 0;
+            transform: scale(0.6);
+            transition: all 0.2s;
+        }
+
+        .lang-chip.active .lang-chip-check {
+            opacity: 1;
+            transform: scale(1);
+        }
+
         /* Input Bars */
         .input-bar-group {
             display: flex;
@@ -920,20 +971,57 @@
                     </div>
                 </div>
 
-                <!-- Hindi & Dual Audio Priority -->
+                <!-- Real-Time Torrent Seeders & Health -->
                 <div class="setting-item-row">
                     <div class="setting-text-block">
-                        <div class="setting-headline">Prioritize Audio Language</div>
-                        <div class="setting-description">Pin Hindi dubbed, Dual-Audio, and multi-language audio streams to the top.</div>
+                        <div class="setting-headline">
+                            Real-Time Torrent Health & Seeder Badges
+                            <span class="tag-pill-badge" style="background: rgba(34, 197, 94, 0.12); border-color: rgba(34, 197, 94, 0.35); color: #4ade80;">🟢 Live Seeders</span>
+                        </div>
+                        <div class="setting-description">Display live seeders/peers with colored status tags (🟢 145 Seeders) and automatically prioritize healthy torrents.</div>
                     </div>
                     <div class="dual-filter-group">
-                        <label class="filter-capsule" title="Pin Hindi & Dual Audio streams to top">
-                            <span class="filter-capsule-text">🇮🇳 Hindi & Dual Audio</span>
+                        <label class="filter-capsule" title="Show live torrent seeders count on P2P stream badges">
+                            <span class="filter-capsule-text">🧲 Seeder Badges</span>
                             <div class="switch-toggle">
-                                <input type="checkbox" id="prioritizeHindi" onchange="onSettingChanged()">
+                                <input type="checkbox" id="showSeeders" checked onchange="onSettingChanged()">
                                 <span class="switch-slider"></span>
                             </div>
                         </label>
+                    </div>
+                </div>
+
+                <!-- ISP Anti-Block Stream Proxy -->
+                <div class="setting-item-row">
+                    <div class="setting-text-block">
+                        <div class="setting-headline">
+                            ISP Anti-Block Stream Proxy
+                            <span class="tag-pill-badge" style="background: rgba(99, 102, 241, 0.12); border-color: rgba(99, 102, 241, 0.35); color: #a5b4fc;">🛡️ Range Seek</span>
+                        </div>
+                        <div class="setting-description">Route direct video streams through the addon server to bypass local ISP censorship, DNS blocks, and 403 Forbidden errors.</div>
+                    </div>
+                    <div class="dual-filter-group">
+                        <label class="filter-capsule" title="Enable addon server proxying for video streams">
+                            <span class="filter-capsule-text">🛡️ Stream Proxy</span>
+                            <div class="switch-toggle">
+                                <input type="checkbox" id="enableProxy" onchange="onSettingChanged()">
+                                <span class="switch-slider"></span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Multi-Language & Regional Audio Priority -->
+                <div class="setting-item-row" style="flex-direction: column; align-items: flex-start; gap: 10px;">
+                    <div class="setting-text-block" style="width: 100%;">
+                        <div class="setting-headline">
+                            Prioritize Audio Languages & Regional Dubs
+                            <span class="tag-pill-badge">Multi-Select</span>
+                        </div>
+                        <div class="setting-description">Select your preferred audio tracks. Streams containing these languages will float to the top.</div>
+                    </div>
+                    <div class="lang-chips-grid" id="lang-chips-container">
+                        <!-- Dynamically populated via JS -->
                     </div>
                 </div>
             </div>
@@ -1000,8 +1088,57 @@
     <script>
         let configId = null;
         let repos = JSON.parse(localStorage.getItem('nuvio_repos') || '[]');
-        let settings = JSON.parse(localStorage.getItem('nuvio_settings') || '{"hideDead": false, "hideSlow": false, "sortBy": "speed", "prioritizeHindi": false, "disabledProviders": []}');
+        let settings = JSON.parse(localStorage.getItem('nuvio_settings') || '{"hideDead": false, "hideSlow": false, "sortBy": "speed", "prioritizeHindi": false, "showSeeders": true, "enableProxy": false, "preferredLanguages": [], "disabledProviders": []}');
         let allProvidersData = [];
+
+        const SUPPORTED_LANGUAGES = [
+            { id: 'Hindi', label: '🇮🇳 Hindi', desc: 'Hindi Dub & Audio' },
+            { id: 'Dual-Audio', label: '🌐 Dual-Audio', desc: 'Dual & Multi Audio' },
+            { id: 'Tamil', label: '🇮🇳 Tamil', desc: 'Tamil Audio' },
+            { id: 'Telugu', label: '🇮🇳 Telugu', desc: 'Telugu Audio' },
+            { id: 'Malayalam', label: '🇮🇳 Malayalam', desc: 'Malayalam Audio' },
+            { id: 'Kannada', label: '🇮🇳 Kannada', desc: 'Kannada Audio' },
+            { id: 'Bengali', label: '🇮🇳 Bengali', desc: 'Bengali Audio' },
+            { id: 'Punjabi', label: '🇮🇳 Punjabi', desc: 'Punjabi Audio' },
+            { id: 'Japanese', label: '🇯🇵 Anime / Jap', desc: 'Japanese Sub/Dub' },
+            { id: 'English', label: '🇬🇧 English', desc: 'Original / English' },
+            { id: 'Korean', label: '🇰🇷 Korean', desc: 'Korean Audio / K-Drama' },
+            { id: 'Spanish', label: '🇪🇸 Spanish', desc: 'Spanish / Latino' },
+            { id: 'French', label: '🇫🇷 French', desc: 'French Audio' },
+            { id: 'German', label: '🇩🇪 German', desc: 'German Audio' },
+            { id: 'Italian', label: '🇮🇹 Italian', desc: 'Italian Audio' },
+            { id: 'Russian', label: '🇷🇺 Russian', desc: 'Russian Audio' }
+        ];
+
+        function renderLanguageChips() {
+            const container = document.getElementById('lang-chips-container');
+            if (!container) return;
+            const preferred = settings.preferredLanguages || [];
+            
+            container.innerHTML = SUPPORTED_LANGUAGES.map(lang => {
+                const isSelected = preferred.includes(lang.id) || (lang.id === 'Hindi' && settings.prioritizeHindi);
+                return `
+                    <div class="lang-chip ${isSelected ? 'active' : ''}" onclick="toggleLanguage('${lang.id}')" title="${lang.desc}">
+                        <span>${lang.label}</span>
+                        <span class="lang-chip-check">${isSelected ? '✓' : ''}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleLanguage(langId) {
+            settings.preferredLanguages = settings.preferredLanguages || [];
+            const index = settings.preferredLanguages.indexOf(langId);
+            if (index > -1) {
+                settings.preferredLanguages.splice(index, 1);
+                if (langId === 'Hindi') settings.prioritizeHindi = false;
+            } else {
+                settings.preferredLanguages.push(langId);
+                if (langId === 'Hindi') settings.prioritizeHindi = true;
+            }
+            renderLanguageChips();
+            onSettingChanged();
+        }
 
         function showToast(message) {
             const toast = document.getElementById('toast');
@@ -1064,8 +1201,12 @@
         function saveSettingsLocal() {
             settings.hideDead = document.getElementById('hideDead').checked;
             settings.hideSlow = document.getElementById('hideSlow').checked;
+            settings.showSeeders = document.getElementById('showSeeders').checked;
+            settings.enableProxy = document.getElementById('enableProxy').checked;
+            settings.antiBlockProxy = settings.enableProxy;
             settings.prioritizeQuality = (settings.sortBy === 'quality');
-            settings.prioritizeHindi = document.getElementById('prioritizeHindi').checked;
+            settings.preferredLanguages = settings.preferredLanguages || [];
+            settings.prioritizeHindi = settings.preferredLanguages.includes('Hindi');
             localStorage.setItem('nuvio_settings', JSON.stringify(settings));
         }
 
@@ -1081,7 +1222,9 @@
                 const filters = [];
                 if (settings.hideDead) filters.push('Dead');
                 if (settings.hideSlow) filters.push('Slow');
-                if (settings.prioritizeHindi) filters.push('Hindi');
+                if (settings.enableProxy) filters.push('Proxy');
+                const langCount = (settings.preferredLanguages || []).length;
+                if (langCount > 0) filters.push(`${langCount} Lang${langCount === 1 ? '' : 's'}`);
                 statFilterStatus.innerText = filters.length > 0 ? filters.join(' + ') : 'Standard';
             }
         }
@@ -1091,10 +1234,14 @@
                 urls: repos,
                 hideDead: settings.hideDead,
                 hideSlow: settings.hideSlow,
+                showSeeders: settings.showSeeders !== false,
+                enableProxy: !!settings.enableProxy,
+                antiBlockProxy: !!settings.enableProxy,
                 sortBy: settings.sortBy || 'speed',
                 sortMode: settings.sortBy || 'speed',
                 prioritizeQuality: settings.sortBy === 'quality',
                 prioritizeHindi: settings.prioritizeHindi,
+                preferredLanguages: settings.preferredLanguages || [],
                 disabled: settings.disabledProviders || []
             };
         }
@@ -1144,17 +1291,31 @@
             
             if (cfg.hideDead !== undefined) settings.hideDead = cfg.hideDead;
             if (cfg.hideSlow !== undefined) settings.hideSlow = cfg.hideSlow;
+            if (cfg.showSeeders !== undefined) settings.showSeeders = cfg.showSeeders;
+            if (cfg.enableProxy !== undefined) settings.enableProxy = cfg.enableProxy;
+            else if (cfg.antiBlockProxy !== undefined) settings.enableProxy = cfg.antiBlockProxy;
             if (cfg.sortBy) settings.sortBy = cfg.sortBy;
             else if (cfg.prioritizeQuality !== undefined) settings.sortBy = cfg.prioritizeQuality ? 'quality' : 'speed';
-            if (cfg.prioritizeHindi !== undefined) settings.prioritizeHindi = cfg.prioritizeHindi;
+            if (cfg.preferredLanguages && Array.isArray(cfg.preferredLanguages)) {
+                settings.preferredLanguages = cfg.preferredLanguages;
+            }
+            if (cfg.prioritizeHindi !== undefined) {
+                settings.prioritizeHindi = cfg.prioritizeHindi;
+                if (cfg.prioritizeHindi && (!settings.preferredLanguages || !settings.preferredLanguages.includes('Hindi'))) {
+                    settings.preferredLanguages = settings.preferredLanguages || [];
+                    settings.preferredLanguages.push('Hindi');
+                }
+            }
             if (cfg.disabled && Array.isArray(cfg.disabled)) settings.disabledProviders = cfg.disabled;
             
             localStorage.setItem('nuvio_settings', JSON.stringify(settings));
             
             document.getElementById('hideDead').checked = settings.hideDead || false;
             document.getElementById('hideSlow').checked = settings.hideSlow || false;
-            document.getElementById('prioritizeHindi').checked = settings.prioritizeHindi || false;
+            document.getElementById('showSeeders').checked = settings.showSeeders !== false;
+            document.getElementById('enableProxy').checked = settings.enableProxy || false;
             updateSortModeUI(settings.sortBy || 'speed');
+            renderLanguageChips();
             
             fetchRepos();
         }
@@ -1197,8 +1358,10 @@
             // Load Settings UI
             document.getElementById('hideDead').checked = settings.hideDead || false;
             document.getElementById('hideSlow').checked = settings.hideSlow || false;
-            document.getElementById('prioritizeHindi').checked = settings.prioritizeHindi || false;
+            document.getElementById('showSeeders').checked = settings.showSeeders !== false;
+            document.getElementById('enableProxy').checked = settings.enableProxy || false;
             updateSortModeUI(settings.sortBy || 'speed');
+            renderLanguageChips();
             
             showSyncBadge(`⚡ Cloud Synced (ID: ${configId})`);
             fetchRepos();
