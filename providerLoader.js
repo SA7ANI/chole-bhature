@@ -132,8 +132,26 @@ class ProviderLoader {
                         return axios.get(url, config);
                     };
                     customAxios.post = axios.post;
+                    customAxios.head = axios.head;
+                    customAxios.put = axios.put;
+                    customAxios.delete = axios.delete;
+                    customAxios.patch = axios.patch;
+                    customAxios.options = axios.options;
+                    customAxios.request = (config) => customAxios(config);
                     customAxios.create = () => customAxios;
                     customAxios.default = customAxios;
+                    customAxios.isAxiosError = axios.isAxiosError;
+                    customAxios.AxiosError = axios.AxiosError;
+                    customAxios.defaults = axios.defaults;
+                    customAxios.interceptors = axios.interceptors;
+
+                    const pathMod = require('path');
+                    const utilMod = require('util');
+                    const eventsMod = require('events');
+                    const streamMod = require('stream');
+                    const zlibMod = require('zlib');
+                    const httpsMod = require('https');
+                    const httpMod = require('http');
 
                     const sandbox = {
                         console: console,
@@ -150,6 +168,14 @@ class ProviderLoader {
                         btoa: (str) => Buffer.from(str, 'binary').toString('base64'),
                         TextEncoder: typeof TextEncoder !== 'undefined' ? TextEncoder : class { encode(s) { return Buffer.from(s); } },
                         TextDecoder: typeof TextDecoder !== 'undefined' ? TextDecoder : class { decode(b) { return Buffer.from(b).toString(); } },
+                        AbortController: typeof AbortController !== 'undefined' ? AbortController : class AbortController {
+                            constructor() { this.signal = { aborted: false }; }
+                            abort() { this.signal.aborted = true; }
+                        },
+                        FormData: typeof FormData !== 'undefined' ? FormData : class FormData {},
+                        Event: typeof Event !== 'undefined' ? Event : class Event {},
+                        CustomEvent: typeof CustomEvent !== 'undefined' ? CustomEvent : class CustomEvent {},
+                        performance: typeof performance !== 'undefined' ? performance : { now: () => Date.now() },
                         process: process,
                         Headers: fetch.Headers || class {},
                         Request: fetch.Request || class {},
@@ -162,6 +188,13 @@ class ProviderLoader {
                             if (moduleName === 'crypto') return crypto;
                             if (moduleName === 'url') return urlMod;
                             if (moduleName === 'buffer') return { Buffer };
+                            if (moduleName === 'path') return pathMod;
+                            if (moduleName === 'util') return utilMod;
+                            if (moduleName === 'events') return eventsMod;
+                            if (moduleName === 'stream') return streamMod;
+                            if (moduleName === 'zlib') return zlibMod;
+                            if (moduleName === 'https') return httpsMod;
+                            if (moduleName === 'http') return httpMod;
                             return null;
                         },
                         module: { exports: {} },
