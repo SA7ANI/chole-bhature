@@ -397,27 +397,43 @@ function getQualityScore(stream) {
 }
 
 function getAudioScore(stream, preferredLanguages = [], prioritizeHindi = false) {
+    if (!stream) return 0;
     const meta = parseStreamMetadata(stream);
-    const langs = meta.languages || [];
+    const langs = (meta.languages || []).map(l => l.toLowerCase());
     const text = [stream.name || '', stream.title || '', stream.description || ''].join(' ').toLowerCase();
 
-    let score = 0;
     const list = Array.isArray(preferredLanguages) && preferredLanguages.length > 0
-        ? preferredLanguages
-        : (prioritizeHindi ? ['Hindi', 'Dual-Audio'] : []);
+        ? preferredLanguages.map(l => l.toLowerCase())
+        : (prioritizeHindi ? ['hindi', 'dual-audio'] : []);
 
     if (list.length === 0) return 0;
 
+    let score = 0;
+    let matchedSpecific = false;
+
     list.forEach((pref, index) => {
-        const weight = Math.max(10, (list.length - index) * 20);
-        const prefLower = pref.toLowerCase();
-        if (langs.some(l => l.toLowerCase() === prefLower) || text.includes(prefLower)) {
-            score += weight;
+        const isGenericTag = (pref === 'dual-audio' || pref === 'multi-audio');
+        const weight = Math.max(200, (list.length - index) * 500);
+
+        if (isGenericTag) {
+            // Only reward generic Dual-Audio/Multi-Audio token if specifically in requested list
+            if (langs.includes(pref) || text.includes(pref.replace('-', ' ')) || text.includes(pref.replace('-', ''))) {
+                score += Math.max(50, Math.floor(weight / 4));
+            }
+        } else {
+            // Match specific languages (e.g. hindi, tamil, telugu, english, japanese, etc.)
+            const matched = langs.includes(pref) || new RegExp(`\\b${pref}\\b`, 'i').test(text);
+            if (matched) {
+                score += weight;
+                matchedSpecific = true;
+            }
         }
     });
 
-    if (langs.includes('Dual-Audio') || langs.includes('Multi-Audio') || text.includes('dual') || text.includes('multi')) {
-        score += 15;
+    // Dual-Audio / Multi-Audio synergy bonus ONLY if stream actually contains one of the user's preferred languages
+    const hasDualOrMulti = langs.includes('dual-audio') || langs.includes('multi-audio') || text.includes('dual') || text.includes('multi');
+    if (hasDualOrMulti && matchedSpecific) {
+        score += 150;
     }
 
     return score;
@@ -620,29 +636,34 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics, hostUr
 
     // Sort
     const categoryRank = { 'fast': 1, 'slow': 2, 'dead': 3 };
-    const isQualityFirst = config && (config.sortBy === 'quality' || config.sortMode === 'quality' || config.prioritizeQuality);
-    const prefLanguages = config.preferredLanguages || [];
-    const hasAudioPref = (Array.isArray(prefLanguages) && prefLanguages.length > 0) || config.prioritizeHindi;
+    const sortBy = (config && (config.sortBy || config.sortMode)) 
+        || (config && config.prioritizeQuality ? 'quality' : 'speed');
+    const prefLanguages = config ? (config.preferredLanguages || []) : [];
+    const hasAudioPref = (Array.isArray(prefLanguages) && prefLanguages.length > 0) || (config && config.prioritizeHindi);
 
     filteredStreams.sort((a, b) => {
-        // Dead streams always go to the bottom
+        // Dead streams always sink to the bottom across all modes
         if (a.isDead !== b.isDead) {
             return a.isDead ? 1 : -1;
         }
 
-        if (isQualityFirst) {
+        if (sortBy === 'quality') {
+            // =========================================================================
+            // 🎬 MODE: MAXIMUM QUALITY (4K UHD FIRST)
+            // =========================================================================
+
             // 1. STRICT RESOLUTION TIER (4K > 1080p > 720p > 480p)
-            // Absolute priority: 1080p will NEVER jump above 4K in Quality mode!
+            // Absolute guarantee: 1080p will NEVER jump above 4K in Quality mode!
             const resA = getResolutionTier(a);
             const resB = getResolutionTier(b);
             if (resA !== resB) {
                 return resB - resA;
             }
 
-            // 2. Multi-Language / Audio prioritization within the same resolution tier
+            // 2. Multi-Language / Preferred Audio within the same resolution tier
             if (hasAudioPref) {
-                const audioA = getAudioScore(a, prefLanguages, config.prioritizeHindi);
-                const audioB = getAudioScore(b, prefLanguages, config.prioritizeHindi);
+                const audioA = getAudioScore(a, prefLanguages, config?.prioritizeHindi);
+                const audioB = getAudioScore(b, prefLanguages, config?.prioritizeHindi);
                 if (audioA !== audioB) {
                     return audioB - audioA;
                 }
@@ -658,10 +679,8 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics, hostUr
             // 4. P2P Seeders Prioritization for torrent streams
             const seederA = getSeederScore(a);
             const seederB = getSeederScore(b);
-            if (seederA > 0 || seederB > 0) {
-                if (Math.abs(seederA - seederB) >= 10) {
-                    return seederB - seederA;
-                }
+            if ((seederA > 0 || seederB > 0) && Math.abs(seederA - seederB) >= 10) {
+                return seederB - seederA;
             }
 
             // 5. Status Category: Fast -> Slow
@@ -673,42 +692,126 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics, hostUr
 
             // 6. Within same status: Lowest latency / fastest ping first
             return a.latency - b.latency;
-        } else {
-            // Speed First (Default):
-            // 1. Multi-Language / Audio prioritization
+
+        } else if (sortBy === 'seeders') {
+            // =========================================================================
+            // 🧲 MODE: P2P SEEDERS FIRST (TORRENT HEALTH)
+            // =========================================================================
+
+            // 1. Highest seeders first
+            const seederA = getSeederScore(a);
+            const seederB = getSeederScore(b);
+            if (seederA !== seederB) {
+                return seederB - seederA;
+            }
+
+            // 2. Preferred Audio Language
             if (hasAudioPref) {
-                const audioA = getAudioScore(a, prefLanguages, config.prioritizeHindi);
-                const audioB = getAudioScore(b, prefLanguages, config.prioritizeHindi);
+                const audioA = getAudioScore(a, prefLanguages, config?.prioritizeHindi);
+                const audioB = getAudioScore(b, prefLanguages, config?.prioritizeHindi);
                 if (audioA !== audioB) {
                     return audioB - audioA;
                 }
             }
 
-            // 2. P2P Seeders Prioritization for torrent streams
-            const seederA = getSeederScore(a);
-            const seederB = getSeederScore(b);
-            if (seederA > 0 || seederB > 0) {
-                if (Math.abs(seederA - seederB) >= 10) {
-                    return seederB - seederA;
+            // 3. Resolution Tier
+            const resA = getResolutionTier(a);
+            const resB = getResolutionTier(b);
+            if (resA !== resB) {
+                return resB - resA;
+            }
+
+            // 4. Quality Score
+            const scoreA = getQualityScore(a);
+            const scoreB = getQualityScore(b);
+            if (scoreA !== scoreB) {
+                return scoreB - scoreA;
+            }
+
+            return a.latency - b.latency;
+
+        } else if (sortBy === 'balanced') {
+            // =========================================================================
+            // ⚖️ MODE: SMART BALANCED (PERFORMANCE & QUALITY)
+            // =========================================================================
+
+            // 1. Preferred Audio Language
+            if (hasAudioPref) {
+                const audioA = getAudioScore(a, prefLanguages, config?.prioritizeHindi);
+                const audioB = getAudioScore(b, prefLanguages, config?.prioritizeHindi);
+                if (audioA !== audioB) {
+                    return audioB - audioA;
                 }
             }
 
-            // 3. Status Category (Fast -> Slow -> Dead)
+            // 2. Balanced Performance Matrix
+            const getBalancedTier = (s) => {
+                const res = getResolutionTier(s);
+                const isFast = s.statusCategory === 'fast' && s.latency < 800;
+                if (res === 4 && isFast) return 5; // 4K Fast (< 800ms)
+                if (res === 3 && isFast) return 4; // 1080p Fast (< 800ms)
+                if (res === 4) return 3;           // 4K Slow (> 800ms)
+                if (res === 3) return 2;           // 1080p Slow (> 800ms)
+                if (res === 2 && isFast) return 1; // 720p Fast
+                return 0;
+            };
+
+            const tierA = getBalancedTier(a);
+            const tierB = getBalancedTier(b);
+            if (tierA !== tierB) {
+                return tierB - tierA;
+            }
+
+            // 3. Quality score within same balanced tier
+            const scoreA = getQualityScore(a);
+            const scoreB = getQualityScore(b);
+            if (scoreA !== scoreB) {
+                return scoreB - scoreA;
+            }
+
+            // 4. Exact latency
+            return a.latency - b.latency;
+
+        } else {
+            // =========================================================================
+            // ⚡ MODE: SPEED & LOW LATENCY FIRST (DEFAULT)
+            // =========================================================================
+
+            // 1. Multi-Language / Preferred Audio
+            if (hasAudioPref) {
+                const audioA = getAudioScore(a, prefLanguages, config?.prioritizeHindi);
+                const audioB = getAudioScore(b, prefLanguages, config?.prioritizeHindi);
+                if (audioA !== audioB) {
+                    return audioB - audioA;
+                }
+            }
+
+            // 2. Status Category (Fast < 800ms -> Slow -> Dead)
             const rankA = categoryRank[a.statusCategory] || 2;
             const rankB = categoryRank[b.statusCategory] || 2;
             if (rankA !== rankB) {
                 return rankA - rankB;
             }
 
-            // 4. Exact latency (lowest ms first)
-            if (a.latency !== b.latency) {
+            // 3. Exact latency (lowest ms first)
+            if (Math.abs(a.latency - b.latency) >= 60) {
                 return a.latency - b.latency;
             }
 
-            // 5. Higher quality as tie breaker
+            // 4. Higher resolution & quality as tie-breaker
+            const resA = getResolutionTier(a);
+            const resB = getResolutionTier(b);
+            if (resA !== resB) {
+                return resB - resA;
+            }
+
             const scoreA = getQualityScore(a);
             const scoreB = getQualityScore(b);
-            return scoreB - scoreA;
+            if (scoreA !== scoreB) {
+                return scoreB - scoreA;
+            }
+
+            return a.latency - b.latency;
         }
     });
 
