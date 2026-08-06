@@ -227,7 +227,8 @@ function createAddon(config) {
         const sortedAndTaggedStreams = await sortAndTagStreams(allStreams, {
             hideDead: config.hideDead,
             hideSlow: config.hideSlow,
-            prioritizeQuality: config.prioritizeQuality
+            prioritizeQuality: config.prioritizeQuality,
+            prioritizeHindi: config.prioritizeHindi
         }, providerAnalytics);
 
         // Save to cache
