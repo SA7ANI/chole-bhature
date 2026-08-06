@@ -159,11 +159,134 @@ function parseStreamMetadata(stream) {
     return metadata;
 }
 
+function formatProviderLabel(providers, defaultName) {
+    if (!providers || !Array.isArray(providers) || providers.length === 0) {
+        return defaultName || 'Stream';
+    }
+    const cleanList = [...new Set(providers.filter(Boolean))];
+    if (cleanList.length === 0) return defaultName || 'Stream';
+    if (cleanList.length === 1) return cleanList[0];
+    if (cleanList.length === 2) return `${cleanList[0]} + ${cleanList[1]}`;
+    if (cleanList.length === 3) return `${cleanList[0]} + ${cleanList[1]} + ${cleanList[2]}`;
+    return `${cleanList[0]} + ${cleanList[1]} (+${cleanList.length - 2} more)`;
+}
+
+function normalizeTorrentHash(str) {
+    if (!str || typeof str !== 'string') return null;
+    const magnetMatch = str.match(/xt=urn:btih:([a-zA-Z0-9]{32,40})/i);
+    if (magnetMatch) {
+        return magnetMatch[1].toLowerCase();
+    }
+    if (/^[a-fA-F0-9]{40}$/.test(str) || /^[a-zA-Z2-7]{32}$/.test(str)) {
+        return str.toLowerCase();
+    }
+    return null;
+}
+
+function getStreamFingerprint(stream) {
+    if (!stream) return null;
+
+    // 1. Torrent InfoHash / Magnet URI
+    const hashFromInfoHash = normalizeTorrentHash(stream.infoHash);
+    if (hashFromInfoHash) return `torrent:${hashFromInfoHash}`;
+
+    const hashFromUrl = stream.url ? normalizeTorrentHash(stream.url) : null;
+    if (hashFromUrl) return `torrent:${hashFromUrl}`;
+
+    // 2. Direct Video URL or External URL
+    const rawUrl = stream.url || stream.externalUrl || stream.ytId;
+    if (rawUrl && typeof rawUrl === 'string') {
+        try {
+            if (rawUrl.startsWith('http')) {
+                const parsed = new URL(rawUrl);
+                const searchParams = new URLSearchParams(parsed.search);
+                ['utm_source', 'utm_medium', 'utm_campaign', 'ref', 'source', 'token_expiry', 'session_id'].forEach(p => searchParams.delete(p));
+                const cleanQuery = searchParams.toString() ? `?${searchParams.toString()}` : '';
+                return `url:${parsed.protocol}//${parsed.host}${parsed.pathname}${cleanQuery}`.toLowerCase();
+            }
+        } catch (e) {}
+        return `raw:${rawUrl.trim().toLowerCase()}`;
+    }
+
+    // 3. Fallback: Release signature match (identical normalized title + resolution + size)
+    const meta = parseStreamMetadata(stream);
+    const titleNorm = (stream.title || stream.description || stream.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (titleNorm && meta.resolution && meta.size) {
+        return `release:${titleNorm}:${meta.resolution}:${meta.size}`;
+    }
+
+    return null;
+}
+
+function deduplicateAndMergeStreams(streams, enabled = true) {
+    if (!streams || !Array.isArray(streams) || streams.length === 0) return [];
+    if (!enabled) return streams;
+
+    const mergedMap = new Map();
+    const result = [];
+
+    for (const stream of streams) {
+        const fingerprint = getStreamFingerprint(stream);
+        const pName = cleanProviderName(stream.originalProvider || stream.name);
+
+        if (!fingerprint) {
+            const copy = { ...stream, providers: pName ? [pName] : ['Stream'] };
+            result.push(copy);
+            continue;
+        }
+
+        if (mergedMap.has(fingerprint)) {
+            const existing = mergedMap.get(fingerprint);
+
+            // Merge providers
+            if (!existing.providers) {
+                existing.providers = [cleanProviderName(existing.originalProvider || existing.name)];
+            }
+            if (pName && !existing.providers.includes(pName)) {
+                existing.providers.push(pName);
+            }
+
+            // Merge seeders (preserve highest seeders count)
+            const metaExisting = parseStreamMetadata(existing);
+            const metaNew = parseStreamMetadata(stream);
+            const maxSeeders = Math.max(metaExisting.seeders || 0, metaNew.seeders || 0, existing.seeders || 0, stream.seeders || 0);
+            if (maxSeeders > 0) {
+                existing.seeders = maxSeeders;
+            }
+
+            // Merge descriptions / titles if new one is richer (e.g. contains regional audio tags)
+            if (stream.title && existing.title && stream.title !== existing.title) {
+                if (stream.title.length > existing.title.length) {
+                    existing.title = stream.title;
+                }
+            }
+
+            // Merge custom headers
+            if (stream.headers || stream.behaviorHints) {
+                existing.headers = { ...(existing.headers || {}), ...(stream.headers || {}) };
+                existing.behaviorHints = { ...(existing.behaviorHints || {}), ...(stream.behaviorHints || {}) };
+            }
+        } else {
+            const copy = { ...stream, providers: pName ? [pName] : ['Stream'] };
+            mergedMap.set(fingerprint, copy);
+            result.push(copy);
+        }
+    }
+
+    return result;
+}
+
 function formatStreamLabels(stream, latency = 150, isP2P = false, isDead = false, showSeeders = true) {
     const originalName = stream.name || 'Stream';
     const originalTitle = stream.title || stream.description || stream.quality || '';
-    const providerName = cleanProviderName(originalName);
+    const rawProviderName = cleanProviderName(originalName);
+    const providerLabel = formatProviderLabel(stream.providers, rawProviderName);
     const meta = parseStreamMetadata(stream);
+
+    // Apply merged seeders if present on stream
+    if (stream.seeders !== undefined && stream.seeders !== null && stream.seeders > 0) {
+        meta.seeders = Math.max(meta.seeders || 0, stream.seeders);
+    }
 
     let seederBadge = null;
     if (meta.seeders !== null && showSeeders !== false) {
@@ -193,13 +316,13 @@ function formatStreamLabels(stream, latency = 150, isP2P = false, isDead = false
 
     let nameLine = '';
     if (isDead) {
-        nameLine = `🔴 DEAD • ${providerName}${badgeSuffix}`;
+        nameLine = `🔴 DEAD • ${providerLabel}${badgeSuffix}`;
     } else if (isP2P) {
-        nameLine = `🧲 P2P • ${providerName}${badgeSuffix}`;
+        nameLine = `🧲 P2P • ${providerLabel}${badgeSuffix}`;
     } else {
         const statusEmoji = latency < 800 ? '🟢' : '🟡';
         const statusTag = latency < 800 ? 'FAST' : 'SLOW';
-        nameLine = `${statusEmoji} ${statusTag} | ${latency}ms • ${providerName}${badgeSuffix}`;
+        nameLine = `${statusEmoji} ${statusTag} | ${latency}ms • ${providerLabel}${badgeSuffix}`;
     }
 
     return {
@@ -410,25 +533,10 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics, hostUr
     if (!streams || streams.length === 0) return [];
 
     const showSeeders = config && config.showSeeders !== false;
+    const deduplicate = config && config.deduplicateStreams !== false;
 
-    // Deduplicate identical stream URLs or infohashes
-    const uniqueStreams = [];
-    const urlMap = new Map();
-
-    for (const stream of streams) {
-        const streamKey = stream.url || (stream.infoHash ? `magnet:${stream.infoHash}` : null) || stream.externalUrl || stream.ytId;
-        if (!streamKey) continue;
-        if (urlMap.has(streamKey)) {
-            const existing = urlMap.get(streamKey);
-            if (!existing.name.includes(stream.name)) {
-                existing.name = `${existing.name} + ${stream.name}`;
-            }
-        } else {
-            const copy = { ...stream };
-            urlMap.set(streamKey, copy);
-            uniqueStreams.push(copy);
-        }
-    }
+    // Deduplicate and merge identical streams across providers
+    const uniqueStreams = deduplicateAndMergeStreams(streams, deduplicate);
 
     // Run tests concurrently
     const testedStreams = await Promise.all(
@@ -576,6 +684,10 @@ module.exports = {
     sortAndTagStreams,
     parseStreamMetadata,
     formatStreamLabels,
+    formatProviderLabel,
     getAudioScore,
-    getSeederScore
+    getSeederScore,
+    deduplicateAndMergeStreams,
+    getStreamFingerprint,
+    normalizeTorrentHash
 };

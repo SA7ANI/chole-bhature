@@ -321,6 +321,7 @@ function createAddon(config) {
             prioritizeHindi: config.prioritizeHindi,
             preferredLanguages: config.preferredLanguages || (config.prioritizeHindi ? ['Hindi', 'Dual-Audio'] : []),
             showSeeders: config.showSeeders !== false,
+            deduplicateStreams: config.deduplicateStreams !== false,
             enableProxy: config.enableProxy || config.antiBlockProxy
         }, providerAnalytics, hostUrl);
 

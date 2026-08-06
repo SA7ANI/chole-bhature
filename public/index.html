@@ -1212,6 +1212,26 @@
                     </div>
                 </div>
 
+                <!-- Smart Stream Deduplication & Multi-Source Badges -->
+                <div class="setting-item-row">
+                    <div class="setting-text-block">
+                        <div class="setting-headline">
+                            Smart Stream Deduplication
+                            <span class="tag-pill-badge" style="background: rgba(168, 85, 247, 0.12); border-color: rgba(168, 85, 247, 0.35); color: #c084fc;">🗂️ Multi-Source</span>
+                        </div>
+                        <div class="setting-description">Merge identical streams across providers into single entries with combined badges (e.g. <i>CinemaHD + Torrentio</i>) and maximum seeders.</div>
+                    </div>
+                    <div class="dual-filter-group">
+                        <label class="filter-capsule" title="Merge identical torrent hashes and video links across providers">
+                            <span class="filter-capsule-text">🗂️ Deduplicate</span>
+                            <div class="switch-toggle">
+                                <input type="checkbox" id="deduplicateStreams" checked onchange="onSettingChanged()">
+                                <span class="switch-slider"></span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
                 <!-- ISP Anti-Block Stream Proxy -->
                 <div class="setting-item-row">
                     <div class="setting-text-block">
@@ -1310,7 +1330,7 @@
         let configId = null;
         let storedRepos = localStorage.getItem('nuvio_repos');
         let repos = storedRepos !== null ? JSON.parse(storedRepos) : ['https://raw.githubusercontent.com/D3adlyRocket/All-in-One-Nuvio/refs/heads/main/manifest.json'];
-        let settings = JSON.parse(localStorage.getItem('nuvio_settings') || '{"hideDead": false, "hideSlow": false, "sortBy": "speed", "prioritizeHindi": false, "showSeeders": true, "enableProxy": false, "preferredLanguages": [], "disabledProviders": []}');
+        let settings = JSON.parse(localStorage.getItem('nuvio_settings') || '{"hideDead": false, "hideSlow": false, "sortBy": "speed", "prioritizeHindi": false, "showSeeders": true, "deduplicateStreams": true, "enableProxy": false, "preferredLanguages": [], "disabledProviders": []}');
         let allProvidersData = [];
 
         const SUPPORTED_LANGUAGES = [
@@ -1427,11 +1447,13 @@
             const hideDeadEl = document.getElementById('hideDead');
             const hideSlowEl = document.getElementById('hideSlow');
             const showSeedersEl = document.getElementById('showSeeders');
+            const deduplicateStreamsEl = document.getElementById('deduplicateStreams');
             const enableProxyEl = document.getElementById('enableProxy');
             
             if (hideDeadEl) settings.hideDead = hideDeadEl.checked;
             if (hideSlowEl) settings.hideSlow = hideSlowEl.checked;
             if (showSeedersEl) settings.showSeeders = showSeedersEl.checked;
+            if (deduplicateStreamsEl) settings.deduplicateStreams = deduplicateStreamsEl.checked;
             if (enableProxyEl) settings.enableProxy = enableProxyEl.checked;
             settings.antiBlockProxy = !!settings.enableProxy;
             settings.prioritizeQuality = (settings.sortBy === 'quality');
@@ -1452,6 +1474,7 @@
                 const filters = [];
                 if (settings.hideDead) filters.push('Dead');
                 if (settings.hideSlow) filters.push('Slow');
+                if (settings.deduplicateStreams !== false) filters.push('Dedupe');
                 if (settings.enableProxy) filters.push('Proxy');
                 const langCount = (settings.preferredLanguages || []).length;
                 if (langCount > 0) filters.push(`${langCount} Lang${langCount === 1 ? '' : 's'}`);
@@ -1465,6 +1488,7 @@
                 hideDead: settings.hideDead,
                 hideSlow: settings.hideSlow,
                 showSeeders: settings.showSeeders !== false,
+                deduplicateStreams: settings.deduplicateStreams !== false,
                 enableProxy: !!settings.enableProxy,
                 antiBlockProxy: !!settings.enableProxy,
                 sortBy: settings.sortBy || 'speed',
@@ -1522,6 +1546,7 @@
             if (cfg.hideDead !== undefined) settings.hideDead = cfg.hideDead;
             if (cfg.hideSlow !== undefined) settings.hideSlow = cfg.hideSlow;
             if (cfg.showSeeders !== undefined) settings.showSeeders = cfg.showSeeders;
+            if (cfg.deduplicateStreams !== undefined) settings.deduplicateStreams = cfg.deduplicateStreams;
             if (cfg.enableProxy !== undefined) settings.enableProxy = cfg.enableProxy;
             else if (cfg.antiBlockProxy !== undefined) settings.enableProxy = cfg.antiBlockProxy;
             if (cfg.sortBy) settings.sortBy = cfg.sortBy;
@@ -1543,6 +1568,8 @@
             document.getElementById('hideDead').checked = settings.hideDead || false;
             document.getElementById('hideSlow').checked = settings.hideSlow || false;
             document.getElementById('showSeeders').checked = settings.showSeeders !== false;
+            const dedupeEl = document.getElementById('deduplicateStreams');
+            if (dedupeEl) dedupeEl.checked = settings.deduplicateStreams !== false;
             document.getElementById('enableProxy').checked = settings.enableProxy || false;
             updateSortModeUI(settings.sortBy || 'speed');
             renderLanguageChips();
@@ -1589,6 +1616,8 @@
             document.getElementById('hideDead').checked = settings.hideDead || false;
             document.getElementById('hideSlow').checked = settings.hideSlow || false;
             document.getElementById('showSeeders').checked = settings.showSeeders !== false;
+            const dedupeEl = document.getElementById('deduplicateStreams');
+            if (dedupeEl) dedupeEl.checked = settings.deduplicateStreams !== false;
             document.getElementById('enableProxy').checked = settings.enableProxy || false;
             updateSortModeUI(settings.sortBy || 'speed');
             renderLanguageChips();
