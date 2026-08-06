@@ -1089,30 +1089,6 @@
 <body>
     <div id="toast" class="toast-bubble"></div>
 
-    <!-- PWA Install Guide Modal -->
-    <div id="pwa-modal" class="modal-backdrop" style="display: none;" onclick="closePwaModal(event)">
-        <div class="modal-card" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <div style="font-size: 28px;">📲</div>
-                    <div>
-                        <h3 style="font-size: 16px; font-weight: 700; color: #fff; margin: 0;">Install Chole Bhature</h3>
-                        <p style="font-size: 12px; color: var(--text-secondary); margin: 3px 0 0 0;">Run as a standalone app on your phone, tablet, or PC</p>
-                    </div>
-                </div>
-                <button class="btn-close-modal" onclick="closePwaModal()">✕</button>
-            </div>
-            <div class="modal-body" id="pwa-modal-body">
-                <!-- Dynamically populated instructions based on browser / OS -->
-            </div>
-            <div class="modal-footer" style="display: flex; gap: 10px;">
-                <button class="action-btn action-btn-pwa" id="modal-native-btn" onclick="triggerNativeInstall()" style="flex: 1;">
-                    <span>✨ Install Now</span>
-                </button>
-            </div>
-        </div>
-    </div>
-
     <div class="app-container">
         <!-- Top App Bar -->
         <header class="header-bar">
@@ -1131,9 +1107,6 @@
                 </div>
             </div>
             <div class="action-group">
-                <button class="action-btn action-btn-pwa" id="pwa-install-btn" onclick="handlePwaInstall()" title="Install Chole Bhature App on your device">
-                    <span>📲 Install App</span>
-                </button>
                 <button class="action-btn action-btn-save" id="save-btn" onclick="saveConfigurationToServer(true)" title="Save settings and push updates live without reinstalling">
                     <span>💾 Save Changes</span>
                 </button>
@@ -1870,139 +1843,7 @@
         initConfig();
         fetchAnalytics();
 
-        // PWA Installation & Service Worker Handling
-        let deferredPwaPrompt = null;
-        const pwaInstallBtn = document.getElementById('pwa-install-btn');
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPwaPrompt = e;
-            console.log('[PWA] beforeinstallprompt event captured');
-            if (pwaInstallBtn) {
-                pwaInstallBtn.style.display = 'inline-flex';
-            }
-        });
-
-        window.addEventListener('appinstalled', () => {
-            deferredPwaPrompt = null;
-            closePwaModal();
-            if (pwaInstallBtn) {
-                pwaInstallBtn.innerHTML = '<span>✅ App Installed</span>';
-                setTimeout(() => { pwaInstallBtn.style.display = 'none'; }, 4000);
-            }
-            showToast('🎉 <b>Chole Bhature App Installed Successfully!</b>');
-        });
-
-        function closePwaModal(e) {
-            const modal = document.getElementById('pwa-modal');
-            if (modal) modal.style.display = 'none';
-        }
-
-        function triggerNativeInstall() {
-            if (deferredPwaPrompt) {
-                deferredPwaPrompt.prompt();
-                deferredPwaPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        console.log('[PWA] User accepted installation prompt');
-                    }
-                    deferredPwaPrompt = null;
-                    closePwaModal();
-                });
-            } else {
-                closePwaModal();
-                showToast('ℹ️ Please follow the on-screen browser steps to add to Home Screen.');
-            }
-        }
-
-        function handlePwaInstall() {
-            if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
-                showToast('🎉 <b>Chole Bhature</b> is already installed and running as an app!');
-                return;
-            }
-
-            if (deferredPwaPrompt) {
-                deferredPwaPrompt.prompt();
-                deferredPwaPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        console.log('[PWA] User accepted install prompt');
-                    }
-                    deferredPwaPrompt = null;
-                });
-                return;
-            }
-
-            // Build platform-specific guide modal
-            const ua = navigator.userAgent.toLowerCase();
-            const isIos = /iphone|ipad|ipod/.test(ua);
-            const isAndroid = /android/.test(ua);
-            const isChrome = /chrome/.test(ua) && !/edge|edg|opr/.test(ua);
-            const isEdge = /edg/.test(ua);
-
-            const modalBody = document.getElementById('pwa-modal-body');
-            const modalNativeBtn = document.getElementById('modal-native-btn');
-            let stepsHtml = '';
-
-            if (isIos) {
-                modalNativeBtn.style.display = 'none';
-                stepsHtml = `
-                    <div class="install-step-box">
-                        <div class="install-step-item">
-                            <span class="install-step-num">1</span>
-                            <span>Tap the <b>Share button</b> (square icon with an arrow pointing up <span style="font-size: 15px;">⎋</span>) at the bottom of Safari.</span>
-                        </div>
-                        <div class="install-step-item">
-                            <span class="install-step-num">2</span>
-                            <span>Scroll down the menu and tap <b>"Add to Home Screen"</b>.</span>
-                        </div>
-                        <div class="install-step-item">
-                            <span class="install-step-num">3</span>
-                            <span>Tap <b>"Add"</b> in the top-right corner to install Chole Bhature on your home screen.</span>
-                        </div>
-                    </div>
-                `;
-            } else if (isAndroid) {
-                modalNativeBtn.style.display = deferredPwaPrompt ? 'flex' : 'none';
-                stepsHtml = `
-                    <div class="install-step-box">
-                        <div class="install-step-item">
-                            <span class="install-step-num">1</span>
-                            <span>Tap the <b>three dots (⋮)</b> in the top-right corner of Chrome.</span>
-                        </div>
-                        <div class="install-step-item">
-                            <span class="install-step-num">2</span>
-                            <span>Tap <b>"Install app"</b> or <b>"Add to Home screen"</b>.</span>
-                        </div>
-                        <div class="install-step-item">
-                            <span class="install-step-num">3</span>
-                            <span>Tap <b>"Install"</b> when the system confirmation appears.</span>
-                        </div>
-                    </div>
-                `;
-            } else {
-                modalNativeBtn.style.display = deferredPwaPrompt ? 'flex' : 'none';
-                stepsHtml = `
-                    <div class="install-step-box">
-                        <div class="install-step-item">
-                            <span class="install-step-num">1</span>
-                            <span>Look for the <b>Install App icon (⊕ or 📥)</b> inside the browser address bar on the right.</span>
-                        </div>
-                        <div class="install-step-item">
-                            <span class="install-step-num">2</span>
-                            <span>Or click the browser menu <b>(⋮)</b> → <b>"Install Chole Bhature..."</b></span>
-                        </div>
-                        <div class="install-step-item">
-                            <span class="install-step-num">3</span>
-                            <span>Click <b>"Install"</b> to launch as a standalone desktop app!</span>
-                        </div>
-                    </div>
-                `;
-            }
-
-            modalBody.innerHTML = stepsHtml;
-            document.getElementById('pwa-modal').style.display = 'flex';
-        }
-
-        // Register Service Worker with root scope
+        // Register PWA Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js', { scope: '/' })
