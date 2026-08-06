@@ -61,39 +61,39 @@ app.get('/api/wakeup', async (req, res) => {
     }
 });
 
-// TMDB API KEY (borrowed from 4khdhub for converting IMDB to TMDB, or we can use TMDB public APIs)
-// A better way is using Stremio's cinemeta or just TMDB API directly.
-const TMDB_API_KEY = '439c478a771f35c05022f9feabcca01c'; // From Nuvio provider
+const TMDB_API_KEYS = [
+    '439c478a771f35c05022f9feabcca01c',
+    '1865f43a0549ca50d341dd9ab8b29f49',
+    'e49339e830e014e414c2b9a71b2d4f82',
+    '847a158b5489812f851da8cf02476566',
+    'b025d23315a6b0c266cc6cb221a68134'
+];
 
 async function getTmdbId(imdbId, type) {
-    // If it's already a TMDB id (stremio tmdb addon)
     if (imdbId.startsWith('tmdb:')) {
         return imdbId.split(':')[1];
     }
     
-    const id = imdbId.split(':')[0]; // remove season/episode parts if any
+    const id = imdbId.split(':')[0];
     
-    // If it's a raw number, assume it's a TMDB ID from Nuvio
     if (/^\d+$/.test(id)) {
         return id;
     }
     
-    // For IMDB ids (tt1234567), we can use TMDB's find endpoint
     if (id.startsWith('tt')) {
-        for (let attempt = 1; attempt <= 3; attempt++) {
+        for (const key of TMDB_API_KEYS) {
             try {
-                const res = await axios.get(`https://api.themoviedb.org/3/find/${id}?api_key=${TMDB_API_KEY}&external_source=imdb_id`, { timeout: 5000 });
-                if (type === 'movie' && res.data.movie_results.length > 0) {
+                const res = await axios.get(`https://api.themoviedb.org/3/find/${id}?api_key=${key}&external_source=imdb_id`, { 
+                    timeout: 4000,
+                    headers: { 'Accept': 'application/json' }
+                });
+                if (type === 'movie' && res.data && res.data.movie_results && res.data.movie_results.length > 0) {
                     return res.data.movie_results[0].id.toString();
-                } else if (type === 'series' && res.data.tv_results.length > 0) {
+                } else if ((type === 'series' || type === 'tv') && res.data && res.data.tv_results && res.data.tv_results.length > 0) {
                     return res.data.tv_results[0].id.toString();
                 }
-                break; // Stop retrying if we got a successful response but no matches
             } catch (err) {
-                console.error(`[TMDB] Failed to convert IMDB to TMDB (Attempt ${attempt}):`, err.message);
-                if (attempt === 3) break;
-                // Wait briefly before retrying
-                await new Promise(r => setTimeout(r, 500));
+                // try next key
             }
         }
     }
@@ -198,8 +198,8 @@ function createAddon(config) {
 
         let allStreams = [];
 
-        // Execute all providers in parallel with a strict timeout of 10 seconds per provider
-        const PROVIDER_TIMEOUT_MS = 10000;
+        // Execute all providers in parallel with a timeout of 14 seconds per provider
+        const PROVIDER_TIMEOUT_MS = 14000;
 
         await Promise.all(allProviders.map(async (provider) => {
             try {
