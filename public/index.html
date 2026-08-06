@@ -1158,38 +1158,22 @@
                 <div style="margin-bottom: 20px;">
                     <div class="setting-text-block" style="margin-bottom: 12px;">
                         <div class="setting-headline">Stream Priority & Sorting Mode</div>
-                        <div class="setting-description">Choose how streams are prioritized and ranked in Stremio.</div>
+                        <div class="setting-description">Choose whether streams are prioritized by ultra-low response latency or maximum 4K video quality.</div>
                     </div>
                     <div class="sort-options-grid">
                         <div class="sort-option-card active" id="sort-speed" onclick="setSortMode('speed')">
                             <div class="sort-icon-box">⚡</div>
                             <div class="sort-info-block">
-                                <div class="sort-title">Speed & Low Latency</div>
-                                <div class="sort-desc">Ultra-fast ping CDN streams at top</div>
+                                <div class="sort-title">Speed & Low Latency First</div>
+                                <div class="sort-desc">Fastest responding streams prioritized at the top</div>
                             </div>
                             <div class="radio-indicator"></div>
                         </div>
                         <div class="sort-option-card" id="sort-quality" onclick="setSortMode('quality')">
                             <div class="sort-icon-box">🎬</div>
                             <div class="sort-info-block">
-                                <div class="sort-title">Maximum Quality (4K)</div>
-                                <div class="sort-desc">4K UHD → 1080p FHD → 720p</div>
-                            </div>
-                            <div class="radio-indicator"></div>
-                        </div>
-                        <div class="sort-option-card" id="sort-balanced" onclick="setSortMode('balanced')">
-                            <div class="sort-icon-box">⚖️</div>
-                            <div class="sort-info-block">
-                                <div class="sort-title">Smart Balanced</div>
-                                <div class="sort-desc">Optimal blend of 4K quality & fast ping</div>
-                            </div>
-                            <div class="radio-indicator"></div>
-                        </div>
-                        <div class="sort-option-card" id="sort-seeders" onclick="setSortMode('seeders')">
-                            <div class="sort-icon-box">🧲</div>
-                            <div class="sort-info-block">
-                                <div class="sort-title">P2P Seeders First</div>
-                                <div class="sort-desc">Highest healthy torrent seeds at top</div>
+                                <div class="sort-title">Maximum Quality (4K UHD First)</div>
+                                <div class="sort-desc">4K UHD → 1080p FHD → 720p (sorted by speed)</div>
                             </div>
                             <div class="radio-indicator"></div>
                         </div>
@@ -1441,23 +1425,18 @@
         }
 
         function updateSortModeUI(mode) {
-            const allModes = ['speed', 'quality', 'balanced', 'seeders'];
-            const activeMode = allModes.includes(mode) ? mode : 'speed';
-
-            allModes.forEach(m => {
-                const card = document.getElementById(`sort-${m}`);
-                if (card) {
-                    if (m === activeMode) card.classList.add('active');
-                    else card.classList.remove('active');
-                }
-            });
-
+            const speedCard = document.getElementById('sort-speed');
+            const qualityCard = document.getElementById('sort-quality');
             const statSortMode = document.getElementById('stat-sort-mode');
-            if (statSortMode) {
-                if (activeMode === 'quality') statSortMode.innerText = '4K Quality';
-                else if (activeMode === 'balanced') statSortMode.innerText = 'Balanced';
-                else if (activeMode === 'seeders') statSortMode.innerText = 'Max Seeders';
-                else statSortMode.innerText = 'Speed First';
+            
+            if (mode === 'quality') {
+                if (speedCard) speedCard.classList.remove('active');
+                if (qualityCard) qualityCard.classList.add('active');
+                if (statSortMode) statSortMode.innerText = '4K Quality';
+            } else {
+                if (speedCard) speedCard.classList.add('active');
+                if (qualityCard) qualityCard.classList.remove('active');
+                if (statSortMode) statSortMode.innerText = 'Speed First';
             }
         }
 
