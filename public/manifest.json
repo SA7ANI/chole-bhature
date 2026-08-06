@@ -1,0 +1,21 @@
+{
+  "name": "Chole Bhature • Nuvio Meta-Sorter",
+  "short_name": "Chole Bhature",
+  "description": "High-Performance Stream Meta-Sorter & Priority Engine for Nuvio & Stremio",
+  "start_url": "/configure",
+  "display": "standalone",
+  "background_color": "#07080c",
+  "theme_color": "#6366f1",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["entertainment", "utilities"],
+  "lang": "en",
+  "dir": "ltr"
+}
