@@ -203,9 +203,12 @@ function createAddon(config) {
 
         await Promise.all(allProviders.map(async (provider) => {
             try {
-                const nuvioType = type === 'series' ? 'tv' : type;
+                let nuvioType = type;
+                if (type === 'series' || type === 'tv') nuvioType = 'tv';
+                else if (type === 'movie') nuvioType = 'movie';
+                else if (type === 'anime') nuvioType = (season && episode) ? 'tv' : 'movie';
                 
-                const scrapePromise = provider.getStreams(tmdbId, nuvioType, season, episode);
+                const scrapePromise = provider.getStreams(tmdbId, nuvioType, season, episode, config);
                 
                 // Timeout promise
                 const timeoutPromise = new Promise((_, reject) => 
