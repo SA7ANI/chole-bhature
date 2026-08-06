@@ -5,9 +5,46 @@ const providerLoader = require('./providerLoader');
 const { sortAndTagStreams } = require('./streamTester');
 const axios = require('axios');
 
-const app = express();
+const fs = require('fs');
+const crypto = require('crypto');
 
-// Serve the configuration page
+const app = express();
+app.use(express.json());
+
+// Persistent User Configuration Store
+const CONFIGS_FILE = path.join(__dirname, 'user_configs.json');
+const userConfigs = new Map();
+
+function loadUserConfigs() {
+    try {
+        if (fs.existsSync(CONFIGS_FILE)) {
+            const raw = fs.readFileSync(CONFIGS_FILE, 'utf8');
+            const data = JSON.parse(raw);
+            for (const [k, v] of Object.entries(data)) {
+                userConfigs.set(k, v);
+            }
+            console.log(`[Config] Loaded ${userConfigs.size} user configurations.`);
+        }
+    } catch (e) {
+        console.error('[Config] Failed to load user_configs.json:', e.message);
+    }
+}
+
+function saveUserConfig(configId, configData) {
+    userConfigs.set(configId, configData);
+    try {
+        const obj = {};
+        for (const [k, v] of userConfigs.entries()) {
+            obj[k] = v;
+        }
+        fs.writeFileSync(CONFIGS_FILE, JSON.stringify(obj, null, 2));
+    } catch (e) {
+        console.error('[Config] Failed to persist user_configs.json:', e.message);
+    }
+}
+loadUserConfigs();
+
+// Serve static assets
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/', (req, res) => {
@@ -18,18 +55,48 @@ app.get('/configure', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Handle Nuvio/Stremio gear icon clicks which append /configure or / to the addon base URL
-app.get('/:configJSON/configure', (req, res) => {
-    res.redirect('/configure');
+// Serve configure page on configId routes
+app.get('/c/:configId', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+app.get('/c/:configId/configure', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.get('/:configJSON', (req, res, next) => {
-    // If it's literally just the base config URL, redirect to /configure
-    // But don't intercept /api/analytics or other real routes
-    if (req.params.configJSON !== 'api' && req.params.configJSON !== 'configure') {
-        return res.redirect('/configure');
+// API to save configuration (Instant Sync)
+app.post('/api/config/save', (req, res) => {
+    try {
+        let { configId, config } = req.body;
+        if (!configId) {
+            configId = crypto.randomBytes(4).toString('hex');
+        }
+        
+        saveUserConfig(configId, config);
+        
+        // Invalidate stream cache for this configuration
+        for (const key of streamCache.keys()) {
+            if (key.includes(configId)) {
+                streamCache.delete(key);
+            }
+        }
+        
+        console.log(`[Config] Configuration saved & synced for configId: ${configId}`);
+        res.json({ success: true, configId, config });
+    } catch (err) {
+        console.error('[Config Error]', err);
+        res.status(500).json({ success: false, error: err.message });
     }
-    next();
+});
+
+// API to get configuration
+app.get('/api/config/:configId', (req, res) => {
+    const config = userConfigs.get(req.params.configId) || null;
+    res.json({ config });
+});
+
+// Handle Nuvio/Stremio gear icon clicks which append /configure or / to the addon base URL
+app.get('/:configJSON/configure', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 const streamCache = new Map();
@@ -292,6 +359,78 @@ app.get('/:configJSON/clear-cache/:type/:id', (req, res) => {
     }
 });
 
+app.get('/c/:configId/clear-cache/:type/:id', (req, res) => {
+    const { configId, type, id } = req.params;
+    try {
+        const config = userConfigs.get(configId) || {};
+        config.addonHost = req.headers.host;
+        const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+        config.addonProtocol = protocol.split(',')[0].trim();
+        config.configId = configId;
+        
+        const cacheKey = `${type}:${id}:${JSON.stringify(config)}`;
+        streamCache.delete(cacheKey);
+        for (const k of streamCache.keys()) {
+            if (k.includes(configId)) streamCache.delete(k);
+        }
+        console.log(`[Cache] Cleared via browser link for ${type} ${id} (configId: ${configId})`);
+        
+        const html = `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Cache Cleared</title>
+            <style>
+                body { background-color: #09090b; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+                h1 { color: #4ade80; }
+                p { color: #94a3b8; }
+            </style>
+        </head>
+        <body>
+            <h1>✅ Cache Cleared!</h1>
+            <p>Closing automatically...</p>
+            <script>
+                setTimeout(() => {
+                    window.close();
+                }, 1500);
+            </script>
+        </body>
+        </html>
+        `;
+        res.status(200).send(html);
+    } catch (e) {
+        res.status(500).send('Error clearing cache.');
+    }
+});
+
+app.use('/c/:configId', (req, res, next) => {
+    // Only intercept Stremio API routes
+    if (req.path === '/manifest.json' || req.path.startsWith('/stream/') || req.path.startsWith('/catalog/')) {
+        try {
+            const { configId } = req.params;
+            let config = userConfigs.get(configId);
+            if (!config) {
+                config = { repoUrl: 'https://raw.githubusercontent.com/D3adlyRocket/All-in-One-Nuvio/refs/heads/main/manifest.json' };
+            }
+            config = JSON.parse(JSON.stringify(config)); // clone
+            config.configId = configId;
+            config.addonHost = req.headers.host;
+            const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+            config.addonProtocol = protocol.split(',')[0].trim();
+            
+            const addonInterface = createAddon(config);
+            const router = getRouter(addonInterface);
+            return router(req, res, next);
+        } catch (err) {
+            console.error('[Router Error /c/:configId]', err);
+            return res.status(400).send('Invalid configuration');
+        }
+    }
+    next();
+});
+
 app.use('/:configJSON', (req, res, next) => {
     // Only intercept Stremio API routes
     if (req.path === '/manifest.json' || req.path.startsWith('/stream/') || req.path.startsWith('/catalog/')) {
@@ -305,8 +444,6 @@ app.use('/:configJSON', (req, res, next) => {
             const router = getRouter(addonInterface);
             
             // Override req.url so the internal router matches /manifest.json or /stream/...
-            // The router expects the URL to be just the path, but Express preserves the base.
-            // Using getRouter on a sub-path is officially supported this way.
             return router(req, res, next);
         } catch (err) {
             console.error('[Router Error]', err);
