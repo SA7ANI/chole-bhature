@@ -35,11 +35,31 @@ function parseStreamMetadata(stream) {
         peers: null
     };
 
-    // 1. Resolution
-    if (/\b(?:2160[pi]?|4k|uhd)\b/i.test(fullText)) metadata.resolution = '2160p';
-    else if (/\b(?:1080[pi]?|fhd|full[\s._-]?hd)\b/i.test(fullText)) metadata.resolution = '1080p';
-    else if (/\b(?:720[pi]?|hd)\b/i.test(fullText)) metadata.resolution = '720p';
-    else if (/\b(?:480[pi]?|sd)\b/i.test(fullText)) metadata.resolution = '480p';
+    // 1. Resolution (Strict pattern matching, ignoring release group noise like 4kHDHub, UHDMovies)
+    const has2160 = /\b2160[pi]?\b/i.test(fullText);
+    const has1080 = /\b1080[pi]?\b/i.test(fullText);
+    const has720  = /\b720[pi]?\b/i.test(fullText);
+    const has480  = /\b(?:480[pi]?|576[pi]?)\b/i.test(fullText);
+
+    if (has2160 && !has1080 && !has720 && !has480) {
+        metadata.resolution = '2160p';
+    } else if (has1080 && !has2160) {
+        metadata.resolution = '1080p';
+    } else if (has720 && !has1080 && !has2160) {
+        metadata.resolution = '720p';
+    } else if (has480 && !has1080 && !has2160 && !has720) {
+        metadata.resolution = '480p';
+    } else if (has2160 && has1080) {
+        const match2160 = fullText.search(/\b2160[pi]?\b/i);
+        const match1080 = fullText.search(/\b1080[pi]?\b/i);
+        metadata.resolution = match2160 < match1080 ? '2160p' : '1080p';
+    } else {
+        const cleanText = fullText.replace(/uhdmovies|4khdhub|hdhub4u|hdhub|uhdrip/gi, ' ');
+        if (/\b(?:4k|uhd)\b/i.test(cleanText)) metadata.resolution = '2160p';
+        else if (/\b(?:fhd|full[\s._-]?hd)\b/i.test(cleanText)) metadata.resolution = '1080p';
+        else if (/\b(?:hd)\b/i.test(cleanText) && !/\b(?:hdtv|hdrip|hdcam|hdts)\b/i.test(fullText)) metadata.resolution = '720p';
+        else if (/\b(?:sd)\b/i.test(cleanText)) metadata.resolution = '480p';
+    }
 
     // 2. Quality / Source
     if (/\b(?:bd|uhd)?remux\b/i.test(fullText)) metadata.special.push('REMUX');
@@ -331,20 +351,49 @@ function formatStreamLabels(stream, latency = 150, isP2P = false, isDead = false
     };
 }
 
+function getResolutionTier(stream) {
+    if (!stream) return 0;
+    const meta = parseStreamMetadata(stream);
+    if (meta.resolution === '2160p') return 4;
+    if (meta.resolution === '1080p') return 3;
+    if (meta.resolution === '720p') return 2;
+    if (meta.resolution === '480p') return 1;
+    return 0;
+}
+
 function getQualityScore(stream) {
     if (!stream) return 0;
-    const text = [
-        stream.name || '',
-        stream.title || '',
-        stream.description || '',
-        stream.quality || ''
-    ].join(' ').toLowerCase();
+    const meta = parseStreamMetadata(stream);
+    let score = 0;
 
-    if (text.includes('4k') || text.includes('2160p') || text.includes('uhd')) return 4;
-    if (text.includes('1080p') || text.includes('fhd')) return 3;
-    if (text.includes('720p') || text.includes('hd')) return 2;
-    if (text.includes('480p') || text.includes('sd')) return 1;
-    return 0;
+    // 1. Resolution Base Tier (4000 = 4K, 3000 = 1080p, 2000 = 720p, 1000 = 480p)
+    if (meta.resolution === '2160p') score += 4000;
+    else if (meta.resolution === '1080p') score += 3000;
+    else if (meta.resolution === '720p') score += 2000;
+    else if (meta.resolution === '480p') score += 1000;
+
+    // 2. Source / Release Quality Tier (Within resolution tier)
+    if (meta.special.includes('REMUX')) score += 500;
+    else if (meta.quality === 'BluRay') score += 400;
+    else if (meta.quality === 'WEB-DL') score += 300;
+    else if (meta.quality === 'WEBRip') score += 200;
+    else if (meta.quality === 'HDTV') score += 100;
+    else if (meta.quality === 'CAM') score -= 500;
+
+    // 3. HDR / Visual Quality Bonuses
+    if (meta.hdr.includes('Dolby Vision')) score += 50;
+    if (meta.hdr.includes('HDR10+') || meta.hdr.includes('HDR10') || meta.hdr.includes('HDR')) score += 30;
+    if (meta.special.includes('IMAX Enhanced') || meta.special.includes('IMAX')) score += 20;
+    if (meta.special.includes('10bit')) score += 10;
+
+    // 4. Audio Quality Bonuses
+    if (meta.audio.includes('Dolby Atmos')) score += 25;
+    if (meta.audio.includes('TrueHD') || meta.audio.includes('DTS-HD MA') || meta.audio.includes('DTS:X')) score += 20;
+    else if (meta.audio.includes('DDP')) score += 15;
+    else if (meta.audio.includes('FLAC')) score += 15;
+    else if (meta.audio.includes('DD') || meta.audio.includes('DTS')) score += 10;
+
+    return score;
 }
 
 function getAudioScore(stream, preferredLanguages = [], prioritizeHindi = false) {
@@ -581,56 +630,82 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics, hostUr
             return a.isDead ? 1 : -1;
         }
 
-        // Multi-Language / Audio prioritization
-        if (hasAudioPref) {
-            const audioA = getAudioScore(a, prefLanguages, config.prioritizeHindi);
-            const audioB = getAudioScore(b, prefLanguages, config.prioritizeHindi);
-            if (audioA !== audioB) {
-                return audioB - audioA;
-            }
-        }
-
-        // P2P Seeders Prioritization for torrent streams
-        const seederA = getSeederScore(a);
-        const seederB = getSeederScore(b);
-        if (seederA > 0 || seederB > 0) {
-            if (Math.abs(seederA - seederB) >= 10) {
-                return seederB - seederA;
-            }
-        }
-
         if (isQualityFirst) {
-            // Sort by Resolution: 4K (4) -> 1080p (3) -> 720p (2) -> 480p (1) -> Unknown (0)
+            // 1. STRICT RESOLUTION TIER (4K > 1080p > 720p > 480p)
+            // Absolute priority: 1080p will NEVER jump above 4K in Quality mode!
+            const resA = getResolutionTier(a);
+            const resB = getResolutionTier(b);
+            if (resA !== resB) {
+                return resB - resA;
+            }
+
+            // 2. Multi-Language / Audio prioritization within the same resolution tier
+            if (hasAudioPref) {
+                const audioA = getAudioScore(a, prefLanguages, config.prioritizeHindi);
+                const audioB = getAudioScore(b, prefLanguages, config.prioritizeHindi);
+                if (audioA !== audioB) {
+                    return audioB - audioA;
+                }
+            }
+
+            // 3. Release & Codec Quality (REMUX > BluRay > WEB-DL, HDR/DV, Atmos)
             const scoreA = getQualityScore(a);
             const scoreB = getQualityScore(b);
             if (scoreA !== scoreB) {
                 return scoreB - scoreA;
             }
 
-            // Within same resolution: Fast -> Slow -> Dead
+            // 4. P2P Seeders Prioritization for torrent streams
+            const seederA = getSeederScore(a);
+            const seederB = getSeederScore(b);
+            if (seederA > 0 || seederB > 0) {
+                if (Math.abs(seederA - seederB) >= 10) {
+                    return seederB - seederA;
+                }
+            }
+
+            // 5. Status Category: Fast -> Slow
             const rankA = categoryRank[a.statusCategory] || 2;
             const rankB = categoryRank[b.statusCategory] || 2;
             if (rankA !== rankB) {
                 return rankA - rankB;
             }
 
-            // Within same status: Lowest latency / fastest ping first
+            // 6. Within same status: Lowest latency / fastest ping first
             return a.latency - b.latency;
         } else {
-            // Sort by Speed (Default):
-            // 1. Status Category (Fast -> Slow -> Dead)
+            // Speed First (Default):
+            // 1. Multi-Language / Audio prioritization
+            if (hasAudioPref) {
+                const audioA = getAudioScore(a, prefLanguages, config.prioritizeHindi);
+                const audioB = getAudioScore(b, prefLanguages, config.prioritizeHindi);
+                if (audioA !== audioB) {
+                    return audioB - audioA;
+                }
+            }
+
+            // 2. P2P Seeders Prioritization for torrent streams
+            const seederA = getSeederScore(a);
+            const seederB = getSeederScore(b);
+            if (seederA > 0 || seederB > 0) {
+                if (Math.abs(seederA - seederB) >= 10) {
+                    return seederB - seederA;
+                }
+            }
+
+            // 3. Status Category (Fast -> Slow -> Dead)
             const rankA = categoryRank[a.statusCategory] || 2;
             const rankB = categoryRank[b.statusCategory] || 2;
             if (rankA !== rankB) {
                 return rankA - rankB;
             }
 
-            // 2. Exact latency (lowest ms first)
+            // 4. Exact latency (lowest ms first)
             if (a.latency !== b.latency) {
                 return a.latency - b.latency;
             }
 
-            // 3. Higher quality as tie breaker
+            // 5. Higher quality as tie breaker
             const scoreA = getQualityScore(a);
             const scoreB = getQualityScore(b);
             return scoreB - scoreA;

@@ -201,7 +201,7 @@ function createAddon(config) {
 
     const builder = new addonBuilder({
         id: addonId,
-        version: '2.1.0',
+        version: '2.1.1',
         name: addonName,
         description: 'Dynamically loads Nuvio providers, tests stream speed, and sorts them.',
         logo: addonLogo,

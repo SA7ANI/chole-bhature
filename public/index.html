@@ -7,10 +7,11 @@
     <meta name="theme-color" content="#6366f1">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Chole Bhature">
     <link rel="manifest" href="/manifest.json">
-    <link rel="apple-touch-icon" href="/icon-512.png">
-    <link rel="icon" type="image/png" href="/icon-512.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="/icon-512.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
     <title>Chole Bhature • Nuvio & Stremio Meta-Sorter</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1108,7 +1109,7 @@
                 <div class="brand-content">
                     <div class="brand-header-row">
                         <h1 class="brand-title">Chole Bhature</h1>
-                        <span class="brand-version">v2.1.0</span>
+                        <span class="brand-version">v2.1.1</span>
                     </div>
                     <p class="brand-tagline">High-Performance Stream Meta-Sorter & Priority Engine</p>
                     <div id="sync-badge" class="sync-status-pill" style="display: none;">
@@ -1885,11 +1886,16 @@
 
         // Register PWA Service Worker
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
+            const registerSW = () => {
                 navigator.serviceWorker.register('/sw.js', { scope: '/' })
                     .then(reg => console.log('[PWA] Service Worker registered with scope:', reg.scope))
                     .catch(err => console.warn('[PWA] Service Worker registration failed:', err));
-            });
+            };
+            if (document.readyState === 'complete') {
+                registerSW();
+            } else {
+                window.addEventListener('load', registerSW);
+            }
         }
     </script>
 </body>

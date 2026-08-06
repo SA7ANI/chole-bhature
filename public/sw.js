@@ -1,8 +1,10 @@
-const CACHE_NAME = 'chole-bhature-v4';
+const CACHE_NAME = 'chole-bhature-v5';
 const STATIC_ASSETS = [
   '/configure',
   '/icon-192.png',
   '/icon-512.png',
+  '/icon-maskable-192.png',
+  '/icon-maskable-512.png',
   '/manifest.json'
 ];
 
