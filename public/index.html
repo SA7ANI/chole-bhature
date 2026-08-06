@@ -1064,6 +1064,131 @@
             input[type="url"], input[type="text"] { font-size: 13px; padding: 11px 14px; border-radius: 10px; }
         }
 
+        /* ===== DYNAMIC MOBILE NAVBAR & FLOATING DOCK ===== */
+        .mobile-bottom-nav {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: calc(58px + env(safe-area-inset-bottom, 0px));
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+            background: rgba(10, 12, 19, 0.88);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            z-index: 990;
+            justify-content: space-around;
+            align-items: center;
+            box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.6);
+        }
+
+        .mobile-nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            color: var(--text-muted);
+            text-decoration: none;
+            position: relative;
+            padding: 8px 4px;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .mobile-nav-icon {
+            font-size: 18px;
+            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .mobile-nav-label {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            transition: color 0.25s;
+        }
+
+        .nav-active-glow {
+            position: absolute;
+            top: 0;
+            width: 28px;
+            height: 3px;
+            border-radius: 3px;
+            background: var(--gradient-brand);
+            box-shadow: 0 0 12px var(--accent-glow);
+            opacity: 0;
+            transform: scaleX(0);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .mobile-nav-item.active {
+            color: var(--text-primary);
+        }
+
+        .mobile-nav-item.active .mobile-nav-icon {
+            transform: translateY(-2px) scale(1.18);
+            filter: drop-shadow(0 2px 10px rgba(99, 102, 241, 0.7));
+        }
+
+        .mobile-nav-item.active .mobile-nav-label {
+            color: #a5b4fc;
+        }
+
+        .mobile-nav-item.active .nav-active-glow {
+            opacity: 1;
+            transform: scaleX(1);
+        }
+
+        .mobile-nav-item:active {
+            transform: scale(0.92);
+        }
+
+        /* Floating Unsaved Changes Quick Save Pill for Mobile */
+        .mobile-floating-save-pill {
+            position: fixed;
+            bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+            left: 50%;
+            transform: translateX(-50%) translateY(80px) scale(0.9);
+            opacity: 0;
+            pointer-events: none;
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: #ffffff;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 8px 30px rgba(99, 102, 241, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.2);
+            z-index: 995;
+            cursor: pointer;
+            transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .mobile-floating-save-pill.visible {
+            transform: translateX(-50%) translateY(0) scale(1);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .floating-save-dot {
+            width: 8px;
+            height: 8px;
+            background: #4ade80;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #4ade80;
+            animation: pulseSaveDot 1.5s infinite;
+        }
+
+        @keyframes pulseSaveDot {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.35); opacity: 0.5; }
+        }
+
         /* Very small phones (iPhone SE, Galaxy Fold) */
         @media (max-width: 380px) {
             .brand-logo { width: 40px; height: 40px; border-radius: 10px; padding: 2px; }
@@ -1081,6 +1206,19 @@
                 padding: 6px 10px;
             }
             .filter-capsule-text { font-size: 11px; }
+        }
+
+        /* Mobile navbar enablement */
+        @media (max-width: 768px) {
+            .mobile-bottom-nav {
+                display: flex;
+            }
+            body {
+                padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)) !important;
+            }
+            .section-wrap {
+                scroll-margin-top: 16px;
+            }
         }
 
         /* Large screens & desktops */
@@ -1152,7 +1290,7 @@
         </div>
 
         <!-- Stream Priority & Optimization Suite -->
-        <div class="section-wrap">
+        <div class="section-wrap" id="section-priority">
             <div class="section-label-bar">
                 <span class="section-label">⚙️ Stream Optimization Settings</span>
             </div>
@@ -1284,7 +1422,7 @@
         </div>
 
         <!-- Provider Health & Analytics -->
-        <div class="section-wrap">
+        <div class="section-wrap" id="section-analytics">
             <div class="section-label-bar" style="cursor: pointer; user-select: none;" onclick="toggleAnalytics()">
                 <span class="section-label">📊 Live Provider Analytics & Health</span>
                 <span id="analytics-toggle-icon" style="color: var(--text-muted); font-size: 12px;">▼</span>
@@ -1297,41 +1435,44 @@
             </div>
         </div>
 
-        <!-- Add Nuvio Repository -->
-        <div class="section-wrap">
-            <div class="section-label-bar">
-                <span class="section-label">➕ Add Nuvio Repository</span>
+        <!-- Repositories & Add Repo -->
+        <div id="section-repos">
+            <!-- Add Nuvio Repository -->
+            <div class="section-wrap">
+                <div class="section-label-bar">
+                    <span class="section-label">➕ Add Nuvio Repository</span>
+                </div>
+                <div class="section-card">
+                    <form id="install-form">
+                        <div class="input-bar-group">
+                            <input type="url" id="manifestUrl" placeholder="Enter repository manifest URL (e.g. https://.../manifest.json)" required>
+                            <button type="submit" class="btn-submit-action">Add Repo</button>
+                        </div>
+                    </form>
+                    
+                    <div id="fallbackLink" style="display: none; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border-subtle);">
+                        <div class="section-label" style="margin-bottom: 8px;">🔗 Manual Manifest Link (Copy & Paste to Stremio/Nuvio)</div>
+                        <div class="input-bar-group">
+                            <input type="text" id="generatedUrl" readonly>
+                            <button type="button" onclick="copyLink()" class="btn-submit-action">Copy URL</button>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="section-card">
-                <form id="install-form">
-                    <div class="input-bar-group">
-                        <input type="url" id="manifestUrl" placeholder="Enter repository manifest URL (e.g. https://.../manifest.json)" required>
-                        <button type="submit" class="btn-submit-action">Add Repo</button>
-                    </div>
-                </form>
-                
-                <div id="fallbackLink" style="display: none; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border-subtle);">
-                    <div class="section-label" style="margin-bottom: 8px;">🔗 Manual Manifest Link (Copy & Paste to Stremio/Nuvio)</div>
-                    <div class="input-bar-group">
-                        <input type="text" id="generatedUrl" readonly>
-                        <button type="button" onclick="copyLink()" class="btn-submit-action">Copy URL</button>
-                    </div>
+
+            <!-- Installed Repositories -->
+            <div class="section-wrap">
+                <div class="section-label-bar">
+                    <span class="section-label">📦 Installed Repositories</span>
+                </div>
+                <div id="installed-repos">
+                    <div class="empty-placeholder">No repositories added yet.</div>
                 </div>
             </div>
         </div>
 
-        <!-- Installed Repositories -->
-        <div class="section-wrap">
-            <div class="section-label-bar">
-                <span class="section-label">📦 Installed Repositories</span>
-            </div>
-            <div id="installed-repos">
-                <div class="empty-placeholder">No repositories added yet.</div>
-            </div>
-        </div>
-
         <!-- Providers List -->
-        <div class="section-wrap">
+        <div class="section-wrap" id="section-providers">
             <div class="section-label-bar">
                 <span class="section-label">🧩 Scrapers & Providers</span>
             </div>
@@ -1455,6 +1596,8 @@
             saveConfigurationToServer(false);
             const saveBtn = document.getElementById('save-btn');
             if (saveBtn) saveBtn.classList.add('unsaved');
+            const floatingSave = document.getElementById('mobile-floating-save');
+            if (floatingSave) floatingSave.classList.add('visible');
             updateStatsBar();
         }
 
@@ -1533,6 +1676,8 @@
                     }
                     const saveBtn = document.getElementById('save-btn');
                     if (saveBtn) saveBtn.classList.remove('unsaved');
+                    const floatingSave = document.getElementById('mobile-floating-save');
+                    if (floatingSave) floatingSave.classList.remove('visible');
                     
                     showSyncBadge(`⚡ Cloud Synced (ID: ${configId})`);
                     
@@ -1545,6 +1690,65 @@
                 if (showToastMsg) {
                     showToast("❌ <b>Error:</b> Could not save settings.");
                 }
+            }
+        }
+
+        function scrollToSection(e, sectionId) {
+            if (e) e.preventDefault();
+            const target = document.getElementById(sectionId);
+            if (target) {
+                const headerOffset = 65;
+                const elementPosition = target.getBoundingClientRect().top;
+                const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+                
+                window.scrollTo({
+                    top: offsetPosition,
+                    behavior: 'smooth'
+                });
+                
+                updateActiveNav(sectionId);
+            }
+        }
+
+        function updateActiveNav(activeId) {
+            document.querySelectorAll('.mobile-nav-item').forEach(item => {
+                const href = item.getAttribute('href').replace('#', '');
+                if (href === activeId) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+        }
+
+        function initScrollSpy() {
+            const sectionIds = ['section-priority', 'section-analytics', 'section-repos', 'section-providers'];
+            const sections = sectionIds.map(id => document.getElementById(id)).filter(Boolean);
+            
+            if ('IntersectionObserver' in window) {
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            updateActiveNav(entry.target.id);
+                        }
+                    });
+                }, {
+                    root: null,
+                    rootMargin: '-15% 0px -65% 0px',
+                    threshold: 0.05
+                });
+                
+                sections.forEach(sec => observer.observe(sec));
+            } else {
+                window.addEventListener('scroll', () => {
+                    const scrollPos = window.scrollY + 100;
+                    for (const sec of sections) {
+                        if (sec.offsetTop <= scrollPos && (sec.offsetTop + sec.offsetHeight) > scrollPos) {
+                            updateActiveNav(sec.id);
+                            break;
+                        }
+                    }
+                }, { passive: true });
             }
         }
 
@@ -1886,6 +2090,7 @@
         // Init
         initConfig();
         fetchAnalytics();
+        initScrollSpy();
 
         // Register Service Worker
         if ('serviceWorker' in navigator) {
@@ -1904,5 +2109,35 @@
             }
         }
     </script>
+
+    <!-- Dynamic Mobile Bottom Navigation Bar -->
+    <nav class="mobile-bottom-nav" id="mobile-nav">
+        <a href="#section-priority" class="mobile-nav-item active" onclick="scrollToSection(event, 'section-priority')">
+            <span class="mobile-nav-icon">⚡</span>
+            <span class="mobile-nav-label">Priority</span>
+            <span class="nav-active-glow"></span>
+        </a>
+        <a href="#section-analytics" class="mobile-nav-item" onclick="scrollToSection(event, 'section-analytics')">
+            <span class="mobile-nav-icon">📊</span>
+            <span class="mobile-nav-label">Health</span>
+            <span class="nav-active-glow"></span>
+        </a>
+        <a href="#section-repos" class="mobile-nav-item" onclick="scrollToSection(event, 'section-repos')">
+            <span class="mobile-nav-icon">📦</span>
+            <span class="mobile-nav-label">Repos</span>
+            <span class="nav-active-glow"></span>
+        </a>
+        <a href="#section-providers" class="mobile-nav-item" onclick="scrollToSection(event, 'section-providers')">
+            <span class="mobile-nav-icon">🧩</span>
+            <span class="mobile-nav-label">Scrapers</span>
+            <span class="nav-active-glow"></span>
+        </a>
+    </nav>
+
+    <!-- Floating Mobile Quick Save Action -->
+    <div id="mobile-floating-save" class="mobile-floating-save-pill" onclick="saveConfigurationToServer(true)">
+        <span class="floating-save-dot"></span>
+        <span class="floating-save-text">💾 Save Changes</span>
+    </div>
 </body>
 </html>
