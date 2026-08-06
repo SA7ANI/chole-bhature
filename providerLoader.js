@@ -4,8 +4,16 @@ const cheerio = require('cheerio');
 const CryptoJS = require('crypto-js');
 const vm = require('vm');
 
+const http = require('http');
+const https = require('https');
+
+// High performance connection pooling to prevent socket hang ups across 60+ parallel scrapers
+const httpAgent = new http.Agent({ keepAlive: true, maxSockets: 100, maxFreeSockets: 30, timeout: 30000 });
+const httpsAgent = new https.Agent({ keepAlive: true, maxSockets: 100, maxFreeSockets: 30, timeout: 30000 });
+
 // Global in-memory cache for TMDB responses to prevent rate-limits and ECONNRESET across all providers
 const tmdbCache = new Map();
+const tmdbPending = new Map();
 const TMDB_API_KEYS = [
     '439c478a771f35c05022f9feabcca01c',
     '1865f43a0549ca50d341dd9ab8b29f49',
@@ -14,39 +22,69 @@ const TMDB_API_KEYS = [
     'b025d23315a6b0c266cc6cb221a68134'
 ];
 
+function getTmdbNormalizedKey(rawUrl) {
+    try {
+        const u = new URL(rawUrl);
+        u.searchParams.delete('api_key');
+        return `${u.pathname}?${u.searchParams.toString()}`;
+    } catch (e) {
+        return rawUrl.replace(/[?&]api_key=[^&]+/, '');
+    }
+}
+
 async function fetchTmdbWithFallback(rawUrl) {
+    const normKey = getTmdbNormalizedKey(rawUrl);
+    if (tmdbCache.has(normKey)) {
+        return tmdbCache.get(normKey);
+    }
     if (tmdbCache.has(rawUrl)) {
         return tmdbCache.get(rawUrl);
     }
 
-    // Extract path without original API key to enable key rotation
-    for (const key of TMDB_API_KEYS) {
-        try {
-            let targetUrl = rawUrl;
-            if (rawUrl.includes('api_key=')) {
-                targetUrl = rawUrl.replace(/api_key=[^&]+/, `api_key=${key}`);
-            } else {
-                targetUrl += (rawUrl.includes('?') ? '&' : '?') + `api_key=${key}`;
-            }
-
-            const res = await axios.get(targetUrl, {
-                timeout: 5000,
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-                    'Accept': 'application/json'
-                }
-            });
-
-            if (res.data) {
-                tmdbCache.set(rawUrl, res.data);
-                // Also cache standard normalized URL
-                return res.data;
-            }
-        } catch (e) {
-            // try next key
-        }
+    if (tmdbPending.has(normKey)) {
+        return await tmdbPending.get(normKey);
     }
-    return null;
+
+    const promise = (async () => {
+        // Extract path without original API key to enable key rotation
+        for (const key of TMDB_API_KEYS) {
+            try {
+                let targetUrl = rawUrl;
+                if (rawUrl.includes('api_key=')) {
+                    targetUrl = rawUrl.replace(/api_key=[^&]+/, `api_key=${key}`);
+                } else {
+                    targetUrl += (rawUrl.includes('?') ? '&' : '?') + `api_key=${key}`;
+                }
+
+                const res = await axios.get(targetUrl, {
+                    timeout: 8000,
+                    httpAgent,
+                    httpsAgent,
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (res.data) {
+                    tmdbCache.set(normKey, res.data);
+                    tmdbCache.set(rawUrl, res.data);
+                    return res.data;
+                }
+            } catch (e) {
+                // try next key
+            }
+        }
+        return null;
+    })();
+
+    tmdbPending.set(normKey, promise);
+    try {
+        const result = await promise;
+        return result;
+    } finally {
+        tmdbPending.delete(normKey);
+    }
 }
 
 function createCheerioWrapper() {
@@ -96,10 +134,10 @@ class ProviderLoader {
                     const scriptRes = await axios.get(scriptUrl);
                     const scriptCode = scriptRes.data;
                     
-                    // Intercept fetch for TMDB
+                    // Intercept fetch for TMDB and inject connection pooling
                     const customFetch = async (url, options = {}) => {
                         const urlStr = typeof url === 'string' ? url : (url && url.url ? url.url : String(url));
-                        if (urlStr.includes('api.themoviedb.org')) {
+                        if (urlStr.includes('themoviedb.org') || urlStr.includes('tmdb.org')) {
                             const cached = await fetchTmdbWithFallback(urlStr);
                             if (cached) {
                                 return new fetch.Response(JSON.stringify(cached), {
@@ -108,42 +146,52 @@ class ProviderLoader {
                                 });
                             }
                         }
-                        return fetch(url, options);
+                        const mergedOptions = {
+                            agent: (_parsedUrl) => (_parsedUrl.protocol === 'http:' ? httpAgent : httpsAgent),
+                            ...options
+                        };
+                        return fetch(url, mergedOptions);
                     };
 
-                    // Intercept axios for TMDB
+                    // Intercept axios for TMDB and inject connection pooling
+                    const axiosInstance = axios.create({
+                        httpAgent,
+                        httpsAgent,
+                        timeout: 20000
+                    });
+
                     const customAxios = async (config) => {
                         const urlStr = typeof config === 'string' ? config : (config && config.url ? config.url : '');
-                        if (urlStr.includes('api.themoviedb.org')) {
+                        if (urlStr.includes('themoviedb.org') || urlStr.includes('tmdb.org')) {
                             const cached = await fetchTmdbWithFallback(urlStr);
                             if (cached) {
                                 return { data: cached, status: 200, statusText: 'OK', headers: {}, config };
                             }
                         }
-                        return axios(config);
+                        return axiosInstance(config);
                     };
                     customAxios.get = async (url, config = {}) => {
-                        if (typeof url === 'string' && url.includes('api.themoviedb.org')) {
+                        if (typeof url === 'string' && (url.includes('themoviedb.org') || url.includes('tmdb.org'))) {
                             const cached = await fetchTmdbWithFallback(url);
                             if (cached) {
                                 return { data: cached, status: 200, statusText: 'OK', headers: {}, config };
                             }
                         }
-                        return axios.get(url, config);
+                        return axiosInstance.get(url, config);
                     };
-                    customAxios.post = axios.post;
-                    customAxios.head = axios.head;
-                    customAxios.put = axios.put;
-                    customAxios.delete = axios.delete;
-                    customAxios.patch = axios.patch;
-                    customAxios.options = axios.options;
+                    customAxios.post = (url, data, config) => axiosInstance.post(url, data, config);
+                    customAxios.head = (url, config) => axiosInstance.head(url, config);
+                    customAxios.put = (url, data, config) => axiosInstance.put(url, data, config);
+                    customAxios.delete = (url, config) => axiosInstance.delete(url, config);
+                    customAxios.patch = (url, data, config) => axiosInstance.patch(url, data, config);
+                    customAxios.options = (url, config) => axiosInstance.options(url, config);
                     customAxios.request = (config) => customAxios(config);
                     customAxios.create = () => customAxios;
                     customAxios.default = customAxios;
                     customAxios.isAxiosError = axios.isAxiosError;
                     customAxios.AxiosError = axios.AxiosError;
-                    customAxios.defaults = axios.defaults;
-                    customAxios.interceptors = axios.interceptors;
+                    customAxios.defaults = axiosInstance.defaults;
+                    customAxios.interceptors = axiosInstance.interceptors;
 
                     const pathMod = require('path');
                     const utilMod = require('util');

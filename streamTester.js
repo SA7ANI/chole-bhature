@@ -456,6 +456,11 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics, hostUr
         filteredStreams = filteredStreams.filter(s => s.statusCategory !== 'slow');
     }
 
+    // Safety fallback: if strict filters leave 0 streams, retain all tested streams
+    if (filteredStreams.length === 0 && testedStreams.length > 0) {
+        filteredStreams = testedStreams;
+    }
+
     // Sort
     const categoryRank = { 'fast': 1, 'slow': 2, 'dead': 3 };
     const isQualityFirst = config && (config.sortBy === 'quality' || config.sortMode === 'quality' || config.prioritizeQuality);

@@ -1,6 +1,7 @@
-const CACHE_NAME = 'chole-bhature-v2';
+const CACHE_NAME = 'chole-bhature-v4';
 const STATIC_ASSETS = [
   '/configure',
+  '/icon-192.png',
   '/icon-512.png',
   '/manifest.json'
 ];
@@ -9,47 +10,59 @@ const STATIC_ASSETS = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS);
+      return cache.addAll(STATIC_ASSETS).catch((err) => {
+        console.warn('[SW] Cache addAll warning:', err);
+      });
     })
   );
   self.skipWaiting();
 });
 
-// Activate — clean old caches
+// Activate — clean old caches & claim clients immediately
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
         keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))
       );
-    })
+    }).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
-// Fetch — network-first for API, cache-first for assets
+// Fetch — network-first for API & streams, cache-fallback for app shell
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Always go to network for API calls and config saves
-  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/proxy/') || url.pathname.startsWith('/c/')) {
-    event.respondWith(fetch(event.request));
+  // Always go to network for API, proxy, and dynamic routes
+  if (
+    url.pathname.startsWith('/api/') ||
+    url.pathname.startsWith('/proxy/') ||
+    url.pathname.startsWith('/c/') ||
+    url.pathname.endsWith('.json') && url.pathname !== '/manifest.json' ||
+    event.request.method !== 'GET'
+  ) {
     return;
   }
 
-  // For navigation and static assets, try network first, fallback to cache
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Clone and cache the response
-        const responseClone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseClone);
-        });
+        if (response && response.status === 200 && response.type === 'basic') {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseClone);
+          });
+        }
         return response;
       })
       .catch(() => {
-        return caches.match(event.request);
+        return caches.match(event.request).then((cached) => {
+          if (cached) return cached;
+          if (event.request.mode === 'navigate') {
+            return caches.match('/configure');
+          }
+          return new Response('Offline', { status: 503, statusText: 'Offline' });
+        });
       })
   );
 });

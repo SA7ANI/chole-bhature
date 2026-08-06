@@ -44,6 +44,20 @@ function saveUserConfig(configId, configData) {
 }
 loadUserConfigs();
 
+// PWA Core Endpoints with explicit headers
+app.get('/sw.js', (req, res) => {
+    res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+    res.setHeader('Service-Worker-Allowed', '/');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.sendFile(path.join(__dirname, 'public', 'sw.js'));
+});
+
+app.get('/manifest.json', (req, res) => {
+    res.setHeader('Content-Type', 'application/manifest+json; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.sendFile(path.join(__dirname, 'public', 'manifest.json'));
+});
+
 // Serve static assets
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -238,11 +252,14 @@ function createAddon(config) {
             manifestUrls = [config.repoUrl];
         } else if (config.urls && Array.isArray(config.urls)) {
             manifestUrls = config.urls;
+        } else if (config.repos && Array.isArray(config.repos)) {
+            manifestUrls = config.repos;
         } else if (config.url) {
             manifestUrls = [config.url];
         }
         
         if (manifestUrls.length === 0) {
+            console.log('[Stremio] No repository URLs configured');
             return { streams: [] };
         }
 
@@ -265,8 +282,8 @@ function createAddon(config) {
 
         let allStreams = [];
 
-        // Execute all providers in parallel with a timeout of 14 seconds per provider
-        const PROVIDER_TIMEOUT_MS = 14000;
+        // Execute all providers in parallel with an increased timeout of 26 seconds per provider
+        const PROVIDER_TIMEOUT_MS = 26000;
 
         await Promise.all(allProviders.map(async (provider) => {
             try {
