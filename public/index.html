@@ -76,11 +76,101 @@
             font-size: 14px;
         }
 
+        .header-buttons {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .save-btn {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+            white-space: nowrap;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .save-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .save-btn.unsaved {
+            animation: pulse-border 1.8s infinite;
+        }
+
+        @keyframes pulse-border {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        .sync-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+            color: #34d399;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 6px;
+        }
+
+        .pulse-dot {
+            width: 7px;
+            height: 7px;
+            background-color: #34d399;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 8px #34d399;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #18181b;
+            color: #f8fafc;
+            padding: 14px 24px;
+            border-radius: 12px;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 20px rgba(16, 185, 129, 0.2);
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: none;
+            max-width: 90%;
+            text-align: center;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
         .install-all-btn {
             background: var(--gradient);
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 12px 20px;
             border-radius: 12px;
             font-size: 14px;
             font-weight: 600;
@@ -538,13 +628,26 @@
     </style>
 </head>
 <body>
+    <div id="toast" class="toast"></div>
     <div class="container">
         <div class="header">
             <div class="brand">
                 <h1>Chole Bhature</h1>
-                <p>Advanced Meta-Sorter for Nuvio</p>
+                <p>Advanced Meta-Sorter for Nuvio & Stremio</p>
+                <div id="sync-badge" class="sync-badge" style="display: none;">
+                    <span class="pulse-dot"></span>
+                    <span id="sync-text">⚡ Instant Sync Active</span>
+                </div>
             </div>
-            <button class="install-all-btn" onclick="installStremio()">Install Master Addon</button>
+            <div class="header-buttons">
+                <button class="save-btn" id="save-btn" onclick="saveConfigurationToServer(true)" title="Save settings and update Stremio & Nuvio instantly without reinstalling">
+                    <span>💾 Save Changes</span>
+                    <small style="display: block; font-size: 10px; opacity: 0.85; font-weight: normal; margin-top: 2px;">Instant Sync (No Reinstall)</small>
+                </button>
+                <button class="install-all-btn" onclick="installStremio()">
+                    <span>🚀 Install Addon</span>
+                </button>
+            </div>
         </div>
 
         <div class="section-title">Settings</div>
@@ -584,14 +687,14 @@
                     <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;" title="Hide Dead Streams">
                         <span style="font-size: 13px; font-weight: 500;">🔴 Dead</span>
                         <div class="switch">
-                            <input type="checkbox" id="hideDead" onchange="saveSettings()">
+                            <input type="checkbox" id="hideDead" onchange="onSettingChanged()">
                             <span class="slider"></span>
                         </div>
                     </label>
                     <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;" title="Hide Slow Streams">
                         <span style="font-size: 13px; font-weight: 500;">🟡 Slow</span>
                         <div class="switch">
-                            <input type="checkbox" id="hideSlow" onchange="saveSettings()">
+                            <input type="checkbox" id="hideSlow" onchange="onSettingChanged()">
                             <span class="slider"></span>
                         </div>
                     </label>
@@ -603,7 +706,7 @@
                     <small>Boost Hindi, Dual Audio, and Multi-Audio streams to the top.</small>
                 </div>
                 <label class="switch">
-                    <input type="checkbox" id="prioritizeHindi" onchange="saveSettings()">
+                    <input type="checkbox" id="prioritizeHindi" onchange="onSettingChanged()">
                     <span class="slider"></span>
                 </label>
             </div>
@@ -630,7 +733,7 @@
             </form>
             
             <div id="fallbackLink" style="display: none; margin-top: 20px;">
-                <div class="section-title" style="margin-top: 0;">Manual Link</div>
+                <div class="section-title" style="margin-top: 0;">Manifest Link</div>
                 <div class="input-group">
                     <input type="text" id="generatedUrl" readonly>
                     <button type="button" onclick="copyLink()" class="submit-btn">Copy</button>
@@ -650,26 +753,36 @@
     </div>
 
     <script>
+        let configId = null;
         let repos = JSON.parse(localStorage.getItem('nuvio_repos') || '[]');
-        let settings = JSON.parse(localStorage.getItem('nuvio_settings') || '{"hideDead": false, "hideSlow": false, "sortBy": "speed", "prioritizeHindi": false}');
+        let settings = JSON.parse(localStorage.getItem('nuvio_settings') || '{"hideDead": false, "hideSlow": false, "sortBy": "speed", "prioritizeHindi": false, "disabledProviders": []}');
         let allProvidersData = [];
 
-        // Backwards compatibility for prioritizeQuality flag
-        if (!settings.sortBy) {
-            settings.sortBy = settings.prioritizeQuality ? 'quality' : 'speed';
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.innerText = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3500);
         }
 
-        // Load Settings UI
-        document.getElementById('hideDead').checked = settings.hideDead || false;
-        document.getElementById('hideSlow').checked = settings.hideSlow || false;
-        document.getElementById('prioritizeHindi').checked = settings.prioritizeHindi || false;
-        updateSortModeUI(settings.sortBy || 'speed');
+        function showSyncBadge(text) {
+            const badge = document.getElementById('sync-badge');
+            const syncText = document.getElementById('sync-text');
+            if (badge && syncText) {
+                syncText.innerText = text;
+                badge.style.display = 'inline-flex';
+            }
+        }
 
-        function setSortMode(mode) {
-            settings.sortBy = mode;
-            settings.prioritizeQuality = (mode === 'quality');
-            updateSortModeUI(mode);
-            saveSettings();
+        function getOrCreateConfigId() {
+            let savedId = localStorage.getItem('cb_config_id');
+            if (!savedId) {
+                savedId = Math.random().toString(36).substring(2, 10);
+                localStorage.setItem('cb_config_id', savedId);
+            }
+            return savedId;
         }
 
         function updateSortModeUI(mode) {
@@ -685,7 +798,21 @@
             }
         }
 
-        function saveSettings() {
+        function setSortMode(mode) {
+            settings.sortBy = mode;
+            settings.prioritizeQuality = (mode === 'quality');
+            updateSortModeUI(mode);
+            onSettingChanged();
+        }
+
+        function onSettingChanged() {
+            saveSettingsLocal();
+            saveConfigurationToServer(false);
+            const saveBtn = document.getElementById('save-btn');
+            if (saveBtn) saveBtn.classList.add('unsaved');
+        }
+
+        function saveSettingsLocal() {
             settings.hideDead = document.getElementById('hideDead').checked;
             settings.hideSlow = document.getElementById('hideSlow').checked;
             settings.prioritizeQuality = (settings.sortBy === 'quality');
@@ -693,14 +820,133 @@
             localStorage.setItem('nuvio_settings', JSON.stringify(settings));
         }
 
+        function buildConfigObject() {
+            return {
+                urls: repos,
+                hideDead: settings.hideDead,
+                hideSlow: settings.hideSlow,
+                sortBy: settings.sortBy || 'speed',
+                sortMode: settings.sortBy || 'speed',
+                prioritizeQuality: settings.sortBy === 'quality',
+                prioritizeHindi: settings.prioritizeHindi,
+                disabled: settings.disabledProviders || []
+            };
+        }
+
+        async function saveConfigurationToServer(showToastMsg = false) {
+            saveSettingsLocal();
+            const configObj = buildConfigObject();
+            
+            try {
+                const res = await fetch('/api/config/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ configId: configId, config: configObj })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (data.configId) {
+                        configId = data.configId;
+                        localStorage.setItem('cb_config_id', configId);
+                    }
+                    const saveBtn = document.getElementById('save-btn');
+                    if (saveBtn) saveBtn.classList.remove('unsaved');
+                    
+                    showSyncBadge(`⚡ Cloud Synced: Config #${configId}`);
+                    
+                    if (showToastMsg) {
+                        showToast("✅ Settings Saved! Stremio & Nuvio will use your changes immediately without reinstalling.");
+                    }
+                }
+            } catch (err) {
+                console.error('Save error', err);
+                if (showToastMsg) {
+                    showToast("❌ Error saving settings to server.");
+                }
+            }
+        }
+
+        function loadConfigIntoUI(cfg) {
+            if (!cfg) return;
+            if (cfg.urls && Array.isArray(cfg.urls)) {
+                repos = cfg.urls;
+                localStorage.setItem('nuvio_repos', JSON.stringify(repos));
+            } else if (cfg.repoUrl) {
+                if (!repos.includes(cfg.repoUrl)) repos.push(cfg.repoUrl);
+                localStorage.setItem('nuvio_repos', JSON.stringify(repos));
+            }
+            
+            if (cfg.hideDead !== undefined) settings.hideDead = cfg.hideDead;
+            if (cfg.hideSlow !== undefined) settings.hideSlow = cfg.hideSlow;
+            if (cfg.sortBy) settings.sortBy = cfg.sortBy;
+            else if (cfg.prioritizeQuality !== undefined) settings.sortBy = cfg.prioritizeQuality ? 'quality' : 'speed';
+            if (cfg.prioritizeHindi !== undefined) settings.prioritizeHindi = cfg.prioritizeHindi;
+            if (cfg.disabled && Array.isArray(cfg.disabled)) settings.disabledProviders = cfg.disabled;
+            
+            localStorage.setItem('nuvio_settings', JSON.stringify(settings));
+            
+            document.getElementById('hideDead').checked = settings.hideDead || false;
+            document.getElementById('hideSlow').checked = settings.hideSlow || false;
+            document.getElementById('prioritizeHindi').checked = settings.prioritizeHindi || false;
+            updateSortModeUI(settings.sortBy || 'speed');
+            
+            fetchRepos();
+        }
+
+        async function initConfig() {
+            const pathParts = window.location.pathname.split('/').filter(Boolean);
+            
+            // 1. If URL path is /c/:configId
+            if (pathParts[0] === 'c' && pathParts[1]) {
+                configId = pathParts[1];
+                localStorage.setItem('cb_config_id', configId);
+                try {
+                    const res = await fetch(`/api/config/${configId}`);
+                    const data = await res.json();
+                    if (data && data.config) {
+                        loadConfigIntoUI(data.config);
+                        showSyncBadge(`⚡ Linked to Stremio: Config #${configId}`);
+                        return;
+                    }
+                } catch (e) {}
+            }
+            
+            // 2. If URL path is /:base64JSON/configure or /:base64JSON
+            if (pathParts[0] && pathParts[0] !== 'configure' && pathParts[0] !== 'api' && pathParts[0] !== 'c') {
+                try {
+                    const decoded = JSON.parse(decodeURIComponent(pathParts[0]));
+                    if (decoded) {
+                        configId = getOrCreateConfigId();
+                        loadConfigIntoUI(decoded);
+                        showSyncBadge(`⚡ Imported from Stremio (ID: ${configId})`);
+                        saveConfigurationToServer(false);
+                        return;
+                    }
+                } catch (e) {}
+            }
+            
+            // 3. Fallback to localStorage or new ID
+            configId = getOrCreateConfigId();
+            
+            // Load Settings UI
+            document.getElementById('hideDead').checked = settings.hideDead || false;
+            document.getElementById('hideSlow').checked = settings.hideSlow || false;
+            document.getElementById('prioritizeHindi').checked = settings.prioritizeHindi || false;
+            updateSortModeUI(settings.sortBy || 'speed');
+            
+            showSyncBadge(`⚡ Instant Sync Active (ID: ${configId})`);
+            fetchRepos();
+        }
+
         async function fetchRepos() {
             const reposContainer = document.getElementById('installed-repos');
             const providersContainer = document.getElementById('providers-list');
             
             if (repos.length === 0) {
-                reposContainer.innerHTML = '<div class="empty-state">No repositories added yet.</div>';
-                providersContainer.innerHTML = '<div class="empty-state" style="grid-column: 1 / -1;">Add a repository to discover providers.</div>';
-                return;
+                // If default empty, add the official repository automatically
+                const defaultRepo = 'https://raw.githubusercontent.com/D3adlyRocket/All-in-One-Nuvio/refs/heads/main/manifest.json';
+                repos.push(defaultRepo);
+                localStorage.setItem('nuvio_repos', JSON.stringify(repos));
             }
 
             let reposHtml = '';
@@ -712,7 +958,6 @@
                     const res = await fetch(url);
                     const manifest = await res.json();
                     const name = manifest.name || 'Unknown Repo';
-                    // Nuvio uses "scrapers" or "providers" array
                     const providersArray = manifest.scrapers || manifest.providers || [];
 
                     providersArray.forEach(p => {
@@ -734,7 +979,6 @@
                                 <span class="tag" style="background: rgba(99, 102, 241, 0.1); color: #818cf8;">${providersArray.length} providers</span>
                             </div>
                             <div class="repo-actions">
-                                <button class="install-all-btn" onclick="installRepoTab('${safeName}', '${url}')">Install Repo Tab</button>
                                 <button class="delete-btn" title="Remove Repository" onclick="removeRepo(${i})">🗑</button>
                             </div>
                         </div>
@@ -766,7 +1010,7 @@
             }
 
             let html = '';
-            allProvidersData.forEach((p, idx) => {
+            allProvidersData.forEach((p) => {
                 const iconHtml = p.logo ? `<img src="${p.logo}" alt="logo" onerror="this.outerHTML='🧩'">` : '🧩';
                 const typesStr = p.supportedTypes.join(' | ');
                 
@@ -808,17 +1052,14 @@
                     settings.disabledProviders.push(name);
                 }
             }
-            saveSettings();
+            onSettingChanged();
             renderProviders();
-        }
-
-        function openProviderSettings(name) {
-            alert(`Settings for ${name}\\n\\nSince Chole Bhature is a Meta-Sorter that bypasses the Nuvio backend, provider-specific settings (like API keys) must be hardcoded in the provider's Github file directly. UI configuration for encrypted Nuvio providers is coming soon!`);
         }
 
         function removeRepo(index) {
             repos.splice(index, 1);
             localStorage.setItem('nuvio_repos', JSON.stringify(repos));
+            onSettingChanged();
             fetchRepos();
         }
 
@@ -830,45 +1071,34 @@
             if (!repos.includes(url)) {
                 repos.push(url);
                 localStorage.setItem('nuvio_repos', JSON.stringify(repos));
+                onSettingChanged();
             }
             
             document.getElementById('manifestUrl').value = '';
             fetchRepos();
         });
 
-        function buildStremioUrl(configObj) {
-            // Include settings in the config payload
-            configObj.hideDead = settings.hideDead;
-            configObj.hideSlow = settings.hideSlow;
-            configObj.sortBy = settings.sortBy || 'speed';
-            configObj.sortMode = settings.sortBy || 'speed';
-            configObj.prioritizeQuality = settings.sortBy === 'quality';
-            configObj.prioritizeHindi = settings.prioritizeHindi;
-            configObj.disabled = settings.disabledProviders || [];
-            
-            const encodedConfig = encodeURIComponent(JSON.stringify(configObj));
+        function buildStremioUrl() {
             const currentUrl = new URL(window.location.href);
             let host = currentUrl.host;
             let protocol = currentUrl.protocol === 'https:' ? 'https://' : 'http://';
-            const manifestPath = `/${encodedConfig}/manifest.json`;
+            const manifestPath = `/c/${configId}/manifest.json`;
             return {
                 stremioUrl: `stremio://${host}${manifestPath}`,
                 httpUrl: `${protocol}${host}${manifestPath}`
             };
         }
 
-        function installStremio() {
+        async function installStremio() {
             if (repos.length === 0) {
                 alert("Please add at least one repository first.");
                 return;
             }
-            const urls = buildStremioUrl({ urls: repos });
-            showFallback(urls.httpUrl);
-            window.location.href = urls.stremioUrl;
-        }
-        
-        function installRepoTab(repoName, repoUrl) {
-            const urls = buildStremioUrl({ repoName: repoName, repoUrl: repoUrl });
+            
+            // Save to server first
+            await saveConfigurationToServer(false);
+            
+            const urls = buildStremioUrl();
             showFallback(urls.httpUrl);
             window.location.href = urls.stremioUrl;
         }
@@ -884,7 +1114,7 @@
             const copyText = document.getElementById("generatedUrl");
             copyText.select();
             document.execCommand("copy");
-            alert("Copied link to clipboard!");
+            showToast("📋 Copied manifest URL to clipboard!");
         }
 
         function toggleAnalytics() {
@@ -931,8 +1161,8 @@
             }
         }
 
-        // Initialize
-        fetchRepos();
+        // Initialize on load
+        initConfig();
         fetchAnalytics();
     </script>
 </body>
