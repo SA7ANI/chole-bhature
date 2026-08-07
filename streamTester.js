@@ -707,45 +707,6 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics, hostUr
             return !meta.isCam;
         });
     }
-    // Auto-Hide Samples, Promos, and Teaser clips
-    if (config && (config.hideSamples || config.blockSamples)) {
-        filteredStreams = filteredStreams.filter(s => {
-            const meta = parseStreamMetadata(s);
-            return !meta.isSample;
-        });
-    }
-    // Max File Size filter (in GB)
-    if (config && config.maxFileSize && Number(config.maxFileSize) > 0) {
-        const maxGB = Number(config.maxFileSize);
-        filteredStreams = filteredStreams.filter(s => {
-            const meta = parseStreamMetadata(s);
-            if (meta.sizeGB !== null && meta.sizeGB > maxGB) {
-                return false;
-            }
-            return true;
-        });
-    }
-    // Min File Size filter (in GB)
-    if (config && config.minFileSize && Number(config.minFileSize) > 0) {
-        const minGB = Number(config.minFileSize);
-        filteredStreams = filteredStreams.filter(s => {
-            const meta = parseStreamMetadata(s);
-            if (meta.sizeGB !== null && meta.sizeGB < minGB) {
-                return false;
-            }
-            return true;
-        });
-    }
-    // Custom Blocked Keywords / Release Groups
-    if (config && Array.isArray(config.blockedKeywords) && config.blockedKeywords.length > 0) {
-        const keywords = config.blockedKeywords.map(k => String(k).trim().toLowerCase()).filter(Boolean);
-        if (keywords.length > 0) {
-            filteredStreams = filteredStreams.filter(s => {
-                const text = `${s.name || ''} ${s.title || ''} ${s.description || ''}`.toLowerCase();
-                return !keywords.some(kw => text.includes(kw));
-            });
-        }
-    }
 
     // Safety fallback: if strict filters leave 0 streams, retain all tested streams
     if (filteredStreams.length === 0 && testedStreams.length > 0) {

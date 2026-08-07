@@ -32,7 +32,7 @@ Instead of waiting through buffering wheels or clicking broken links, Chole Bhat
 | :--- | :--- |
 | ⚡ **Real-Time Latency Probing** | Concurrently tests HTTP/HLS streams via lightweight `HEAD`/`Range` requests. Dynamically tags links with `🟢 FAST (<800ms)`, `🟡 SLOW (≥800ms)`, or `🔴 DEAD`. |
 | 🎬 **Strict 4K UHD Hierarchy** | Strict resolution-first ordering (`4K UHD` > `1080p FHD` > `720p HD` > `480p SD`). Lower resolutions will never leapfrog 4K content in Quality mode. |
-| 🚫 **Smart Exclusion & Release Filters** | Automatically filters out blurry theater recordings (`CAM`, `HDCAM`, `TeleSync`), sample clips, enforces maximum file size bandwidth caps, and blocks blacklisted release keywords. |
+| 🚫 **Auto-Hide CAM & Theater Rips** | Automatically filters out blurry theater recordings (`CAM`, `HDCAM`, `TeleSync`, `TC`, and `Screeners`). |
 | 🧲 **Smart P2P Torrent Health** | Accurately maps torrent swarm seeders to health badges (`🟢 20+ Healthy`, `🟡 5–19 Moderate`, `🔴 1–4 Buffering Risk`) to prevent stalled playback. |
 | 🌐 **Regional & Multi-Audio Priority** | Float preferred languages (`Hindi`, `Tamil`, `Telugu`, `Malayalam`, `Dual-Audio`, `Anime/Jap`, etc.) directly to the top of your stream list. |
 | 🧩 **Multi-Source Deduplication** | Merges identical streams found across different providers into unified entries with multi-source badges (e.g. `CinemaHD + Torrentio`) and maximum seeder counts. |
