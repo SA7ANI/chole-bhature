@@ -1,56 +1,98 @@
-<h1 align="center">
-  Chole Bhature <br>
-  <span style="font-size: 20px; font-weight: 400;">Advanced Meta-Sorter Addon for Nuvio & Stremio</span>
-</h1>
+<div align="center">
 
-<p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-2.1.0-blue.svg?cacheSeconds=2592000" />
-  <img alt="License: ISC" src="https://img.shields.io/badge/License-ISC-yellow.svg" />
-  <img alt="Node Version" src="https://img.shields.io/badge/node-%3E%3D14.0.0-brightgreen" />
-  <br><br>
-  <img src="screenshot.png" alt="Chole Bhature Configuration UI" width="800" style="border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.4);" />
-</p>
+  <img src="public/icon-512.png" alt="Chole Bhature Logo" width="120" height="120" style="border-radius: 28px; margin-bottom: 12px;" />
 
-## 🎬 What is this?
-**Chole Bhature** is a blazing-fast, dynamic Meta-Sorter backend for Nuvio and Stremio. 
+  # Chole Bhature
+  ### High-Performance Stream Meta-Sorter & Priority Engine for Nuvio & Stremio
 
-Instead of dealing with endless buffering and dead links, this addon intercepts your stream requests, concurrently executes 40+ provider scrapers, **live-pings every single stream**, and perfectly sorts them based on latency and quality before serving them to your screen. 
+  [![Version](https://img.shields.io/badge/version-2.1.2-indigo.svg?style=for-the-badge)](https://github.com)
+  [![Platform](https://img.shields.io/badge/Platform-Nuvio%20%7C%20Stremio-purple.svg?style=for-the-badge)](https://stremio.com)
+  [![License](https://img.shields.io/badge/License-ISC-amber.svg?style=for-the-badge)](LICENSE)
+  [![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-emerald.svg?style=for-the-badge)](https://nodejs.org)
 
-## ✨ Features
-* ⚡ **Lightning Fast Ping Sorting:** Streams are sorted dynamically by how fast they respond to your device.
-* 💀 **Auto-Hide Dead/Slow Streams:** Optionally filter out slow (🐢) or dead (💀) streams entirely so you only ever see fast links.
-* 📺 **Prioritize Quality:** Optionally sort by highest resolution (4K > 1080p > 720p) first, using ping speed as a tie-breaker.
-* 📊 **Live Analytics Dashboard:** See real-time metrics on which providers are giving you the most fast, slow, or dead links.
-* 🧠 **Smart Caching:** Identical requests are cached in memory so repeating a search is instantaneous.
-* ⚙️ **One-Click Configuration UI:** A beautiful, mobile-friendly configuration page to manage your repositories and install the addon directly into Stremio/Nuvio.
+  <br>
+
+  <img src="screenshot.png" alt="Chole Bhature Configuration UI" width="850" style="border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 12px 40px rgba(0,0,0,0.6);" />
+
+</div>
 
 ---
 
-## 🚀 How to Run Locally
+## 🌟 Overview
 
-You can run the Meta-Sorter directly on your own computer.
+**Chole Bhature** is a high-performance stream meta-sorter and priority engine designed for **Nuvio** and **Stremio**. 
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/your-username/chole_bhature-metasorter-addon.git
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Start the server:
-   ```bash
-   npm start
-   ```
-4. Open [http://localhost:7000/configure](http://localhost:7000/configure) in your browser.
+Instead of waiting through buffering wheels or clicking broken links, Chole Bhature intercepts stream requests from **120+ scrapers across multiple repositories**, concurrently **live-probes every stream for latency and health**, eliminates duplicates, and serves a cleanly formatted, deterministic stream list tailored to your exact audio, quality, and speed preferences.
 
 ---
 
-## 🛠️ Built With
-- **Node.js** & **Express** - Backend server & routing
-- **Stremio Addon SDK** - Interfacing with Nuvio/Stremio
-- **Crypto-JS & Cheerio** - Parsing provider manifests and links
-- **Vanilla CSS/JS** - Beautiful, lightweight frontend configuration page
+## ✨ Key Features
+
+| Feature | Description |
+| :--- | :--- |
+| ⚡ **Real-Time Latency Probing** | Concurrently tests HTTP/HLS streams via lightweight `HEAD`/`Range` requests. Dynamically tags links with `🟢 FAST (<800ms)`, `🟡 SLOW (≥800ms)`, or `🔴 DEAD`. |
+| 🎬 **Strict 4K UHD Hierarchy** | Strict resolution-first ordering (`4K UHD` > `1080p FHD` > `720p HD` > `480p SD`). Lower resolutions will never leapfrog 4K content in Quality mode. |
+| 🧲 **Smart P2P Torrent Health** | Accurately maps torrent swarm seeders to health badges (`🟢 20+ Healthy`, `🟡 5–19 Moderate`, `🔴 1–4 Buffering Risk`) to prevent stalled playback. |
+| 🌐 **Regional & Multi-Audio Priority** | Float preferred languages (`Hindi`, `Tamil`, `Telugu`, `Malayalam`, `Dual-Audio`, `Anime/Jap`, etc.) directly to the top of your stream list. |
+| 🧩 **Multi-Source Deduplication** | Merges identical streams found across different providers into unified entries with multi-source badges (e.g. `CinemaHD + Torrentio`) and maximum seeder counts. |
+| 🛡️ **Anti-Block Stream Proxy** | Built-in HTTP range-seeking proxy bypasses ISP censorship, DNS poisoning, and `403 Forbidden` CDN blocks. |
+| ☁️ **Instant Cloud Sync** | Save your configuration once on the web UI and changes sync live to your player—no need to reinstall the addon! |
+| 🏷️ **Rich Metadata Badges** | Automatically extracts and displays badges for `HDR10`, `Dolby Vision`, `IMAX`, `REMUX`, `HEVC`, `Dolby Atmos`, `5.1/7.1 Audio`, and file size. |
+
+---
+
+## 🎛️ Intelligent Sorting Modes
+
+Choose how your streams are ranked in the configuration dashboard:
+
+1. **⚡ Speed & Low Latency First (Default)**: Prioritizes the fastest responding streams with the lowest millisecond ping first.
+2. **🎬 Maximum Quality (4K UHD First)**: Strict resolution tiering (`2160p` > `1080p` > `720p`), sorted by ping speed and release quality (`REMUX` > `BluRay` > `WEB-DL`) within each tier.
+3. **⚖️ Smart Balanced**: High-efficiency matrix prioritizing `4K Fast` > `1080p Fast` > `4K Slow` > `1080p Slow` > `720p Fast`.
+4. **🧲 P2P Seeders First**: Ranks torrent streams by highest active seeder count and overall swarm health.
+
+---
+
+## 🚀 Getting Started
+
+### 🌐 Hosted / Cloud Deployment (Recommended)
+You can deploy Chole Bhature directly to **Vercel** with zero server management:
+
+1. Push this repository to your GitHub account.
+2. Import the project in [Vercel](https://vercel.com).
+3. Open your Vercel deployment URL (e.g. `https://your-addon.vercel.app/configure`).
+4. Customize your repositories, language preferences, and sorting modes.
+5. Click **🚀 Install Addon** to add directly to Stremio or Nuvio!
+
+---
+
+### 💻 Running Locally
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/your-username/chole-bhature.git
+cd chole-bhature
+
+# 2. Install dependencies
+npm install
+
+# 3. Start the server
+npm start
+```
+
+Open [http://localhost:7000/configure](http://localhost:7000/configure) in your browser.
+
+---
+
+## 🛠️ Tech Stack & Architecture
+
+* **Runtime:** Node.js (ES6+)
+* **Server Framework:** Express.js (Vercel Serverless Compatible)
+* **SDK:** Stremio Addon SDK (`stremio-addon-sdk`)
+* **Scraper Engine:** Axios, Cheerio, Crypto-JS (AES / CryptoJS decryptors)
+* **Frontend:** Vanilla HTML5, CSS3 Glassmorphism, Responsive PWA with Service Worker `v7` offline shell
+
+---
 
 ## 📝 License
-This project is licensed under the ISC License.
+
+This project is open-source and licensed under the **ISC License**.
