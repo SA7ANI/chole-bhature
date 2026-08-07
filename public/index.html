@@ -631,6 +631,86 @@
             transform: scale(1);
         }
 
+        /* Filter Select Dropdown */
+        .filter-select {
+            background-color: var(--bg-input);
+            border: 1px solid var(--border-subtle);
+            color: white;
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            outline: none;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .filter-select:hover, .filter-select:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 12px rgba(99, 102, 241, 0.2);
+        }
+
+        .filter-select option {
+            background-color: #10131d;
+            color: white;
+        }
+
+        /* Interactive Tag Chips Input */
+        .tags-input-container {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px;
+            background-color: var(--bg-input);
+            border: 1px solid var(--border-subtle);
+            padding: 6px 10px;
+            border-radius: 12px;
+            width: 100%;
+            transition: all 0.2s;
+            margin-top: 6px;
+        }
+
+        .tags-input-container:focus-within {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 16px rgba(99, 102, 241, 0.2);
+        }
+
+        .tag-chip-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            color: #fca5a5;
+            padding: 4px 9px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .tag-chip-item .tag-remove-btn {
+            cursor: pointer;
+            font-size: 13px;
+            opacity: 0.7;
+            transition: opacity 0.15s;
+        }
+
+        .tag-chip-item .tag-remove-btn:hover {
+            opacity: 1;
+            color: #ffffff;
+        }
+
+        .tags-input-field {
+            flex-grow: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: white;
+            font-size: 13px;
+            padding: 4px;
+            min-width: 130px;
+        }
+
         /* Input Bars */
         .input-bar-group {
             display: flex;
@@ -1268,6 +1348,83 @@
                     </div>
                 </div>
 
+                <!-- Auto-Hide CAM & Low-Quality Recordings -->
+                <div class="setting-item-row">
+                    <div class="setting-text-block">
+                        <div class="setting-headline">
+                            Auto-Hide CAM & TeleSync
+                            <span class="tag-pill-badge" style="background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.35); color: #fca5a5;">🚫 Theater Rip</span>
+                        </div>
+                        <div class="setting-description">Automatically filter out low-quality theater recordings, CAM, HDCAM, TeleSync, and Screeners.</div>
+                    </div>
+                    <div class="dual-filter-group">
+                        <label class="filter-capsule" title="Hide CAM, TS, and Screener streams">
+                            <span class="filter-capsule-text">🚫 Block CAM</span>
+                            <div class="switch-toggle">
+                                <input type="checkbox" id="hideCam" checked onchange="onSettingChanged()">
+                                <span class="switch-slider"></span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Auto-Hide Samples & Teaser Clips -->
+                <div class="setting-item-row">
+                    <div class="setting-text-block">
+                        <div class="setting-headline">
+                            Auto-Hide Samples & Teasers
+                            <span class="tag-pill-badge" style="background: rgba(234, 179, 8, 0.12); border-color: rgba(234, 179, 8, 0.35); color: #fde047;">✂️ Promo Filter</span>
+                        </div>
+                        <div class="setting-description">Exclude short sample files, trailer clips, and promotional media from your stream results.</div>
+                    </div>
+                    <div class="dual-filter-group">
+                        <label class="filter-capsule" title="Hide sample clips and teasers">
+                            <span class="filter-capsule-text">✂️ Block Samples</span>
+                            <div class="switch-toggle">
+                                <input type="checkbox" id="hideSamples" checked onchange="onSettingChanged()">
+                                <span class="switch-slider"></span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Max File Size Filter -->
+                <div class="setting-item-row">
+                    <div class="setting-text-block">
+                        <div class="setting-headline">
+                            Maximum File Size Limit
+                            <span class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.35); color: #6ee7b7;">💾 Bandwidth Saver</span>
+                        </div>
+                        <div class="setting-description">Skip streams exceeding your selected file size (ideal for mobile hotspot or capped internet).</div>
+                    </div>
+                    <div class="dual-filter-group">
+                        <select id="maxFileSize" class="filter-select" onchange="onSettingChanged()">
+                            <option value="">No Limit (All Sizes)</option>
+                            <option value="2">Max 2 GB</option>
+                            <option value="5">Max 5 GB</option>
+                            <option value="10">Max 10 GB</option>
+                            <option value="15">Max 15 GB</option>
+                            <option value="25">Max 25 GB</option>
+                            <option value="40">Max 40 GB</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Custom Blocked Keywords -->
+                <div class="setting-item-row" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+                    <div class="setting-text-block" style="width: 100%;">
+                        <div class="setting-headline">
+                            Blacklisted Keywords & Release Groups
+                            <span class="tag-pill-badge" style="background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.35); color: #fca5a5;">⛔ Exclusions</span>
+                        </div>
+                        <div class="setting-description">Type any keyword, release group, or tag to block from your streams and press <kbd style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">Enter</kbd>.</div>
+                    </div>
+                    <div class="tags-input-container" id="tags-input-box" onclick="focusTagInput()">
+                        <div id="keyword-chips-wrap" style="display: inline-flex; flex-wrap: wrap; gap: 6px;"></div>
+                        <input type="text" id="tag-input-field" class="tags-input-field" placeholder="Type keyword & press Enter (e.g. corg, sample)..." onkeydown="handleTagInputKey(event)">
+                    </div>
+                </div>
+
                 <!-- Multi-Language & Regional Audio Priority -->
                 <div class="setting-item-row" style="flex-direction: column; align-items: flex-start; gap: 10px;">
                     <div class="setting-text-block" style="width: 100%;">
@@ -1462,12 +1619,18 @@
         function saveSettingsLocal() {
             const hideDeadEl = document.getElementById('hideDead');
             const hideSlowEl = document.getElementById('hideSlow');
+            const hideCamEl = document.getElementById('hideCam');
+            const hideSamplesEl = document.getElementById('hideSamples');
+            const maxFileSizeEl = document.getElementById('maxFileSize');
             const showSeedersEl = document.getElementById('showSeeders');
             const deduplicateStreamsEl = document.getElementById('deduplicateStreams');
             const enableProxyEl = document.getElementById('enableProxy');
             
             if (hideDeadEl) settings.hideDead = hideDeadEl.checked;
             if (hideSlowEl) settings.hideSlow = hideSlowEl.checked;
+            if (hideCamEl) settings.hideCam = hideCamEl.checked;
+            if (hideSamplesEl) settings.hideSamples = hideSamplesEl.checked;
+            if (maxFileSizeEl) settings.maxFileSize = maxFileSizeEl.value;
             if (showSeedersEl) settings.showSeeders = showSeedersEl.checked;
             if (deduplicateStreamsEl) settings.deduplicateStreams = deduplicateStreamsEl.checked;
             if (enableProxyEl) settings.enableProxy = enableProxyEl.checked;
@@ -1475,6 +1638,7 @@
             settings.prioritizeQuality = (settings.sortBy === 'quality');
             settings.preferredLanguages = settings.preferredLanguages || [];
             settings.prioritizeHindi = settings.preferredLanguages.includes('Hindi');
+            settings.blockedKeywords = settings.blockedKeywords || [];
             localStorage.setItem('nuvio_settings', JSON.stringify(settings));
         }
 
@@ -1490,10 +1654,15 @@
                 const filters = [];
                 if (settings.hideDead) filters.push('Dead');
                 if (settings.hideSlow) filters.push('Slow');
+                if (settings.hideCam) filters.push('No-CAM');
+                if (settings.hideSamples) filters.push('No-Sample');
+                if (settings.maxFileSize) filters.push(`≤${settings.maxFileSize}GB`);
                 if (settings.deduplicateStreams !== false) filters.push('Dedupe');
                 if (settings.enableProxy) filters.push('Proxy');
                 const langCount = (settings.preferredLanguages || []).length;
                 if (langCount > 0) filters.push(`${langCount} Lang${langCount === 1 ? '' : 's'}`);
+                const kwCount = (settings.blockedKeywords || []).length;
+                if (kwCount > 0) filters.push(`${kwCount} Blocked`);
                 statFilterStatus.innerText = filters.length > 0 ? filters.join(' + ') : 'Standard';
             }
         }
@@ -1503,6 +1672,10 @@
                 urls: repos,
                 hideDead: settings.hideDead,
                 hideSlow: settings.hideSlow,
+                hideCam: settings.hideCam,
+                hideSamples: settings.hideSamples,
+                maxFileSize: settings.maxFileSize,
+                blockedKeywords: settings.blockedKeywords || [],
                 showSeeders: settings.showSeeders !== false,
                 deduplicateStreams: settings.deduplicateStreams !== false,
                 enableProxy: !!settings.enableProxy,
@@ -1514,6 +1687,59 @@
                 preferredLanguages: settings.preferredLanguages || [],
                 disabled: settings.disabledProviders || []
             };
+        }
+
+        // Custom Blocked Keywords Chip Handlers
+        function focusTagInput() {
+            const input = document.getElementById('tag-input-field');
+            if (input) input.focus();
+        }
+
+        function renderKeywordChips() {
+            const wrap = document.getElementById('keyword-chips-wrap');
+            if (!wrap) return;
+            const keywords = settings.blockedKeywords || [];
+            
+            wrap.innerHTML = keywords.map((kw, idx) => `
+                <div class="tag-chip-item">
+                    <span>${kw}</span>
+                    <span class="tag-remove-btn" onclick="removeKeyword(${idx})" title="Remove keyword">×</span>
+                </div>
+            `).join('');
+        }
+
+        function handleTagInputKey(e) {
+            if (e.key === 'Enter' || e.key === ',') {
+                e.preventDefault();
+                const input = document.getElementById('tag-input-field');
+                if (!input) return;
+                const val = input.value.trim().toLowerCase().replace(/,/g, '');
+                if (val) {
+                    settings.blockedKeywords = settings.blockedKeywords || [];
+                    if (!settings.blockedKeywords.includes(val)) {
+                        settings.blockedKeywords.push(val);
+                        renderKeywordChips();
+                        onSettingChanged();
+                    }
+                    input.value = '';
+                }
+            } else if (e.key === 'Backspace' && e.target.value === '') {
+                settings.blockedKeywords = settings.blockedKeywords || [];
+                if (settings.blockedKeywords.length > 0) {
+                    settings.blockedKeywords.pop();
+                    renderKeywordChips();
+                    onSettingChanged();
+                }
+            }
+        }
+
+        function removeKeyword(idx) {
+            settings.blockedKeywords = settings.blockedKeywords || [];
+            if (idx >= 0 && idx < settings.blockedKeywords.length) {
+                settings.blockedKeywords.splice(idx, 1);
+                renderKeywordChips();
+                onSettingChanged();
+            }
         }
 
         async function saveConfigurationToServer(showToastMsg = false) {
@@ -1561,6 +1787,10 @@
             
             if (cfg.hideDead !== undefined) settings.hideDead = cfg.hideDead;
             if (cfg.hideSlow !== undefined) settings.hideSlow = cfg.hideSlow;
+            if (cfg.hideCam !== undefined) settings.hideCam = cfg.hideCam;
+            if (cfg.hideSamples !== undefined) settings.hideSamples = cfg.hideSamples;
+            if (cfg.maxFileSize !== undefined) settings.maxFileSize = cfg.maxFileSize;
+            if (cfg.blockedKeywords && Array.isArray(cfg.blockedKeywords)) settings.blockedKeywords = cfg.blockedKeywords;
             if (cfg.showSeeders !== undefined) settings.showSeeders = cfg.showSeeders;
             if (cfg.deduplicateStreams !== undefined) settings.deduplicateStreams = cfg.deduplicateStreams;
             if (cfg.enableProxy !== undefined) settings.enableProxy = cfg.enableProxy;
@@ -1583,12 +1813,19 @@
             
             document.getElementById('hideDead').checked = settings.hideDead || false;
             document.getElementById('hideSlow').checked = settings.hideSlow || false;
+            const hideCamEl = document.getElementById('hideCam');
+            if (hideCamEl) hideCamEl.checked = settings.hideCam !== false;
+            const hideSamplesEl = document.getElementById('hideSamples');
+            if (hideSamplesEl) hideSamplesEl.checked = settings.hideSamples !== false;
+            const maxFileSizeEl = document.getElementById('maxFileSize');
+            if (maxFileSizeEl) maxFileSizeEl.value = settings.maxFileSize || '';
             document.getElementById('showSeeders').checked = settings.showSeeders !== false;
             const dedupeEl = document.getElementById('deduplicateStreams');
             if (dedupeEl) dedupeEl.checked = settings.deduplicateStreams !== false;
             document.getElementById('enableProxy').checked = settings.enableProxy || false;
             updateSortModeUI(settings.sortBy || 'speed');
             renderLanguageChips();
+            renderKeywordChips();
             
             fetchRepos();
         }
@@ -1631,12 +1868,19 @@
             // Load Settings UI
             document.getElementById('hideDead').checked = settings.hideDead || false;
             document.getElementById('hideSlow').checked = settings.hideSlow || false;
+            const hideCamEl = document.getElementById('hideCam');
+            if (hideCamEl) hideCamEl.checked = settings.hideCam !== false;
+            const hideSamplesEl = document.getElementById('hideSamples');
+            if (hideSamplesEl) hideSamplesEl.checked = settings.hideSamples !== false;
+            const maxFileSizeEl = document.getElementById('maxFileSize');
+            if (maxFileSizeEl) maxFileSizeEl.value = settings.maxFileSize || '';
             document.getElementById('showSeeders').checked = settings.showSeeders !== false;
             const dedupeEl = document.getElementById('deduplicateStreams');
             if (dedupeEl) dedupeEl.checked = settings.deduplicateStreams !== false;
             document.getElementById('enableProxy').checked = settings.enableProxy || false;
             updateSortModeUI(settings.sortBy || 'speed');
             renderLanguageChips();
+            renderKeywordChips();
             
             showSyncBadge(`⚡ Cloud Synced (ID: ${configId})`);
             fetchRepos();

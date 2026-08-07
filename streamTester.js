@@ -31,11 +31,27 @@ function parseStreamMetadata(stream) {
         channels: null,
         languages: [],
         size: null,
+        sizeGB: null,
         seeders: null,
-        peers: null
+        peers: null,
+        isCam: false,
+        isSample: false
     };
 
-    // 1. Resolution (Strict pattern matching, ignoring release group noise like 4kHDHub, UHDMovies)
+    // 1. CAM / TeleSync / Screener & Low-Quality Theater Recording Detection
+    const camPattern = /\b(?:cam|camrip|hdcam|hd[\s._-]?cam|telesync|tele[\s._-]?sync|ts|hdts|hd[\s._-]?ts|tc|telecine|tele[\s._-]?cine|dvdscr|scr|screener|workprint)\b/i;
+    if (camPattern.test(fullText)) {
+        metadata.isCam = true;
+        metadata.quality = 'CAM';
+    }
+
+    // Sample & Promo Detection
+    const samplePattern = /\b(?:sample|trailer|promo|teaser)\b/i;
+    if (samplePattern.test(fullText) || /[\s._\-/]sample[\s._\-\]\/]/i.test(fullText) || /\.sample\./i.test(fullText)) {
+        metadata.isSample = true;
+    }
+
+    // 2. Resolution (Strict pattern matching, ignoring release group noise like 4kHDHub, UHDMovies)
     const has2160 = /\b2160[pi]?\b/i.test(fullText);
     const has1080 = /\b1080[pi]?\b/i.test(fullText);
     const has720  = /\b720[pi]?\b/i.test(fullText);
@@ -61,16 +77,16 @@ function parseStreamMetadata(stream) {
         else if (/\b(?:sd)\b/i.test(cleanText)) metadata.resolution = '480p';
     }
 
-    // 2. Quality / Source
+    // 3. Quality / Source
     if (/\b(?:bd|uhd)?remux\b/i.test(fullText)) metadata.special.push('REMUX');
     if (/\b(?:bluray|blu[\s._-]?ray|bd[\s._-]?rip|br[\s._-]?rip)\b/i.test(fullText)) metadata.quality = 'BluRay';
     else if (/\b(?:web[\s._-]?dl|webdl)\b/i.test(fullText)) metadata.quality = 'WEB-DL';
     else if (/\b(?:web[\s._-]?rip|webrip)\b/i.test(fullText)) metadata.quality = 'WEBRip';
     else if (/\b(?:hdtv|pdtv|dsr)\b/i.test(fullText)) metadata.quality = 'HDTV';
     else if (/\b(?:dvd[\s._-]?rip)\b/i.test(fullText)) metadata.quality = 'DVDRip';
-    else if (/\b(?:cam|camrip|hdcam|telesync|ts|hdts)\b/i.test(fullText)) metadata.quality = 'CAM';
+    else if (metadata.isCam) metadata.quality = 'CAM';
 
-    // 3. Visual / HDR / IMAX / Bit-depth
+    // 4. Visual / HDR / IMAX / Bit-depth
     const hasIMAXEnhanced = /\b(?:imax[\s._-]?enhanced)\b/i.test(fullText);
     const hasIMAX = hasIMAXEnhanced || /\bimax\b/i.test(fullText) || /(?:^|[\s._\-\[/])imax(?:[\s._\-\]\/]|$)/i.test(fullText);
     if (hasIMAXEnhanced) metadata.special.push('IMAX Enhanced');
@@ -100,13 +116,13 @@ function parseStreamMetadata(stream) {
 
     if (/\b10[\s._-]?bit\b/i.test(fullText) || /\bhevc[\s._-]?10\b/i.test(fullText)) metadata.special.push('10bit');
 
-    // 4. Video Codec
+    // 5. Video Codec
     if (/\b(?:hevc|h[\s._-]?265|x265)\b/i.test(fullText)) metadata.codec = 'HEVC';
     else if (/\b(?:avc|h[\s._-]?264|x264)\b/i.test(fullText)) metadata.codec = 'H.264';
     else if (/\bav1\b/i.test(fullText)) metadata.codec = 'AV1';
     else if (/\b(?:xvid|divx)\b/i.test(fullText)) metadata.codec = 'XviD';
 
-    // 5. Audio Formats & Atmos
+    // 6. Audio Formats & Atmos
     const hasAtmos = /\b(?:atmos|dolby[\s._-]?atmos|ddpa|ddpa[\s._-]?[57]\.?1)\b/i.test(fullText)
         || /(?:^|[\s._\-\[/])atmos(?:[\s._\-\]\/]|$)/i.test(fullText)
         || /\b(?:ddp|dd\+|e[\s._-]?ac[\s._-]?3|true[\s._-]?hd)[\s._-]?atmos\b/i.test(fullText)
@@ -134,12 +150,12 @@ function parseStreamMetadata(stream) {
     else if (hasFLAC) metadata.audio.push('FLAC');
     else if (hasAAC && metadata.audio.length === 0) metadata.audio.push('AAC');
 
-    // 6. Channels
+    // 7. Channels
     if (/(?:^|[^0-9])7[. ]1(?![0-9])|\b8ch\b/i.test(fullText)) metadata.channels = '7.1';
     else if (/(?:^|[^0-9])5[. ]1(?![0-9])|\b6ch\b/i.test(fullText)) metadata.channels = '5.1';
     else if (/(?:^|[^0-9])2[. ]0(?![0-9])|\b2ch\b|\bstereo\b/i.test(fullText)) metadata.channels = '2.0';
 
-    // 7. Languages (Indian & Global / Anime)
+    // 8. Languages (Indian & Global / Anime)
     const hasMulti = /\b(?:multi[\s._-]?audio|multi[\s._-]?sub|multi)\b/i.test(fullText);
     const hasDual = /\b(?:dual[\s._-]?audio|dual)\b/i.test(fullText) && !hasMulti;
     if (hasMulti) metadata.languages.push('Multi-Audio');
@@ -161,11 +177,20 @@ function parseStreamMetadata(stream) {
     if (/\bitalian\b|\bita\b/i.test(fullText)) metadata.languages.push('Italian');
     if (/\brussian\b|\brus\b/i.test(fullText)) metadata.languages.push('Russian');
 
-    // 8. Size
-    const sizeMatch = fullText.match(/\b(\d+(?:\.\d+)?\s*(?:GB|MB|GiB|MiB))\b/i);
-    if (sizeMatch) metadata.size = sizeMatch[1].toUpperCase();
+    // 9. Size & Normalized Size in GB
+    const sizeMatch = fullText.match(/\b(\d+(?:\.\d+)?)\s*(GB|MB|GiB|MiB)\b/i);
+    if (sizeMatch) {
+        metadata.size = `${sizeMatch[1]} ${sizeMatch[2].toUpperCase()}`;
+        const numVal = parseFloat(sizeMatch[1]);
+        const unit = sizeMatch[2].toUpperCase();
+        if (unit.startsWith('M')) {
+            metadata.sizeGB = Math.round((numVal / 1024) * 100) / 100;
+        } else {
+            metadata.sizeGB = numVal;
+        }
+    }
 
-    // 9. Torrent Seeders & Peers
+    // 10. Torrent Seeders & Peers
     const seederMatch = fullText.match(/(?:👤|seeders?|seeds?|\bs:)\s*(\d+)/i)
         || fullText.match(/\[\s*(\d+)\s*\/\s*\d+\s*\]/);
     if (seederMatch) {
@@ -674,6 +699,52 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics, hostUr
     }
     if (config && config.hideSlow) {
         filteredStreams = filteredStreams.filter(s => s.statusCategory !== 'slow');
+    }
+    // Auto-Hide CAM, TeleSync, and Screener theater recordings
+    if (config && (config.hideCam || config.blockCam)) {
+        filteredStreams = filteredStreams.filter(s => {
+            const meta = parseStreamMetadata(s);
+            return !meta.isCam;
+        });
+    }
+    // Auto-Hide Samples, Promos, and Teaser clips
+    if (config && (config.hideSamples || config.blockSamples)) {
+        filteredStreams = filteredStreams.filter(s => {
+            const meta = parseStreamMetadata(s);
+            return !meta.isSample;
+        });
+    }
+    // Max File Size filter (in GB)
+    if (config && config.maxFileSize && Number(config.maxFileSize) > 0) {
+        const maxGB = Number(config.maxFileSize);
+        filteredStreams = filteredStreams.filter(s => {
+            const meta = parseStreamMetadata(s);
+            if (meta.sizeGB !== null && meta.sizeGB > maxGB) {
+                return false;
+            }
+            return true;
+        });
+    }
+    // Min File Size filter (in GB)
+    if (config && config.minFileSize && Number(config.minFileSize) > 0) {
+        const minGB = Number(config.minFileSize);
+        filteredStreams = filteredStreams.filter(s => {
+            const meta = parseStreamMetadata(s);
+            if (meta.sizeGB !== null && meta.sizeGB < minGB) {
+                return false;
+            }
+            return true;
+        });
+    }
+    // Custom Blocked Keywords / Release Groups
+    if (config && Array.isArray(config.blockedKeywords) && config.blockedKeywords.length > 0) {
+        const keywords = config.blockedKeywords.map(k => String(k).trim().toLowerCase()).filter(Boolean);
+        if (keywords.length > 0) {
+            filteredStreams = filteredStreams.filter(s => {
+                const text = `${s.name || ''} ${s.title || ''} ${s.description || ''}`.toLowerCase();
+                return !keywords.some(kw => text.includes(kw));
+            });
+        }
     }
 
     // Safety fallback: if strict filters leave 0 streams, retain all tested streams
