@@ -464,6 +464,21 @@ async function testStream(stream, showSeeders = true) {
         };
     }
 
+    // If stream already has pre-computed test results (e.g. from cache or mock tests)
+    if (stream._pretested || (typeof stream.latency === 'number' && stream.statusCategory)) {
+        const isDead = Boolean(stream.isDead || stream.statusCategory === 'dead' || stream.latency >= 90000);
+        const labels = formatStreamLabels(stream, stream.latency, false, isDead, showSeeders);
+        return {
+            ...stream,
+            name: labels.name,
+            title: labels.title,
+            latency: stream.latency,
+            isDead: isDead,
+            statusCategory: stream.statusCategory,
+            originalProvider: stream.originalProvider || providerName
+        };
+    }
+
     // Handle P2P Magnet streams (e.g. Torrentio)
     if ((stream.url && stream.url.startsWith('magnet:')) || stream.infoHash) {
         const labels = formatStreamLabels(stream, 150, true, false, showSeeders);
@@ -642,14 +657,23 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics, hostUr
     const hasAudioPref = (Array.isArray(prefLanguages) && prefLanguages.length > 0) || (config && config.prioritizeHindi);
 
     filteredStreams.sort((a, b) => {
-        // Dead streams always sink to the bottom across all modes
-        if (a.isDead !== b.isDead) {
-            return a.isDead ? 1 : -1;
+        // Safe numeric latency
+        const latA = typeof a.latency === 'number' && !isNaN(a.latency) ? a.latency : 99999;
+        const latB = typeof b.latency === 'number' && !isNaN(b.latency) ? b.latency : 99999;
+
+        // 1. Dead streams ALWAYS sink to the absolute bottom across all modes
+        const isDeadA = Boolean(a.isDead || a.statusCategory === 'dead' || latA >= 90000);
+        const isDeadB = Boolean(b.isDead || b.statusCategory === 'dead' || latB >= 90000);
+        if (isDeadA !== isDeadB) {
+            return isDeadA ? 1 : -1;
         }
+
+        const rankA = categoryRank[a.statusCategory] || 2;
+        const rankB = categoryRank[b.statusCategory] || 2;
 
         if (sortBy === 'quality') {
             // =========================================================================
-            // 🎬 MODE: MAXIMUM QUALITY (4K UHD FIRST)
+            // 🎬 MODE: MAXIMUM QUALITY (4K UHD FIRST, SORTED BY SPEED)
             // =========================================================================
 
             // 1. STRICT RESOLUTION TIER (4K > 1080p > 720p > 480p)
@@ -669,29 +693,31 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics, hostUr
                 }
             }
 
-            // 3. Release & Codec Quality (REMUX > BluRay > WEB-DL, HDR/DV, Atmos)
+            // 3. Status Category: Fast (<800ms) -> Slow (>=800ms) -> Dead
+            if (rankA !== rankB) {
+                return rankA - rankB;
+            }
+
+            // 4. Latency / Ping: Lowest ms first (Strict ping sorting within resolution tier)
+            if (latA !== latB) {
+                return latA - latB;
+            }
+
+            // 5. Release & Codec Quality (REMUX > BluRay > WEB-DL, HDR/DV, Atmos) as tie-breaker
             const scoreA = getQualityScore(a);
             const scoreB = getQualityScore(b);
             if (scoreA !== scoreB) {
                 return scoreB - scoreA;
             }
 
-            // 4. P2P Seeders Prioritization for torrent streams
+            // 6. P2P Seeders Prioritization for torrent streams as tie-breaker
             const seederA = getSeederScore(a);
             const seederB = getSeederScore(b);
-            if ((seederA > 0 || seederB > 0) && Math.abs(seederA - seederB) >= 10) {
+            if (seederA !== seederB) {
                 return seederB - seederA;
             }
 
-            // 5. Status Category: Fast -> Slow
-            const rankA = categoryRank[a.statusCategory] || 2;
-            const rankB = categoryRank[b.statusCategory] || 2;
-            if (rankA !== rankB) {
-                return rankA - rankB;
-            }
-
-            // 6. Within same status: Lowest latency / fastest ping first
-            return a.latency - b.latency;
+            return 0;
 
         } else if (sortBy === 'seeders') {
             // =========================================================================
@@ -721,14 +747,24 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics, hostUr
                 return resB - resA;
             }
 
-            // 4. Quality Score
+            // 4. Status Category: Fast -> Slow
+            if (rankA !== rankB) {
+                return rankA - rankB;
+            }
+
+            // 5. Latency / Ping
+            if (latA !== latB) {
+                return latA - latB;
+            }
+
+            // 6. Quality Score
             const scoreA = getQualityScore(a);
             const scoreB = getQualityScore(b);
             if (scoreA !== scoreB) {
                 return scoreB - scoreA;
             }
 
-            return a.latency - b.latency;
+            return 0;
 
         } else if (sortBy === 'balanced') {
             // =========================================================================
@@ -745,9 +781,9 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics, hostUr
             }
 
             // 2. Balanced Performance Matrix
-            const getBalancedTier = (s) => {
+            const getBalancedTier = (s, lat) => {
                 const res = getResolutionTier(s);
-                const isFast = s.statusCategory === 'fast' && s.latency < 800;
+                const isFast = s.statusCategory === 'fast' && lat < 800;
                 if (res === 4 && isFast) return 5; // 4K Fast (< 800ms)
                 if (res === 3 && isFast) return 4; // 1080p Fast (< 800ms)
                 if (res === 4) return 3;           // 4K Slow (> 800ms)
@@ -756,21 +792,30 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics, hostUr
                 return 0;
             };
 
-            const tierA = getBalancedTier(a);
-            const tierB = getBalancedTier(b);
+            const tierA = getBalancedTier(a, latA);
+            const tierB = getBalancedTier(b, latB);
             if (tierA !== tierB) {
                 return tierB - tierA;
             }
 
-            // 3. Quality score within same balanced tier
+            // 3. Status Category: Fast -> Slow
+            if (rankA !== rankB) {
+                return rankA - rankB;
+            }
+
+            // 4. Latency / Ping: Lowest ms first
+            if (latA !== latB) {
+                return latA - latB;
+            }
+
+            // 5. Quality score within same balanced tier
             const scoreA = getQualityScore(a);
             const scoreB = getQualityScore(b);
             if (scoreA !== scoreB) {
                 return scoreB - scoreA;
             }
 
-            // 4. Exact latency
-            return a.latency - b.latency;
+            return 0;
 
         } else {
             // =========================================================================
@@ -778,18 +823,16 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics, hostUr
             // =========================================================================
 
             // 1. Status Category (Fast < 800ms -> Slow -> Dead)
-            const rankA = categoryRank[a.statusCategory] || 2;
-            const rankB = categoryRank[b.statusCategory] || 2;
             if (rankA !== rankB) {
                 return rankA - rankB;
             }
 
-            // 2. Exact latency (lowest ms first) — PRIMARY sort in speed mode
-            if (Math.abs(a.latency - b.latency) >= 30) {
-                return a.latency - b.latency;
+            // 2. Exact latency (lowest ms first) — STRICT PRIMARY sort in speed mode
+            if (latA !== latB) {
+                return latA - latB;
             }
 
-            // 3. Multi-Language / Preferred Audio (tie-breaker for similar latency)
+            // 3. Multi-Language / Preferred Audio (tie-breaker for exact same latency)
             if (hasAudioPref) {
                 const audioA = getAudioScore(a, prefLanguages, config?.prioritizeHindi);
                 const audioB = getAudioScore(b, prefLanguages, config?.prioritizeHindi);
@@ -811,7 +854,7 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics, hostUr
                 return scoreB - scoreA;
             }
 
-            return a.latency - b.latency;
+            return 0;
         }
     });
 

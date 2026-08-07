@@ -60,7 +60,14 @@ app.get('/manifest.json', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'manifest.json'));
 });
 
-['icon-192.png', 'icon-512.png', 'icon-maskable-192.png', 'icon-maskable-512.png'].forEach((iconFile) => {
+app.get(['/favicon.ico', '/favicon.png'], (req, res) => {
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.sendFile(path.join(__dirname, 'public', 'icon-192.png'));
+});
+
+['icon-192.png', 'icon-512.png', 'icon-maskable-192.png', 'icon-maskable-512.png', 'logo.png'].forEach((iconFile) => {
     app.get(`/${iconFile}`, (req, res) => {
         res.setHeader('Content-Type', 'image/png');
         res.setHeader('Access-Control-Allow-Origin', '*');
@@ -204,12 +211,12 @@ function createAddon(config) {
     }
 
     const addonLogo = config.addonHost 
-        ? `${config.addonProtocol || 'http'}://${config.addonHost}/icon-512.png` 
-        : 'https://raw.githubusercontent.com/yoruix/nuvio-providers/main/public/icon-512.png';
+        ? `${config.addonProtocol || 'http'}://${config.addonHost}/icon-512.png?v=3` 
+        : 'https://raw.githubusercontent.com/yoruix/nuvio-providers/main/public/icon-512.png?v=3';
 
     const builder = new addonBuilder({
         id: addonId,
-        version: '2.1.1',
+        version: '2.1.2',
         name: addonName,
         description: 'Dynamically loads Nuvio providers, tests stream speed, and sorts them.',
         logo: addonLogo,

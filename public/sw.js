@@ -1,4 +1,4 @@
-const CACHE_NAME = 'chole-bhature-v6';
+const CACHE_NAME = 'chole-bhature-v7';
 const STATIC_ASSETS = [
   '/',
   '/configure',
@@ -6,7 +6,8 @@ const STATIC_ASSETS = [
   '/icon-192.png',
   '/icon-512.png',
   '/icon-maskable-192.png',
-  '/icon-maskable-512.png'
+  '/icon-maskable-512.png',
+  '/logo.png'
 ];
 
 // Install — cache static shell
