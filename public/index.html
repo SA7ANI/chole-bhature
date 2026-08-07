@@ -21,7 +21,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        :root {
+        /* ====== DEFAULT DARK THEME ====== */
+        :root,
+        [data-theme="dark"] {
             --bg-base: #07080c;
             --bg-surface: #0e1018;
             --bg-card: rgba(16, 19, 29, 0.72);
@@ -42,6 +44,59 @@
             --gradient-emerald: linear-gradient(135deg, #10b981 0%, #059669 100%);
             --shadow-card: 0 12px 36px -4px rgba(0, 0, 0, 0.45);
             --shadow-glow: 0 0 30px rgba(99, 102, 241, 0.25);
+        }
+
+        /* ====== OLED PURE BLACK THEME ====== */
+        [data-theme="oled"] {
+            --bg-base: #000000;
+            --bg-surface: #000000;
+            --bg-card: rgba(8, 8, 8, 0.95);
+            --bg-card-hover: rgba(14, 14, 14, 0.98);
+            --bg-input: #0a0a0a;
+            --text-primary: #ffffff;
+            --text-secondary: #a0aec0;
+            --text-muted: #586374;
+            --accent-primary: #818cf8;
+            --accent-secondary: #c084fc;
+            --accent-emerald: #34d399;
+            --accent-rose: #fb7185;
+            --accent-amber: #fbbf24;
+            --border-subtle: rgba(255, 255, 255, 0.06);
+            --border-highlight: rgba(129, 140, 248, 0.45);
+            --gradient-brand: linear-gradient(135deg, #c7d2fe 0%, #e879f9 50%, #f9a8d4 100%);
+            --gradient-btn: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #9333ea 100%);
+            --gradient-emerald: linear-gradient(135deg, #059669 0%, #047857 100%);
+            --shadow-card: 0 12px 36px -4px rgba(0, 0, 0, 0.85);
+            --shadow-glow: 0 0 30px rgba(129, 140, 248, 0.2);
+        }
+
+        /* ====== LIGHT THEME (System fallback) ====== */
+        [data-theme="light"] {
+            --bg-base: #f1f5f9;
+            --bg-surface: #ffffff;
+            --bg-card: rgba(255, 255, 255, 0.85);
+            --bg-card-hover: rgba(255, 255, 255, 0.98);
+            --bg-input: #f8fafc;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --accent-primary: #6366f1;
+            --accent-secondary: #a855f7;
+            --accent-emerald: #059669;
+            --accent-rose: #e11d48;
+            --accent-amber: #d97706;
+            --border-subtle: rgba(0, 0, 0, 0.08);
+            --border-highlight: rgba(99, 102, 241, 0.4);
+            --gradient-brand: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+            --gradient-btn: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+            --gradient-emerald: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            --shadow-card: 0 4px 24px -4px rgba(0, 0, 0, 0.12);
+            --shadow-glow: 0 0 30px rgba(99, 102, 241, 0.15);
+        }
+
+        /* Smooth theme transitions */
+        *, *::before, *::after {
+            transition: background-color 0.25s ease, border-color 0.25s ease, color 0.15s ease;
         }
         
         * {
@@ -65,6 +120,18 @@
             display: flex;
             justify-content: center;
             -webkit-font-smoothing: antialiased;
+        }
+
+        [data-theme="oled"] body {
+            background-image: none;
+            background-color: #000000;
+        }
+
+        [data-theme="light"] body {
+            background-image:
+                radial-gradient(circle at 10% 0%, rgba(99, 102, 241, 0.06) 0%, transparent 40%),
+                radial-gradient(circle at 90% 10%, rgba(168, 85, 247, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 50% 100%, rgba(16, 185, 129, 0.03) 0%, transparent 45%);
         }
 
         .app-container {
@@ -1098,6 +1165,160 @@
                 padding-bottom: max(clamp(40px, 8vw, 100px), env(safe-area-inset-bottom));
             }
         }
+
+        /* ====== THEME SWITCHER WIDGET ====== */
+        .theme-switcher {
+            display: inline-flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 4px;
+            gap: 2px;
+        }
+
+        .theme-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            opacity: 0.5;
+            position: relative;
+        }
+
+        .theme-btn:hover {
+            opacity: 0.85;
+            background: rgba(255, 255, 255, 0.07);
+        }
+
+        .theme-btn.active {
+            opacity: 1;
+            background: var(--accent-primary);
+            box-shadow: 0 2px 12px rgba(99, 102, 241, 0.45);
+        }
+
+        .theme-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: var(--accent-primary);
+        }
+
+        /* Light theme overrides for card borders & inputs */
+        [data-theme="light"] .section-card,
+        [data-theme="light"] .header-bar,
+        [data-theme="light"] .stat-card {
+            border-color: rgba(0, 0, 0, 0.07);
+            box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
+        }
+
+        [data-theme="light"] .sort-option-card {
+            background: rgba(0, 0, 0, 0.02);
+            border-color: rgba(0, 0, 0, 0.07);
+        }
+
+        [data-theme="light"] .sort-option-card:hover {
+            background: rgba(0, 0, 0, 0.04);
+        }
+
+        [data-theme="light"] .filter-capsule {
+            background: rgba(0, 0, 0, 0.03);
+        }
+
+        [data-theme="light"] .filter-capsule:hover {
+            background: rgba(0, 0, 0, 0.06);
+        }
+
+        [data-theme="light"] .switch-slider {
+            background-color: rgba(0, 0, 0, 0.12);
+            border-color: rgba(0, 0, 0, 0.12);
+        }
+
+        [data-theme="light"] .theme-btn:hover {
+            background: rgba(0, 0, 0, 0.07);
+        }
+
+        [data-theme="light"] input[type="url"],
+        [data-theme="light"] input[type="text"] {
+            background: #ffffff;
+            border-color: rgba(0, 0, 0, 0.12);
+            color: #0f172a;
+        }
+
+        [data-theme="light"] .lang-chip {
+            background: rgba(99, 102, 241, 0.08);
+            border-color: rgba(99, 102, 241, 0.2);
+            color: #4338ca;
+        }
+
+        [data-theme="light"] .lang-chip.selected {
+            background: rgba(99, 102, 241, 0.15);
+            border-color: var(--accent-primary);
+            color: #4338ca;
+        }
+
+        [data-theme="light"] .repo-item-card,
+        [data-theme="light"] .provider-item-card {
+            background: rgba(0, 0, 0, 0.02);
+            border-color: rgba(0, 0, 0, 0.07);
+        }
+
+        [data-theme="light"] .toast-bubble {
+            background: rgba(15, 23, 42, 0.92);
+            color: #f8fafc;
+        }
+
+        /* OLED specific card sharpening */
+        [data-theme="oled"] .section-card,
+        [data-theme="oled"] .header-bar,
+        [data-theme="oled"] .stat-card {
+            border-color: rgba(255, 255, 255, 0.05);
+            background: rgba(10, 10, 10, 0.98);
+        }
+
+        [data-theme="oled"] .sort-option-card.active {
+            background: rgba(129, 140, 248, 0.08);
+            box-shadow: 0 0 20px rgba(129, 140, 248, 0.15);
+        }
+
+        /* System theme — media query picks dark or light automatically */
+        @media (prefers-color-scheme: light) {
+            [data-theme="system"] {
+                --bg-base: #f1f5f9;
+                --bg-surface: #ffffff;
+                --bg-card: rgba(255, 255, 255, 0.85);
+                --bg-card-hover: rgba(255, 255, 255, 0.98);
+                --bg-input: #f8fafc;
+                --text-primary: #0f172a;
+                --text-secondary: #475569;
+                --text-muted: #94a3b8;
+                --accent-primary: #6366f1;
+                --accent-secondary: #a855f7;
+                --accent-emerald: #059669;
+                --accent-rose: #e11d48;
+                --accent-amber: #d97706;
+                --border-subtle: rgba(0, 0, 0, 0.08);
+                --border-highlight: rgba(99, 102, 241, 0.4);
+                --gradient-brand: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+                --gradient-btn: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+                --gradient-emerald: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                --shadow-card: 0 4px 24px -4px rgba(0, 0, 0, 0.12);
+                --shadow-glow: 0 0 30px rgba(99, 102, 241, 0.15);
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -1113,7 +1334,7 @@
                 <div class="brand-content">
                     <div class="brand-header-row">
                         <h1 class="brand-title">Chole Bhature</h1>
-                        <span class="brand-version">v2.1.2</span>
+                        <span class="brand-version">v2.2.0</span>
                     </div>
                     <p class="brand-tagline">High-Performance Stream Meta-Sorter & Priority Engine</p>
                     <div id="sync-badge" class="sync-status-pill" style="display: none;">
@@ -1123,6 +1344,13 @@
                 </div>
             </div>
             <div class="action-group">
+                <!-- Theme Switcher -->
+                <div class="theme-switcher" id="theme-switcher" title="Switch theme">
+                    <button class="theme-btn" id="theme-dark" onclick="setTheme('dark')" title="Dark Theme">🌑</button>
+                    <button class="theme-btn" id="theme-oled" onclick="setTheme('oled')" title="OLED Pure Black">⬛</button>
+                    <button class="theme-btn" id="theme-system" onclick="setTheme('system')" title="Follow System Theme">🌗</button>
+                    <button class="theme-btn" id="theme-light" onclick="setTheme('light')" title="Light Theme">☀️</button>
+                </div>
                 <button class="action-btn action-btn-save" id="save-btn" onclick="saveConfigurationToServer(true)" title="Save settings and push updates live without reinstalling">
                     <span>💾 Save Changes</span>
                 </button>
@@ -1363,6 +1591,47 @@
     </div>
 
     <script>
+        // ====== THEME ENGINE ======
+        const THEMES = { dark: '🌑', oled: '⬛', system: '🌗', light: '☀️' };
+
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            // For system theme, also apply light overrides on the html element if needed
+            if (theme === 'system') {
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                document.documentElement.setAttribute('data-system-dark', prefersDark ? 'true' : 'false');
+            }
+            // Sync active button states
+            Object.keys(THEMES).forEach(t => {
+                const btn = document.getElementById(`theme-${t}`);
+                if (btn) btn.classList.toggle('active', t === theme);
+            });
+            // Update theme-color meta for browser chrome
+            const metaTheme = document.querySelector('meta[name="theme-color"]');
+            if (metaTheme) {
+                if (theme === 'oled') metaTheme.setAttribute('content', '#000000');
+                else if (theme === 'light') metaTheme.setAttribute('content', '#f1f5f9');
+                else metaTheme.setAttribute('content', '#07080c');
+            }
+            localStorage.setItem('cb_theme', theme);
+        }
+
+        function setTheme(theme) {
+            applyTheme(theme);
+        }
+
+        // Apply on load before first paint to avoid flash
+        (function() {
+            const saved = localStorage.getItem('cb_theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', saved);
+        })();
+
+        // Watch system preference change in real-time when in 'system' mode
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+            const current = localStorage.getItem('cb_theme') || 'dark';
+            if (current === 'system') applyTheme('system');
+        });
+
         let configId = null;
         let storedRepos = localStorage.getItem('nuvio_repos');
         let repos = storedRepos !== null ? JSON.parse(storedRepos) : ['https://raw.githubusercontent.com/D3adlyRocket/All-in-One-Nuvio/refs/heads/main/manifest.json'];
@@ -1918,6 +2187,9 @@
         // Init
         initConfig();
         fetchAnalytics();
+
+        // Sync theme buttons after DOM is fully loaded
+        applyTheme(localStorage.getItem('cb_theme') || 'dark');
 
         // Register Service Worker
         if ('serviceWorker' in navigator) {
