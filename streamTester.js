@@ -481,14 +481,46 @@ async function testStream(stream, showSeeders = true) {
 
     // Handle P2P Magnet streams (e.g. Torrentio)
     if ((stream.url && stream.url.startsWith('magnet:')) || stream.infoHash) {
-        const labels = formatStreamLabels(stream, 150, true, false, showSeeders);
+        const meta = parseStreamMetadata(stream);
+        const seeders = stream.seeders !== undefined && stream.seeders !== null 
+            ? stream.seeders 
+            : (meta.seeders !== null && meta.seeders !== undefined ? meta.seeders : null);
+
+        let p2pLatency = 350;
+        let isDead = false;
+        let statusCategory = 'fast';
+
+        if (seeders !== null) {
+            if (seeders === 0) {
+                isDead = true;
+                statusCategory = 'dead';
+                p2pLatency = 99999;
+            } else if (seeders < 5) {
+                // 🔴 1-4 seeders: Unhealthy swarm, severe buffering risk -> SLOW
+                isDead = false;
+                statusCategory = 'slow';
+                p2pLatency = 1500 + (5 - seeders) * 100; // 1600ms - 1900ms
+            } else if (seeders < 20) {
+                // 🟡 5-19 seeders: Moderate swarm -> SLOW tier
+                isDead = false;
+                statusCategory = 'slow';
+                p2pLatency = 850 + (20 - seeders) * 25; // 875ms - 1225ms
+            } else {
+                // 🟢 >= 20 seeders: Healthy swarm -> FAST tier
+                isDead = false;
+                statusCategory = 'fast';
+                p2pLatency = Math.max(120, Math.round(520 - Math.min(seeders, 500) * 0.8));
+            }
+        }
+
+        const labels = formatStreamLabels(stream, p2pLatency, true, isDead, showSeeders);
         return {
             ...stream,
             name: labels.name,
             title: labels.title,
-            latency: 150,
-            isDead: false,
-            statusCategory: 'fast',
+            latency: p2pLatency,
+            isDead: isDead,
+            statusCategory: statusCategory,
             originalProvider: providerName
         };
     }
