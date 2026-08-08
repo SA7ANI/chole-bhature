@@ -1295,26 +1295,6 @@
                     </div>
                 </div>
 
-                <!-- ISP Anti-Block Stream Proxy -->
-                <div class="setting-item-row">
-                    <div class="setting-text-block">
-                        <div class="setting-headline">
-                            ISP Anti-Block Stream Proxy
-                            <span class="tag-pill-badge" style="background: rgba(99, 102, 241, 0.12); border-color: rgba(99, 102, 241, 0.35); color: #a5b4fc;">🛡️ Range Seek</span>
-                        </div>
-                        <div class="setting-description">Route direct video streams through the addon server to bypass local ISP censorship, DNS blocks, and 403 Forbidden errors.</div>
-                    </div>
-                    <div class="dual-filter-group">
-                        <label class="filter-capsule" title="Enable addon server proxying for video streams">
-                            <span class="filter-capsule-text">🛡️ Stream Proxy</span>
-                            <div class="switch-toggle">
-                                <input type="checkbox" id="enableProxy" onchange="onSettingChanged()">
-                                <span class="switch-slider"></span>
-                            </div>
-                        </label>
-                    </div>
-                </div>
-
                 <!-- DNS-over-HTTPS (DoH) ISP Censorship Bypass -->
                 <div class="setting-item-row" style="flex-direction: column; align-items: stretch; gap: 12px;">
                     <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
@@ -1444,7 +1424,7 @@
         let configId = null;
         let storedRepos = localStorage.getItem('nuvio_repos');
         let repos = storedRepos !== null ? JSON.parse(storedRepos) : ['https://raw.githubusercontent.com/D3adlyRocket/All-in-One-Nuvio/refs/heads/main/manifest.json'];
-        let settings = JSON.parse(localStorage.getItem('nuvio_settings') || '{"hideDead": false, "hideSlow": false, "sortBy": "speed", "prioritizeHindi": false, "showSeeders": true, "deduplicateStreams": true, "enableProxy": false, "preferredLanguages": [], "disabledProviders": []}');
+        let settings = JSON.parse(localStorage.getItem('nuvio_settings') || '{"hideDead": false, "hideSlow": false, "sortBy": "speed", "prioritizeHindi": false, "showSeeders": true, "deduplicateStreams": true, "preferredLanguages": [], "disabledProviders": []}');
         let allProvidersData = [];
 
         const SUPPORTED_LANGUAGES = [
@@ -1565,7 +1545,6 @@
             const maxFileSizeEl = document.getElementById('maxFileSize');
             const showSeedersEl = document.getElementById('showSeeders');
             const deduplicateStreamsEl = document.getElementById('deduplicateStreams');
-            const enableProxyEl = document.getElementById('enableProxy');
             const enableDohEl = document.getElementById('enableDoh');
             const dohProviderEl = document.getElementById('dohProvider');
             
@@ -1574,10 +1553,8 @@
             if (hideCamEl) settings.hideCam = hideCamEl.checked;
             if (showSeedersEl) settings.showSeeders = showSeedersEl.checked;
             if (deduplicateStreamsEl) settings.deduplicateStreams = deduplicateStreamsEl.checked;
-            if (enableProxyEl) settings.enableProxy = enableProxyEl.checked;
             if (enableDohEl) settings.enableDoh = enableDohEl.checked;
             if (dohProviderEl) settings.dohProvider = dohProviderEl.value;
-            settings.antiBlockProxy = !!settings.enableProxy;
             settings.prioritizeQuality = (settings.sortBy === 'quality');
             settings.preferredLanguages = settings.preferredLanguages || [];
             settings.prioritizeHindi = settings.preferredLanguages.includes('Hindi');
@@ -1598,7 +1575,6 @@
                 if (settings.hideSlow) filters.push('Slow');
                 if (settings.hideCam) filters.push('No-CAM');
                 if (settings.deduplicateStreams !== false) filters.push('Dedupe');
-                if (settings.enableProxy) filters.push('Proxy');
                 if (settings.enableDoh !== false) {
                     const pKey = settings.dohProvider || 'cloudflare';
                     filters.push(`DoH (${pKey.charAt(0).toUpperCase() + pKey.slice(1)})`);
@@ -1617,8 +1593,6 @@
                 hideCam: settings.hideCam,
                 showSeeders: settings.showSeeders !== false,
                 deduplicateStreams: settings.deduplicateStreams !== false,
-                enableProxy: !!settings.enableProxy,
-                antiBlockProxy: !!settings.enableProxy,
                 enableDoh: settings.enableDoh !== false,
                 dohProvider: settings.dohProvider || 'cloudflare',
                 sortBy: settings.sortBy || 'speed',
@@ -1678,8 +1652,6 @@
             if (cfg.hideCam !== undefined) settings.hideCam = cfg.hideCam;
             if (cfg.showSeeders !== undefined) settings.showSeeders = cfg.showSeeders;
             if (cfg.deduplicateStreams !== undefined) settings.deduplicateStreams = cfg.deduplicateStreams;
-            if (cfg.enableProxy !== undefined) settings.enableProxy = cfg.enableProxy;
-            else if (cfg.antiBlockProxy !== undefined) settings.enableProxy = cfg.antiBlockProxy;
             if (cfg.enableDoh !== undefined) settings.enableDoh = cfg.enableDoh;
             if (cfg.dohProvider) settings.dohProvider = cfg.dohProvider;
             if (cfg.sortBy) settings.sortBy = cfg.sortBy;
@@ -1705,7 +1677,6 @@
             document.getElementById('showSeeders').checked = settings.showSeeders !== false;
             const dedupeEl = document.getElementById('deduplicateStreams');
             if (dedupeEl) dedupeEl.checked = settings.deduplicateStreams !== false;
-            document.getElementById('enableProxy').checked = settings.enableProxy || false;
             const enableDohEl = document.getElementById('enableDoh');
             if (enableDohEl) enableDohEl.checked = settings.enableDoh !== false;
             const dohProviderEl = document.getElementById('dohProvider');
@@ -1759,7 +1730,6 @@
             document.getElementById('showSeeders').checked = settings.showSeeders !== false;
             const dedupeEl = document.getElementById('deduplicateStreams');
             if (dedupeEl) dedupeEl.checked = settings.deduplicateStreams !== false;
-            document.getElementById('enableProxy').checked = settings.enableProxy || false;
             const initDohEl = document.getElementById('enableDoh');
             if (initDohEl) initDohEl.checked = settings.enableDoh !== false;
             const initDohProviderEl = document.getElementById('dohProvider');

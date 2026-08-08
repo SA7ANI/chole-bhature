@@ -33,16 +33,15 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch — network-first for API & streams, cache-fallback for app shell
+// Fetch — network-first for API and dynamic stream routes, cache-fallback for app shell
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
   const url = new URL(event.request.url);
 
-  // Always go to network for API, proxy, and dynamic stream routes
+  // Always go to network for API and dynamic stream routes
   if (
     url.pathname.startsWith('/api/') ||
-    url.pathname.startsWith('/proxy/') ||
     url.pathname.startsWith('/c/') ||
     (url.pathname.endsWith('.json') && url.pathname !== '/manifest.json')
   ) {

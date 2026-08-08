@@ -3,7 +3,7 @@ const { addonBuilder, serveHTTP } = require('stremio-addon-sdk');
 const path = require('path');
 const providerLoader = require('./providerLoader');
 const { sortAndTagStreams } = require('./streamTester');
-const { dohHttpAgent, dohHttpsAgent, setDohEnabled, setDohProvider, getDohConfig } = require('./dohResolver');
+const { setDohEnabled, setDohProvider, getDohConfig } = require('./dohResolver');
 const axios = require('axios');
 
 const fs = require('fs');
@@ -339,7 +339,6 @@ function createAddon(config) {
         }));
 
         console.log(`[Stremio] Collected ${allStreams.length} total streams. Testing speeds...`);
-        const hostUrl = config.addonHost ? `${config.addonProtocol || 'http'}://${config.addonHost}` : '';
         const sortedAndTaggedStreams = await sortAndTagStreams(allStreams, {
             hideDead: config.hideDead,
             hideSlow: config.hideSlow,
@@ -350,9 +349,8 @@ function createAddon(config) {
             prioritizeHindi: config.prioritizeHindi,
             preferredLanguages: config.preferredLanguages || (config.prioritizeHindi ? ['Hindi', 'Dual-Audio'] : []),
             showSeeders: config.showSeeders !== false,
-            deduplicateStreams: config.deduplicateStreams !== false,
-            enableProxy: config.enableProxy || config.antiBlockProxy
-        }, providerAnalytics, hostUrl);
+            deduplicateStreams: config.deduplicateStreams !== false
+        }, providerAnalytics);
 
         // Save to cache
         streamCache.set(cacheKey, { timestamp: Date.now(), streams: sortedAndTaggedStreams });
@@ -367,100 +365,6 @@ function createAddon(config) {
 }
 
 const { getRouter } = require('stremio-addon-sdk');
-
-// --- Streaming Reverse Proxy (Anti-Block & Header Preservation) ---
-app.get('/proxy/stream', async (req, res) => {
-    const { payload, url: rawUrl } = req.query;
-    let targetUrl = rawUrl;
-    let targetHeaders = {};
-
-    if (payload) {
-        try {
-            const decoded = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
-            targetUrl = decoded.url;
-            targetHeaders = decoded.headers || {};
-        } catch (e) {
-            try {
-                const decoded = JSON.parse(Buffer.from(payload, 'base64').toString('utf8'));
-                targetUrl = decoded.url;
-                targetHeaders = decoded.headers || {};
-            } catch (e2) {
-                return res.status(400).send('Invalid proxy payload');
-            }
-        }
-    }
-
-    if (!targetUrl || !targetUrl.startsWith('http')) {
-        return res.status(400).send('Missing or invalid target URL');
-    }
-
-    try {
-        const urlObj = new URL(targetUrl);
-        const origin = urlObj.origin;
-
-        const forwardHeaders = {
-            'User-Agent': targetHeaders['User-Agent'] || targetHeaders['user-agent'] || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-            'Referer': targetHeaders['Referer'] || targetHeaders['referer'] || origin,
-            'Origin': targetHeaders['Origin'] || targetHeaders['origin'] || origin,
-            'Accept': '*/*',
-            'Accept-Encoding': 'identity;q=1, *;q=0'
-        };
-
-        // Forward Range header for player seeking (HTTP 206 Partial Content)
-        if (req.headers.range) {
-            forwardHeaders['Range'] = req.headers.range;
-        }
-
-        const axiosRes = await axios({
-            method: 'GET',
-            url: targetUrl,
-            headers: forwardHeaders,
-            httpAgent: dohHttpAgent,
-            httpsAgent: dohHttpsAgent,
-            responseType: 'stream',
-            timeout: 15000,
-            maxRedirects: 5,
-            validateStatus: (status) => status < 500
-        });
-
-        res.status(axiosRes.status);
-
-        const headersToForward = [
-            'content-type',
-            'content-length',
-            'content-range',
-            'accept-ranges',
-            'last-modified',
-            'etag'
-        ];
-
-        headersToForward.forEach(h => {
-            if (axiosRes.headers[h]) {
-                res.setHeader(h, axiosRes.headers[h]);
-            }
-        });
-
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Allow-Headers', '*');
-        if (!axiosRes.headers['accept-ranges']) {
-            res.setHeader('Accept-Ranges', 'bytes');
-        }
-
-        axiosRes.data.pipe(res);
-
-        req.on('close', () => {
-            if (axiosRes.data && typeof axiosRes.data.destroy === 'function') {
-                axiosRes.data.destroy();
-            }
-        });
-
-    } catch (err) {
-        console.error('[Proxy Stream Error]', err.message);
-        if (!res.headersSent) {
-            res.status(502).send(`Proxy streaming error: ${err.message}`);
-        }
-    }
-});
 
 app.get('/:configJSON/clear-cache/:type/:id', (req, res) => {
     const { configJSON, type, id } = req.params;

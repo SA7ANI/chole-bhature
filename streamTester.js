@@ -673,7 +673,7 @@ async function testStream(stream, showSeeders = true) {
     }
 }
 
-async function sortAndTagStreams(streams, config = {}, providerAnalytics, hostUrl = '') {
+async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
     if (!streams || streams.length === 0) return [];
 
     const showSeeders = config && config.showSeeders !== false;
@@ -928,20 +928,6 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics, hostUr
             return 0;
         }
     });
-
-    // Apply ISP Anti-Block Stream Proxy if enabled
-    if (config && (config.enableProxy || config.antiBlockProxy) && hostUrl) {
-        filteredStreams.forEach(stream => {
-            if (stream.url && stream.url.startsWith('http') && !stream.url.includes('/proxy/stream')) {
-                const targetData = {
-                    url: stream.url,
-                    headers: stream.behaviorHints?.proxyHeaders?.request || stream.headers || {}
-                };
-                const encodedPayload = Buffer.from(JSON.stringify(targetData)).toString('base64url');
-                stream.url = `${hostUrl}/proxy/stream?payload=${encodedPayload}`;
-            }
-        });
-    }
 
     // Clean up internal properties and ensure behaviorHints.filename is enriched for Nuvio Native Badges
     return filteredStreams.map(s => {
