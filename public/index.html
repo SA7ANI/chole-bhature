@@ -24,6 +24,7 @@
         :root {
             --bg-base: #07080c;
             --bg-surface: #0e1018;
+            --bg-surface-secondary: #151821;
             --bg-card: rgba(16, 19, 29, 0.72);
             --bg-card-hover: rgba(22, 26, 40, 0.85);
             --bg-input: #121522;
@@ -528,6 +529,52 @@
             font-weight: 600;
             color: var(--text-primary);
             white-space: nowrap;
+        }
+
+        .doh-provider-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            flex-wrap: wrap;
+        }
+
+        .doh-provider-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .doh-provider-select {
+            min-width: min(100%, 310px);
+            background-color: var(--bg-surface-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 7px 36px 7px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            line-height: 1.35;
+            outline: none;
+            cursor: pointer;
+            font-family: inherit;
+            color-scheme: dark;
+        }
+
+        .doh-provider-select:hover,
+        .doh-provider-select:focus {
+            border-color: rgba(99, 102, 241, 0.45);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.14);
+        }
+
+        .doh-provider-select option {
+            background-color: #151821;
+            color: #f8fafc;
+            font-weight: 600;
         }
 
         /* Toggle Switches */
@@ -1288,9 +1335,9 @@
                             </label>
                         </div>
                     </div>
-                    <div id="doh-provider-wrap" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); border-radius: 10px; flex-wrap: wrap;">
-                        <span style="font-size: 12px; color: var(--text-secondary); font-weight: 500;">DoH Resolver Provider:</span>
-                        <select id="dohProvider" onchange="onSettingChanged()" style="background: var(--bg-surface-secondary); color: var(--text-primary); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 6px 12px; font-size: 12px; outline: none; cursor: pointer; font-family: inherit;">
+                    <div id="doh-provider-wrap" class="doh-provider-wrap">
+                        <span class="doh-provider-label">DoH Resolver Provider:</span>
+                        <select id="dohProvider" class="doh-provider-select" onchange="onSettingChanged()">
                             <option value="cloudflare">⚡ Cloudflare (1.1.1.1) - Fastest</option>
                             <option value="google">🌐 Google DNS (8.8.8.8) - Reliable</option>
                             <option value="adguard">🛡️ AdGuard DNS - Privacy Focused</option>
