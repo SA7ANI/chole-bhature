@@ -3,6 +3,7 @@ const { addonBuilder, serveHTTP } = require('stremio-addon-sdk');
 const path = require('path');
 const providerLoader = require('./providerLoader');
 const { sortAndTagStreams } = require('./streamTester');
+const { dohHttpAgent, dohHttpsAgent, setDohEnabled, setDohProvider, getDohConfig } = require('./dohResolver');
 const axios = require('axios');
 
 const fs = require('fs');
@@ -142,6 +143,11 @@ app.get('/api/analytics', (req, res) => {
     res.json(stats);
 });
 
+// DoH Resolver Status
+app.get('/api/doh/status', (req, res) => {
+    res.json(getDohConfig());
+});
+
 // Automated Vercel Cron Job to keep providers awake
 app.get('/api/wakeup', async (req, res) => {
     try {
@@ -199,6 +205,9 @@ async function getTmdbId(imdbId, type) {
 
 // Addon builder factory
 function createAddon(config) {
+    if (config && config.enableDoh !== undefined) setDohEnabled(config.enableDoh !== false);
+    if (config && config.dohProvider) setDohProvider(config.dohProvider);
+
     let addonId = 'org.nuvio.metasorter';
     let addonName = 'Chole Bhature';
     
@@ -406,6 +415,8 @@ app.get('/proxy/stream', async (req, res) => {
             method: 'GET',
             url: targetUrl,
             headers: forwardHeaders,
+            httpAgent: dohHttpAgent,
+            httpsAgent: dohHttpsAgent,
             responseType: 'stream',
             timeout: 15000,
             maxRedirects: 5,

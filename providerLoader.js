@@ -6,10 +6,11 @@ const vm = require('vm');
 
 const http = require('http');
 const https = require('https');
+const { dohHttpAgent, dohHttpsAgent } = require('./dohResolver');
 
-// High performance connection pooling to prevent socket hang ups across 60+ parallel scrapers
-const httpAgent = new http.Agent({ keepAlive: true, maxSockets: 100, maxFreeSockets: 30, timeout: 30000 });
-const httpsAgent = new https.Agent({ keepAlive: true, maxSockets: 100, maxFreeSockets: 30, timeout: 30000 });
+// High performance connection pooling equipped with DNS-over-HTTPS (DoH) lookup
+const httpAgent = dohHttpAgent;
+const httpsAgent = dohHttpsAgent;
 
 // Global in-memory cache for TMDB responses to prevent rate-limits and ECONNRESET across all providers
 const tmdbCache = new Map();

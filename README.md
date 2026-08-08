@@ -37,6 +37,7 @@ Instead of waiting through buffering wheels or clicking broken links, Chole Bhat
 | 🌐 **Regional & Multi-Audio Priority** | Float preferred languages (`Hindi`, `Tamil`, `Telugu`, `Malayalam`, `Dual-Audio`, `Anime/Jap`, etc.) directly to the top of your stream list. |
 | 🧩 **Multi-Source Deduplication** | Merges identical streams found across different providers into unified entries with multi-source badges (e.g. `CinemaHD + Torrentio`) and maximum seeder counts. |
 | 🛡️ **Anti-Block Stream Proxy** | Built-in HTTP range-seeking proxy bypasses ISP censorship, DNS poisoning, and `403 Forbidden` CDN blocks. |
+| 🛡️ **DNS-over-HTTPS (DoH)** | Built-in DoH engine with Cloudflare, Google, AdGuard, and Quad9 resolvers to bypass ISP-level domain blocks with zero latency impact. |
 | ☁️ **Instant Cloud Sync** | Save your configuration once on the web UI and changes sync live to your player—no need to reinstall the addon! |
 | 🏷️ **Rich Metadata Badges** | Automatically extracts and displays badges for `HDR10`, `Dolby Vision`, `IMAX`, `REMUX`, `HEVC`, `Dolby Atmos`, `5.1/7.1 Audio`, and file size. |
 

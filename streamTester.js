@@ -1,4 +1,5 @@
 const axios = require('axios');
+const { dohHttpAgent, dohHttpsAgent } = require('./dohResolver');
 
 const TIMEOUT_MS = 4500;
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
@@ -593,6 +594,8 @@ async function testStream(stream, showSeeders = true) {
                 const hcRes = await axios.get(stream.url, { 
                     timeout: TIMEOUT_MS, 
                     headers: probeHeaders,
+                    httpAgent: dohHttpAgent,
+                    httpsAgent: dohHttpsAgent,
                     validateStatus: () => true 
                 });
                 const data = typeof hcRes.data === 'string' ? hcRes.data.toLowerCase() : '';
@@ -619,6 +622,8 @@ async function testStream(stream, showSeeders = true) {
             await axios.head(origin, {
                 timeout: TIMEOUT_MS,
                 headers: probeHeaders,
+                httpAgent: dohHttpAgent,
+                httpsAgent: dohHttpsAgent,
                 validateStatus: (status) => status < 500
             });
             latency = Date.now() - startTime;
@@ -630,6 +635,8 @@ async function testStream(stream, showSeeders = true) {
                         ...probeHeaders,
                         'Range': 'bytes=0-10'
                     },
+                    httpAgent: dohHttpAgent,
+                    httpsAgent: dohHttpsAgent,
                     validateStatus: (status) => status < 500
                 });
                 latency = Date.now() - startTime;

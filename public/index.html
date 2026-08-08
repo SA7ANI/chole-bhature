@@ -1268,6 +1268,37 @@
                     </div>
                 </div>
 
+                <!-- DNS-over-HTTPS (DoH) ISP Censorship Bypass -->
+                <div class="setting-item-row" style="flex-direction: column; align-items: stretch; gap: 12px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+                        <div class="setting-text-block" style="flex: 1; min-width: 240px;">
+                            <div class="setting-headline">
+                                🛡️ DNS-over-HTTPS (DoH) ISP Bypass
+                                <span class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.35); color: #34d399;">⚡ VPN-Free</span>
+                            </div>
+                            <div class="setting-description">Encrypts scraper and stream DNS queries over HTTPS to bypass ISP-level domain blocks, DNS hijacking, and censorship.</div>
+                        </div>
+                        <div class="dual-filter-group">
+                            <label class="filter-capsule" title="Enable DNS-over-HTTPS resolution to bypass ISP blocks">
+                                <span class="filter-capsule-text">🛡️ Enable DoH</span>
+                                <div class="switch-toggle">
+                                    <input type="checkbox" id="enableDoh" checked onchange="onSettingChanged()">
+                                    <span class="switch-slider"></span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    <div id="doh-provider-wrap" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); border-radius: 10px; flex-wrap: wrap;">
+                        <span style="font-size: 12px; color: var(--text-secondary); font-weight: 500;">DoH Resolver Provider:</span>
+                        <select id="dohProvider" onchange="onSettingChanged()" style="background: var(--bg-surface-secondary); color: var(--text-primary); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 6px 12px; font-size: 12px; outline: none; cursor: pointer; font-family: inherit;">
+                            <option value="cloudflare">⚡ Cloudflare (1.1.1.1) - Fastest</option>
+                            <option value="google">🌐 Google DNS (8.8.8.8) - Reliable</option>
+                            <option value="adguard">🛡️ AdGuard DNS - Privacy Focused</option>
+                            <option value="quad9">🔒 Quad9 (9.9.9.9) - Threat Blocking</option>
+                        </select>
+                    </div>
+                </div>
+
                 <!-- Auto-Hide CAM & Low-Quality Recordings -->
                 <div class="setting-item-row">
                     <div class="setting-text-block">
@@ -1488,6 +1519,8 @@
             const showSeedersEl = document.getElementById('showSeeders');
             const deduplicateStreamsEl = document.getElementById('deduplicateStreams');
             const enableProxyEl = document.getElementById('enableProxy');
+            const enableDohEl = document.getElementById('enableDoh');
+            const dohProviderEl = document.getElementById('dohProvider');
             
             if (hideDeadEl) settings.hideDead = hideDeadEl.checked;
             if (hideSlowEl) settings.hideSlow = hideSlowEl.checked;
@@ -1495,6 +1528,8 @@
             if (showSeedersEl) settings.showSeeders = showSeedersEl.checked;
             if (deduplicateStreamsEl) settings.deduplicateStreams = deduplicateStreamsEl.checked;
             if (enableProxyEl) settings.enableProxy = enableProxyEl.checked;
+            if (enableDohEl) settings.enableDoh = enableDohEl.checked;
+            if (dohProviderEl) settings.dohProvider = dohProviderEl.value;
             settings.antiBlockProxy = !!settings.enableProxy;
             settings.prioritizeQuality = (settings.sortBy === 'quality');
             settings.preferredLanguages = settings.preferredLanguages || [];
@@ -1517,6 +1552,10 @@
                 if (settings.hideCam) filters.push('No-CAM');
                 if (settings.deduplicateStreams !== false) filters.push('Dedupe');
                 if (settings.enableProxy) filters.push('Proxy');
+                if (settings.enableDoh !== false) {
+                    const pKey = settings.dohProvider || 'cloudflare';
+                    filters.push(`DoH (${pKey.charAt(0).toUpperCase() + pKey.slice(1)})`);
+                }
                 const langCount = (settings.preferredLanguages || []).length;
                 if (langCount > 0) filters.push(`${langCount} Lang${langCount === 1 ? '' : 's'}`);
                 statFilterStatus.innerText = filters.length > 0 ? filters.join(' + ') : 'Standard';
@@ -1533,6 +1572,8 @@
                 deduplicateStreams: settings.deduplicateStreams !== false,
                 enableProxy: !!settings.enableProxy,
                 antiBlockProxy: !!settings.enableProxy,
+                enableDoh: settings.enableDoh !== false,
+                dohProvider: settings.dohProvider || 'cloudflare',
                 sortBy: settings.sortBy || 'speed',
                 sortMode: settings.sortBy || 'speed',
                 prioritizeQuality: settings.sortBy === 'quality',
@@ -1592,6 +1633,8 @@
             if (cfg.deduplicateStreams !== undefined) settings.deduplicateStreams = cfg.deduplicateStreams;
             if (cfg.enableProxy !== undefined) settings.enableProxy = cfg.enableProxy;
             else if (cfg.antiBlockProxy !== undefined) settings.enableProxy = cfg.antiBlockProxy;
+            if (cfg.enableDoh !== undefined) settings.enableDoh = cfg.enableDoh;
+            if (cfg.dohProvider) settings.dohProvider = cfg.dohProvider;
             if (cfg.sortBy) settings.sortBy = cfg.sortBy;
             else if (cfg.prioritizeQuality !== undefined) settings.sortBy = cfg.prioritizeQuality ? 'quality' : 'speed';
             if (cfg.preferredLanguages && Array.isArray(cfg.preferredLanguages)) {
@@ -1616,6 +1659,10 @@
             const dedupeEl = document.getElementById('deduplicateStreams');
             if (dedupeEl) dedupeEl.checked = settings.deduplicateStreams !== false;
             document.getElementById('enableProxy').checked = settings.enableProxy || false;
+            const enableDohEl = document.getElementById('enableDoh');
+            if (enableDohEl) enableDohEl.checked = settings.enableDoh !== false;
+            const dohProviderEl = document.getElementById('dohProvider');
+            if (dohProviderEl) dohProviderEl.value = settings.dohProvider || 'cloudflare';
             updateSortModeUI(settings.sortBy || 'speed');
             renderLanguageChips();
             
@@ -1666,6 +1713,10 @@
             const dedupeEl = document.getElementById('deduplicateStreams');
             if (dedupeEl) dedupeEl.checked = settings.deduplicateStreams !== false;
             document.getElementById('enableProxy').checked = settings.enableProxy || false;
+            const initDohEl = document.getElementById('enableDoh');
+            if (initDohEl) initDohEl.checked = settings.enableDoh !== false;
+            const initDohProviderEl = document.getElementById('dohProvider');
+            if (initDohProviderEl) initDohProviderEl.value = settings.dohProvider || 'cloudflare';
             updateSortModeUI(settings.sortBy || 'speed');
             renderLanguageChips();
             
