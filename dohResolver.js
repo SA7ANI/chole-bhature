@@ -143,7 +143,8 @@ function dohLookup(hostname, options, callback) {
         options = {};
     }
 
-    if (!isDohEnabled) {
+    // Auto-disable DoH on Vercel (AWS already has unblocked, ultra-fast DNS)
+    if (!isDohEnabled || process.env.VERCEL) {
         return dns.lookup(hostname, options, callback);
     }
 
