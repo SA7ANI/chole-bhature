@@ -1,6 +1,6 @@
 {
   "name": "chole_bhature-metasorter-addon",
-  "version": "2.1.1",
+  "version": "3.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -20,3 +20,4 @@
     "stremio-addon-sdk": "^1.6.10"
   }
 }
+

@@ -225,7 +225,7 @@ function createAddon(config) {
 
     const builder = new addonBuilder({
         id: addonId,
-        version: '2.1.2',
+        version: '3.0.0',
         name: addonName,
         description: 'Dynamically loads Nuvio providers, tests stream speed, and sorts them.',
         logo: addonLogo,
@@ -512,3 +512,4 @@ if (!process.env.VERCEL) {
 
 // Export the app for Vercel Serverless Functions
 module.exports = app;
+

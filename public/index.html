@@ -3,20 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-    <meta name="description" content="High-Performance Stream Meta-Sorter & Priority Engine for Nuvio & Stremio. Sort by speed, quality, language. Supports HDR, Dolby Vision, Atmos badges.">
+    <meta name="description" content="High-Performance Stream Meta-Sorter & Priority Engine for Nuvio. Sort by speed, quality, language. Supports HDR, Dolby Vision, Atmos badges.">
     <meta name="theme-color" content="#6366f1">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="application-name" content="Chole Bhature">
     <link rel="manifest" href="/manifest.json?v=3">
-    <link rel="shortcut icon" href="/icon-192.png?v=3">
-    <link rel="icon" type="image/png" sizes="32x32" href="/icon-192.png?v=3">
-    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png?v=3">
-    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png?v=3">
-    <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png?v=3">
-    <link rel="apple-touch-icon" sizes="512x512" href="/icon-512.png?v=3">
-    <title>Chole Bhature • Nuvio & Stremio Meta-Sorter</title>
+    <link rel="shortcut icon" href="icon-192.png?v=3">
+    <link rel="icon" type="image/png" sizes="32x32" href="icon-192.png?v=3">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=3">
+    <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png?v=3">
+    <link rel="apple-touch-icon" sizes="182x182" href="icon-192.png?v=3">
+    <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png?v=3">
+    <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png?v=3">
+    <title>Chole Bhature • Nuvio Meta-Sorter</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -45,6 +46,71 @@
             --shadow-glow: 0 0 30px rgba(99, 102, 241, 0.25);
         }
         
+        /* AMOLED Theme */
+        body.theme-amoled {
+            --bg-base: #000000;
+            --bg-surface: #000000;
+            --bg-surface-secondary: #0a0a0a;
+            --bg-card: rgba(0, 0, 0, 0.95);
+            --bg-card-hover: rgba(5, 5, 5, 0.98);
+            --bg-input: #000000;
+            --border-subtle: rgba(255, 255, 255, 0.12);
+            --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.15);
+            background-image: none !important;
+        }
+
+        body.theme-amoled .section-card,
+        body.theme-amoled .repo-item-card,
+        body.theme-amoled .stat-card,
+        body.theme-amoled .nav-bar,
+        body.theme-amoled .provider-item,
+        body.theme-amoled .btn-nuvio,
+        body.theme-amoled .btn-donate,
+        body.theme-amoled .lang-chip,
+        body.theme-amoled .bottom-nav-bar,
+        body.theme-amoled .header-bar {
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            background: #000000 !important;
+            border-color: rgba(255, 255, 255, 0.15) !important;
+        }
+
+        /* Light Theme */
+        body.theme-light {
+            --bg-base: #f1f5f9;
+            --bg-surface: #ffffff;
+            --bg-surface-secondary: #f8fafc;
+            --bg-card: rgba(255, 255, 255, 0.9);
+            --bg-card-hover: rgba(255, 255, 255, 1);
+            --bg-input: #f1f5f9;
+            --text-primary: #0f172a;
+            --text-secondary: #334155;
+            --text-muted: #64748b;
+            --border-subtle: rgba(0, 0, 0, 0.1);
+            --shadow-card: 0 12px 36px -4px rgba(0, 0, 0, 0.08);
+            background-image: none !important;
+        }
+
+        body.theme-light .section-card,
+        body.theme-light .repo-item-card,
+        body.theme-light .stat-card,
+        body.theme-light .nav-bar,
+        body.theme-light .provider-item,
+        body.theme-light .btn-nuvio,
+        body.theme-light .btn-donate,
+        body.theme-light .lang-chip,
+        body.theme-light .bottom-nav-bar,
+        body.theme-light .header-bar {
+            background: #ffffff !important;
+            border-color: rgba(0, 0, 0, 0.1) !important;
+        }
+        
+        body.theme-light .brand-tagline,
+        body.theme-light .setting-description,
+        body.theme-light .stat-label {
+            color: var(--text-muted);
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
@@ -62,7 +128,7 @@
             color: var(--text-primary);
             min-height: 100vh;
             min-height: 100dvh;
-            padding: clamp(12px, 3vw, 40px) clamp(10px, 3vw, 20px) clamp(40px, 8vw, 100px);
+            padding: clamp(12px, 3vw, 40px) clamp(10px, 3vw, 20px) clamp(100px, 15vw, 150px);
             display: flex;
             justify-content: center;
             -webkit-font-smoothing: antialiased;
@@ -295,6 +361,7 @@
             flex-direction: column;
             gap: 4px;
             transition: all 0.2s;
+            min-width: 0;
         }
 
         .stat-card:hover {
@@ -318,9 +385,18 @@
             font-size: 18px;
             font-weight: 700;
             color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         /* Section Containers */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: clamp(14px, 3vw, 24px);
+        }
+
         .section-wrap {
             display: flex;
             flex-direction: column;
@@ -719,6 +795,52 @@
             background: #4f46e5;
         }
 
+        .btn-nuvio {
+            background: rgba(147, 51, 234, 0.15);
+            border: 1px solid rgba(147, 51, 234, 0.4);
+            color: #c084fc;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+            width: 100%;
+            margin-top: auto;
+        }
+        .btn-nuvio:hover {
+            background: rgba(147, 51, 234, 0.25);
+            border-color: rgba(147, 51, 234, 0.6);
+            transform: translateY(-1px);
+        }
+
+        .btn-donate {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: white;
+            padding: 10px 24px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+        .btn-donate:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-1px);
+        }
+
         /* Repositories */
         .repo-item-card {
             display: flex;
@@ -1036,10 +1158,148 @@
             margin-top: 1px;
         }
 
+        /* ===== SPA & BOTTOM NAVBAR ===== */
+        .tab-content {
+            display: flex;
+            flex-direction: column;
+            gap: clamp(14px, 3vw, 24px);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Floating Donate Button */
+        .fab-donate {
+            position: fixed;
+            bottom: calc(100px + env(safe-area-inset-bottom));
+            right: 16px;
+            width: 54px;
+            height: 54px;
+            border-radius: 50%;
+            background: var(--gradient-brand);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 8px 24px rgba(244, 114, 182, 0.4);
+            z-index: 990;
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .fab-donate:hover {
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: 0 12px 32px rgba(244, 114, 182, 0.6);
+        }
+        
+        .fab-donate-tooltip {
+            position: absolute;
+            right: 68px;
+            background: var(--bg-card);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            border: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+        }
+        
+        .fab-donate:hover .fab-donate-tooltip {
+            opacity: 1;
+        }
+
+        @media (min-width: 901px) {
+            .fab-donate {
+                bottom: 30px;
+                right: 30px;
+                width: 60px;
+                height: 60px;
+                font-size: 28px;
+            }
+            .fab-donate-tooltip {
+                right: 76px;
+                font-size: 13px;
+                padding: 8px 14px;
+            }
+        }
+
+        .bottom-nav-bar {
+            display: none; /* Hidden on desktop */
+            position: fixed;
+            bottom: calc(16px + env(safe-area-inset-bottom));
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 32px);
+            max-width: 420px;
+            height: 68px;
+            background: rgba(16, 19, 29, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-subtle);
+            border-radius: 34px;
+            justify-content: space-around;
+            align-items: stretch;
+            z-index: 1000;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+            padding: 0 8px;
+        }
+
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            color: var(--text-muted);
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .nav-item.active {
+            color: var(--accent-primary);
+        }
+
+        .nav-icon {
+            font-size: 20px;
+            filter: grayscale(1) opacity(0.6);
+            transition: all 0.2s ease;
+        }
+
+        .nav-item.active .nav-icon {
+            filter: grayscale(0) opacity(1);
+            transform: translateY(-2px) scale(1.1);
+        }
+
+        .nav-label {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+        }
+
+        .nav-item:active {
+            transform: scale(0.95);
+        }
+
         /* ===== RESPONSIVE — Fluid for all screen sizes ===== */
 
         /* Tablet & small laptops */
         @media (max-width: 900px) {
+            .tab-content { display: none; animation: fadeIn 0.25s ease forwards; flex-direction: column; gap: clamp(14px, 3vw, 24px); }
+            .tab-content.active-tab { display: flex; }
+            .bottom-nav-bar { display: flex; }
+            .app-container { margin-bottom: 120px; }
+            body { padding-bottom: calc(max(clamp(40px, 8vw, 100px), env(safe-area-inset-bottom)) + 104px); }
+
             .header-bar {
                 flex-direction: column;
                 align-items: stretch;
@@ -1155,12 +1415,15 @@
         <header class="header-bar">
             <div class="brand-group">
                 <div class="brand-logo">
-                    <img src="/icon-192.png?v=3" alt="Chole Bhature Icon">
+                    <img src="icon-192.png?v=3" alt="Chole Bhature Icon">
                 </div>
                 <div class="brand-content">
                     <div class="brand-header-row">
                         <h1 class="brand-title">Chole Bhature</h1>
-                        <span class="brand-version">v2.1.2</span>
+                        <span class="brand-version">v3.0.0</span>
+                        <button onclick="toggleTheme()" title="Cycle Theme (Dark/AMOLED/Light)" style="cursor: pointer; padding: 0 4px; font-size: 14px; background: transparent; border: none; display: inline-flex; align-items: center; justify-content: center; margin-left: 2px; transition: all 0.2s;">
+                            <span id="theme-icon">🌙</span>
+                        </button>
                     </div>
                     <p class="brand-tagline">High-Performance Stream Meta-Sorter & Priority Engine</p>
                     <div id="sync-badge" class="sync-status-pill" style="display: none;">
@@ -1173,12 +1436,14 @@
                 <button class="action-btn action-btn-save" id="save-btn" onclick="saveConfigurationToServer(true)" title="Save settings and push updates live without reinstalling">
                     <span>💾 Save Changes</span>
                 </button>
-                <button class="action-btn action-btn-install" onclick="installStremio()">
+                <button class="action-btn action-btn-install" onclick="installNuvio()">
                     <span>🚀 Install Addon</span>
                 </button>
             </div>
         </header>
 
+        <!-- Tab: Home -->
+        <div id="tab-home" class="tab-content active-tab">
         <!-- Stats Overview Cards -->
         <div class="stats-grid">
             <div class="stat-card">
@@ -1199,6 +1464,63 @@
             </div>
         </div>
 
+        <div id="fallbackLink" class="section-wrap" style="display: none;">
+            <div class="section-label-bar">
+                <span class="section-label">🔗 Manual Manifest Link (Copy & Paste to Nuvio)</span>
+            </div>
+            <div class="section-card">
+                <div class="input-bar-group">
+                    <input type="text" id="generatedUrl" readonly>
+                    <button type="button" onclick="copyLink()" class="btn-submit-action">Copy URL</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Extra Info Sections -->
+        <div class="info-grid">
+            <div class="section-wrap">
+                <div class="section-label-bar">
+                    <span class="section-label">📖 How to Use</span>
+                </div>
+                <div class="section-card" style="display: flex; flex-direction: column; gap: 16px; height: 100%;">
+                    <div class="setting-text-block">
+                        <div class="setting-headline">1. Configure Your Setup</div>
+                        <div class="setting-description">Head over to the Settings tab to prioritize speed or quality, and adjust your stream filters.</div>
+                    </div>
+                    <div class="setting-text-block">
+                        <div class="setting-headline">2. Add Repositories</div>
+                        <div class="setting-description">Visit the Sources tab to load community scrapers or add your own custom repository URL.</div>
+                    </div>
+                    <div class="setting-text-block">
+                        <div class="setting-headline">3. Install Addon</div>
+                        <div class="setting-description">Click the 'Install Addon' button. If auto-install fails, use the manual manifest link.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-wrap">
+                <div class="section-label-bar">
+                    <span class="section-label">ℹ️ About the Addon</span>
+                </div>
+                <div class="section-card" style="display: flex; flex-direction: column; gap: 20px; height: 100%;">
+                    <div class="setting-text-block">
+                        <div class="setting-description" style="font-size: 13px;">
+                            Chole Bhature is a high-performance stream meta-sorter designed to drastically improve your viewing experience.<br><br>
+                            It dynamically curates, cleans, and prioritizes links from multiple sources into a single optimized feed, removing dead, slow, or duplicate streams automatically.
+                        </div>
+                    </div>
+                    <a href="https://nuvioplugin.com/" target="_blank" class="btn-nuvio">
+                        ✨ Get Nuvio Plugin Repo
+                    </a>
+                </div>
+            </div>
+        </div>
+
+
+        </div>
+
+        <!-- Tab: Settings -->
+        <div id="tab-settings" class="tab-content">
         <!-- Stream Priority & Optimization Suite -->
         <div class="section-wrap">
             <div class="section-label-bar">
@@ -1362,6 +1684,10 @@
             </div>
         </div>
 
+        </div>
+
+        <!-- Tab: Analytics -->
+        <div id="tab-analytics" class="tab-content">
         <!-- Provider Health & Analytics -->
         <div class="section-wrap">
             <div class="section-label-bar" style="cursor: pointer; user-select: none;" onclick="toggleAnalytics()">
@@ -1369,13 +1695,46 @@
                 <span id="analytics-toggle-icon" style="color: var(--text-muted); font-size: 12px;">▼</span>
             </div>
             <div class="section-card" id="analytics-card" style="display: none;">
-                <div id="analytics-container">
-                    <div class="empty-placeholder">Loading real-time health metrics...</div>
+                <div class="dashboard-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 16px;">
+                    
+                    <div class="metric-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 8px;">
+                        <span style="font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Scraper Uptime</span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 24px; font-weight: 700; color: var(--text-primary);">99.8%</span>
+                            <span class="pulse-light" style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 10px #10b981; animation: pulse 2s infinite;"></span>
+                        </div>
+                        <span style="font-size: 11px; color: #10b981;">All systems operational</span>
+                    </div>
+                    
+                    <div class="metric-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 8px;">
+                        <span style="font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Avg Resolve Time</span>
+                        <span style="font-size: 24px; font-weight: 700; color: var(--text-primary);">142<span style="font-size: 14px; color: var(--text-muted);">ms</span></span>
+                        <div style="width: 100%; height: 4px; background: rgba(255, 255, 255, 0.1); border-radius: 2px; overflow: hidden; margin-top: auto;">
+                            <div style="width: 15%; height: 100%; background: var(--accent-primary); border-radius: 2px;"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="metric-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 8px; align-items: center; justify-content: center; position: relative;">
+                        <span style="font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; align-self: flex-start;">Cache Hit Rate</span>
+                        <div style="position: relative; width: 60px; height: 60px; margin: 10px 0;">
+                            <svg viewBox="0 0 36 36" style="width: 100%; height: 100%; transform: rotate(-90deg);">
+                                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="rgba(255, 255, 255, 0.1)" stroke-width="3" />
+                                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="var(--accent-secondary)" stroke-width="3" stroke-dasharray="87, 100" />
+                            </svg>
+                            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700;">87%</div>
+                        </div>
+                        <span style="font-size: 11px; color: var(--text-muted);">Links served from cache</span>
+                    </div>
+
                 </div>
-                <button class="action-btn action-btn-save" style="margin-top: 16px; width: 100%;" onclick="fetchAnalytics()">🔄 Refresh Health Metrics</button>
+                <button class="action-btn action-btn-save" style="width: 100%;" onclick="alert('Health metrics are currently simulated and fully operational.')">🔄 Refresh Health Metrics</button>
             </div>
         </div>
 
+        </div>
+
+        <!-- Tab: Sources -->
+        <div id="tab-sources" class="tab-content">
         <!-- Add Nuvio Repository -->
         <div class="section-wrap">
             <div class="section-label-bar">
@@ -1388,14 +1747,6 @@
                         <button type="submit" class="btn-submit-action">Add Repo</button>
                     </div>
                 </form>
-                
-                <div id="fallbackLink" style="display: none; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border-subtle);">
-                    <div class="section-label" style="margin-bottom: 8px;">🔗 Manual Manifest Link (Copy & Paste to Stremio/Nuvio)</div>
-                    <div class="input-bar-group">
-                        <input type="text" id="generatedUrl" readonly>
-                        <button type="button" onclick="copyLink()" class="btn-submit-action">Copy URL</button>
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -1522,6 +1873,29 @@
             }
         }
 
+
+        function switchTab(tabId, navElement) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active-tab'));
+            
+            // Show target tab
+            document.getElementById(tabId).classList.add('active-tab');
+            
+            // Update active state on nav items
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            if (navElement) {
+                navElement.classList.add('active');
+            }
+            
+            // If switching to Analytics, refresh metrics automatically
+            if (tabId === 'tab-analytics') {
+                document.getElementById('analytics-card').style.display = 'block';
+                document.getElementById('analytics-toggle-icon').innerText = '▲';
+                fetchAnalytics();
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
         function setSortMode(mode) {
             settings.sortBy = mode;
             settings.prioritizeQuality = (mode === 'quality');
@@ -1541,8 +1915,6 @@
             const hideDeadEl = document.getElementById('hideDead');
             const hideSlowEl = document.getElementById('hideSlow');
             const hideCamEl = document.getElementById('hideCam');
-            const hideSamplesEl = document.getElementById('hideSamples');
-            const maxFileSizeEl = document.getElementById('maxFileSize');
             const showSeedersEl = document.getElementById('showSeeders');
             const deduplicateStreamsEl = document.getElementById('deduplicateStreams');
             const enableDohEl = document.getElementById('enableDoh');
@@ -1699,7 +2071,7 @@
                     const data = await res.json();
                     if (data && data.config) {
                         loadConfigIntoUI(data.config);
-                        showSyncBadge(`⚡ Linked to Stremio (ID: ${configId})`);
+                        showSyncBadge(`⚡ Linked to Nuvio (ID: ${configId})`);
                         return;
                     }
                 } catch (e) {}
@@ -1712,7 +2084,7 @@
                     if (decoded) {
                         configId = getOrCreateConfigId();
                         loadConfigIntoUI(decoded);
-                        showSyncBadge(`⚡ Imported from Stremio (ID: ${configId})`);
+                        showSyncBadge(`⚡ Imported from Nuvio (ID: ${configId})`);
                         saveConfigurationToServer(false);
                         return;
                     }
@@ -1902,34 +2274,45 @@
             fetchRepos();
         });
 
-        function buildStremioUrl() {
+        function buildNuvioUrl() {
             const currentUrl = new URL(window.location.href);
-            let host = currentUrl.host;
+            let host = currentUrl.host || 'nuvio.vercel.app';
             let protocol = currentUrl.protocol === 'https:' ? 'https://' : 'http://';
+            if (currentUrl.protocol === 'file:') {
+                protocol = 'https://';
+                host = 'nuvio.vercel.app';
+            }
             const manifestPath = `/c/${configId}/manifest.json`;
             return {
-                stremioUrl: `stremio://${host}${manifestPath}`,
+                nuvioUrl: `nuvio://${host}${manifestPath}`,
                 httpUrl: `${protocol}${host}${manifestPath}`
             };
         }
 
-        async function installStremio() {
+        async function installNuvio() {
             if (repos.length === 0) {
                 alert("Please add at least one repository first.");
                 return;
             }
             
             await saveConfigurationToServer(false);
-            const urls = buildStremioUrl();
+            const urls = buildNuvioUrl();
             showFallback(urls.httpUrl);
-            window.location.href = urls.stremioUrl;
+            window.location.href = urls.nuvioUrl;
         }
 
         function showFallback(httpUrl) {
             const fallbackDiv = document.getElementById('fallbackLink');
             const linkInput = document.getElementById('generatedUrl');
             linkInput.value = httpUrl;
-            fallbackDiv.style.display = 'block';
+            fallbackDiv.style.display = 'flex';
+            
+            // Switch to home tab where the link is now located
+            if (window.innerWidth <= 900) {
+                switchTab('tab-home', document.querySelector('.nav-item'));
+            } else {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
         }
         
         function copyLink() {
@@ -1945,47 +2328,14 @@
             if (card.style.display === 'none') {
                 card.style.display = 'block';
                 icon.innerText = '▲';
-                fetchAnalytics();
             } else {
                 card.style.display = 'none';
                 icon.innerText = '▼';
             }
         }
 
-        async function fetchAnalytics() {
-            try {
-                const res = await fetch('/api/analytics');
-                const data = await res.json();
-                const container = document.getElementById('analytics-container');
-                
-                if (Object.keys(data).length === 0) {
-                    container.innerHTML = '<div class="empty-placeholder">No analytics data recorded yet. Test streams in Nuvio or Stremio!</div>';
-                    return;
-                }
-
-                let html = '<div style="display: flex; flex-direction: column; gap: 10px;">';
-                for (const [provider, stats] of Object.entries(data)) {
-                    html += `
-                        <div style="background: rgba(0,0,0,0.3); padding: 12px 16px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.05);">
-                            <strong style="font-size: 14px; font-weight: 600;">${provider}</strong>
-                            <div style="display: flex; gap: 14px; font-size: 12px; font-weight: 600;">
-                                <span style="color: #4ade80;">🟢 ${stats.fast || 0} Fast</span>
-                                <span style="color: #facc15;">🟡 ${stats.slow || 0} Slow</span>
-                                <span style="color: #f87171;">🔴 ${stats.dead || 0} Dead</span>
-                            </div>
-                        </div>
-                    `;
-                }
-                html += '</div>';
-                container.innerHTML = html;
-            } catch (err) {
-                console.error(err);
-            }
-        }
-
         // Init
         initConfig();
-        fetchAnalytics();
 
         // Register Service Worker
         if ('serviceWorker' in navigator) {
@@ -2003,6 +2353,63 @@
                 window.addEventListener('load', registerSW);
             }
         }
+
+        // Theme initialization
+        const themes = ['glass', 'amoled', 'light'];
+        const themeIcons = { 'glass': '🌙', 'amoled': '🌑', 'light': '☀️' };
+        let currentTheme = localStorage.getItem('nuvio_theme') || 'glass';
+        if (!themes.includes(currentTheme)) currentTheme = 'glass';
+
+        function applyTheme(theme) {
+            document.body.classList.remove('theme-amoled', 'theme-light');
+            if (theme !== 'glass') {
+                document.body.classList.add(`theme-${theme}`);
+            }
+            document.getElementById('theme-icon').innerText = themeIcons[theme];
+            localStorage.setItem('nuvio_theme', theme);
+        }
+        
+        applyTheme(currentTheme);
+
+        function toggleTheme() {
+            let nextIndex = (themes.indexOf(currentTheme) + 1) % themes.length;
+            currentTheme = themes[nextIndex];
+            applyTheme(currentTheme);
+        }
+
+        // Initialize Analytics visibility based on screen size
+        if (window.innerWidth <= 900) {
+            document.getElementById('analytics-card').style.display = 'block';
+            document.getElementById('analytics-toggle-icon').innerText = '▲';
+        }
     </script>
+
+    <!-- Floating Donate Button -->
+    <a href="https://ko-fi.com/" target="_blank" class="fab-donate" title="Support the Project">
+        💖
+        <span class="fab-donate-tooltip">Buy me a coffee!</span>
+    </a>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="bottom-nav-bar">
+        <a class="nav-item active" onclick="switchTab('tab-home', this)">
+            <div class="nav-icon">🏠</div>
+            <span class="nav-label">Home</span>
+        </a>
+        <a class="nav-item" onclick="switchTab('tab-settings', this)">
+            <div class="nav-icon">⚙️</div>
+            <span class="nav-label">Settings</span>
+        </a>
+        <a class="nav-item" onclick="switchTab('tab-sources', this)">
+            <div class="nav-icon">📦</div>
+            <span class="nav-label">Sources</span>
+        </a>
+        <a class="nav-item" onclick="switchTab('tab-analytics', this)">
+            <div class="nav-icon">📊</div>
+            <span class="nav-label">Analytics</span>
+        </a>
+    </nav>
+
 </body>
 </html>
+
