@@ -138,7 +138,12 @@ bot.on('callback_query', async (query) => {
                     replyMsg += `🔌 **Status:** ${bat.status}\n`;
                 } catch (e) {}
             }
-            bot.sendMessage(chatId, replyMsg, { parse_mode: 'Markdown' });
+            bot.sendMessage(chatId, replyMsg, { 
+                parse_mode: 'Markdown',
+                reply_markup: {
+                    inline_keyboard: [[{ text: '🔙 Back to Menu', callback_data: 'cmd_menu' }]]
+                }
+            });
         });
     }
     else if (data === 'cmd_manage') {
@@ -158,9 +163,14 @@ bot.on('callback_query', async (query) => {
         const users = getAuthorizedUsers();
         bot.answerCallbackQuery(query.id);
         if (users.length === 0) {
-            bot.sendMessage(chatId, 'No sudo users authorized.');
+            bot.sendMessage(chatId, 'No sudo users authorized.', {
+                reply_markup: { inline_keyboard: [[{ text: '🔙 Back to Menu', callback_data: 'cmd_menu' }]] }
+            });
         } else {
-            bot.sendMessage(chatId, `📋 **Sudo Users:**\n\n${users.map(u => `\`${u}\``).join('\n')}`, { parse_mode: 'Markdown' });
+            bot.sendMessage(chatId, `📋 **Sudo Users:**\n\n${users.map(u => `\`${u}\``).join('\n')}`, { 
+                parse_mode: 'Markdown',
+                reply_markup: { inline_keyboard: [[{ text: '🔙 Back to Menu', callback_data: 'cmd_menu' }]] }
+            });
         }
     }
     else if (data === 'cmd_adduser') {
