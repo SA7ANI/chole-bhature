@@ -33,15 +33,23 @@ console.log('[TeleBot] Initialized and polling for commands.');
 
 // Helpers
 function getAuthorizedUsers() {
-    try {
-        return JSON.parse(fs.readFileSync(authFilePath, 'utf8'));
-    } catch (e) {
-        return [];
-    }
+    try { return JSON.parse(fs.readFileSync(authFilePath, 'utf8')); } 
+    catch (e) { return []; }
 }
-
 function saveAuthorizedUsers(users) {
     fs.writeFileSync(authFilePath, JSON.stringify(users, null, 2));
+}
+
+const tokensFilePath = path.join(__dirname, 'access_tokens.json');
+if (!fs.existsSync(tokensFilePath)) {
+    fs.writeFileSync(tokensFilePath, JSON.stringify([]));
+}
+function getTokens() {
+    try { return JSON.parse(fs.readFileSync(tokensFilePath, 'utf8')); } 
+    catch (e) { return []; }
+}
+function saveTokens(tokens) {
+    fs.writeFileSync(tokensFilePath, JSON.stringify(tokens, null, 2));
 }
 
 function isAuthorized(chatId) {
@@ -56,7 +64,8 @@ const MAIN_MENU = {
         inline_keyboard: [
             [{ text: '🚀 Deploy & Restart', callback_data: 'cmd_deploy' }],
             [{ text: '🔋 Hardware Status', callback_data: 'cmd_status' }],
-            [{ text: '👥 Manage Sudo Users', callback_data: 'cmd_manage' }]
+            [{ text: '👥 Manage Sudo Users', callback_data: 'cmd_manage' }],
+            [{ text: '🔑 Manage Access Tokens', callback_data: 'cmd_manage_tokens' }]
         ]
     }
 };
@@ -64,8 +73,18 @@ const MAIN_MENU = {
 const MANAGE_MENU = {
     reply_markup: {
         inline_keyboard: [
-            [{ text: '➕ Add User', callback_data: 'cmd_adduser' }, { text: '➖ Remove User', callback_data: 'cmd_removeuser' }],
-            [{ text: '📋 List Users', callback_data: 'cmd_listusers' }],
+            [{ text: '➕ Add Sudo User', callback_data: 'cmd_adduser' }, { text: '➖ Remove User', callback_data: 'cmd_removeuser' }],
+            [{ text: '📋 List Sudo Users', callback_data: 'cmd_listusers' }],
+            [{ text: '🔙 Back to Menu', callback_data: 'cmd_menu' }]
+        ]
+    }
+};
+
+const TOKENS_MENU = {
+    reply_markup: {
+        inline_keyboard: [
+            [{ text: '➕ Add Token', callback_data: 'cmd_addtoken' }, { text: '➖ Remove Token', callback_data: 'cmd_removetoken' }],
+            [{ text: '📋 List Tokens', callback_data: 'cmd_listtokens' }],
             [{ text: '🔙 Back to Menu', callback_data: 'cmd_menu' }]
         ]
     }
@@ -176,22 +195,19 @@ bot.on('callback_query', async (query) => {
     else if (data === 'cmd_adduser') {
         if (chatId !== ownerId) return;
         bot.answerCallbackQuery(query.id);
-        bot.sendMessage(chatId, 'Reply to this message with the Access Token you want to ADD:', {
+        bot.sendMessage(chatId, 'Reply to this message with the Telegram Chat ID you want to ADD as Sudo:', {
             reply_markup: { force_reply: true }
         }).then(sentMsg => {
             bot.onReplyToMessage(sentMsg.chat.id, sentMsg.message_id, (reply) => {
-                const newToken = reply.text.trim();
-                if (!newToken) {
-                    bot.sendMessage(chatId, '❌ Invalid Token.');
-                    return;
-                }
+                const newId = parseInt(reply.text.trim());
+                if (isNaN(newId)) return bot.sendMessage(chatId, '❌ Invalid ID. Must be a number.');
                 const users = getAuthorizedUsers();
-                if (!users.includes(newToken)) {
-                    users.push(newToken);
+                if (!users.includes(newId)) {
+                    users.push(newId);
                     saveAuthorizedUsers(users);
-                    bot.sendMessage(chatId, `✅ Added \`${newToken}\` to authorized users.`, { parse_mode: 'Markdown' });
+                    bot.sendMessage(chatId, `✅ Added \`${newId}\` to Sudo users.`, { parse_mode: 'Markdown' });
                 } else {
-                    bot.sendMessage(chatId, '⚠️ Token already exists.');
+                    bot.sendMessage(chatId, '⚠️ User already exists.');
                 }
             });
         });
@@ -199,17 +215,72 @@ bot.on('callback_query', async (query) => {
     else if (data === 'cmd_removeuser') {
         if (chatId !== ownerId) return;
         bot.answerCallbackQuery(query.id);
+        bot.sendMessage(chatId, 'Reply to this message with the Telegram Chat ID you want to REMOVE from Sudo:', {
+            reply_markup: { force_reply: true }
+        }).then(sentMsg => {
+            bot.onReplyToMessage(sentMsg.chat.id, sentMsg.message_id, (reply) => {
+                const delId = parseInt(reply.text.trim());
+                if (isNaN(delId)) return bot.sendMessage(chatId, '❌ Invalid ID.');
+                let users = getAuthorizedUsers();
+                if (users.includes(delId)) {
+                    users = users.filter(id => id !== delId);
+                    saveAuthorizedUsers(users);
+                    bot.sendMessage(chatId, `✅ Removed Sudo user \`${delId}\`.`, { parse_mode: 'Markdown' });
+                } else {
+                    bot.sendMessage(chatId, '⚠️ User not found.');
+                }
+            });
+        });
+    }
+    else if (data === 'cmd_manage_tokens') {
+        bot.editMessageText('🔑 **Manage Mini-Debrid Access Tokens**\nSelect an action:', Object.assign({
+            chat_id: chatId, message_id: query.message.message_id, parse_mode: 'Markdown'
+        }, TOKENS_MENU));
+        bot.answerCallbackQuery(query.id);
+    }
+    else if (data === 'cmd_listtokens') {
+        const tokens = getTokens();
+        bot.answerCallbackQuery(query.id);
+        if (tokens.length === 0) {
+            bot.sendMessage(chatId, 'No access tokens created.', { reply_markup: { inline_keyboard: [[{ text: '🔙 Back', callback_data: 'cmd_manage_tokens' }]] } });
+        } else {
+            bot.sendMessage(chatId, `📋 **Access Tokens:**\n\n${tokens.map(t => `\`${t}\``).join('\n')}`, { 
+                parse_mode: 'Markdown', reply_markup: { inline_keyboard: [[{ text: '🔙 Back', callback_data: 'cmd_manage_tokens' }]] }
+            });
+        }
+    }
+    else if (data === 'cmd_addtoken') {
+        bot.answerCallbackQuery(query.id);
+        bot.sendMessage(chatId, 'Reply to this message with the new Access Token string you want to ADD:', {
+            reply_markup: { force_reply: true }
+        }).then(sentMsg => {
+            bot.onReplyToMessage(sentMsg.chat.id, sentMsg.message_id, (reply) => {
+                const newToken = reply.text.trim();
+                if (!newToken) return bot.sendMessage(chatId, '❌ Invalid Token.');
+                const tokens = getTokens();
+                if (!tokens.includes(newToken)) {
+                    tokens.push(newToken);
+                    saveTokens(tokens);
+                    bot.sendMessage(chatId, `✅ Created token \`${newToken}\`.`, { parse_mode: 'Markdown' });
+                } else {
+                    bot.sendMessage(chatId, '⚠️ Token already exists.');
+                }
+            });
+        });
+    }
+    else if (data === 'cmd_removetoken') {
+        bot.answerCallbackQuery(query.id);
         bot.sendMessage(chatId, 'Reply to this message with the Access Token you want to REMOVE:', {
             reply_markup: { force_reply: true }
         }).then(sentMsg => {
             bot.onReplyToMessage(sentMsg.chat.id, sentMsg.message_id, (reply) => {
                 const delToken = reply.text.trim();
                 if (!delToken) return bot.sendMessage(chatId, '❌ Invalid Token.');
-                let users = getAuthorizedUsers();
-                if (users.includes(delToken)) {
-                    users = users.filter(id => id !== delToken);
-                    saveAuthorizedUsers(users);
-                    bot.sendMessage(chatId, `✅ Removed \`${delToken}\`.`, { parse_mode: 'Markdown' });
+                let tokens = getTokens();
+                if (tokens.includes(delToken)) {
+                    tokens = tokens.filter(t => t !== delToken);
+                    saveTokens(tokens);
+                    bot.sendMessage(chatId, `✅ Removed token \`${delToken}\`.`, { parse_mode: 'Markdown' });
                 } else {
                     bot.sendMessage(chatId, '⚠️ Token not found.');
                 }

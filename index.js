@@ -172,17 +172,17 @@ app.get('/stream/:infoHash/:userId', (req, res) => {
     const infoHash = req.params.infoHash;
 
     // Verify User Authorization
-    const authPath = path.join(__dirname, 'authorized_users.json');
+    const authPath = path.join(__dirname, 'access_tokens.json');
     let isAuthorized = false;
     
     if (fs.existsSync(authPath)) {
         try {
-            const users = JSON.parse(fs.readFileSync(authPath, 'utf8'));
-            if (users.includes(userId)) {
+            const tokens = JSON.parse(fs.readFileSync(authPath, 'utf8'));
+            if (tokens.includes(userId)) {
                 isAuthorized = true;
             }
         } catch (e) {
-            console.error('Error reading authorized_users.json', e);
+            console.error('Error reading access_tokens.json', e);
         }
     }
 
