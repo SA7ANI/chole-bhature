@@ -500,137 +500,6 @@ app.use('/:configJSON', (req, res, next) => {
             console.error('[Router Error]', err);
             return res.status(400).send('Invalid configuration');
         }
-    const { configJSON, type, id } = req.params;
-    try {
-        const config = JSON.parse(decodeURIComponent(configJSON));
-        config.addonHost = req.headers.host;
-        const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
-        config.addonProtocol = protocol.split(',')[0].trim();
-        
-        const cacheKey = `${type}:${id}:${JSON.stringify(config)}`;
-        streamCache.delete(cacheKey);
-        console.log(`[Cache] Cleared via browser link for ${type} ${id}`);
-        
-        const html = `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Cache Cleared</title>
-            <style>
-                body { background-color: #09090b; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-                h1 { color: #4ade80; }
-                p { color: #94a3b8; }
-            </style>
-        </head>
-        <body>
-            <h1>✅ Cache Cleared!</h1>
-            <p>Closing automatically...</p>
-            <script>
-                setTimeout(() => {
-                    window.close();
-                }, 1500);
-            </script>
-        </body>
-        </html>
-        `;
-        res.status(200).send(html);
-    } catch (e) {
-        res.status(500).send('Error clearing cache.');
-    }
-});
-
-app.get('/c/:configId/clear-cache/:type/:id', (req, res) => {
-    const { configId, type, id } = req.params;
-    try {
-        const config = userConfigs.get(configId) || {};
-        config.addonHost = req.headers.host;
-        const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
-        config.addonProtocol = protocol.split(',')[0].trim();
-        config.configId = configId;
-        
-        const cacheKey = `${type}:${id}:${JSON.stringify(config)}`;
-        streamCache.delete(cacheKey);
-        for (const k of streamCache.keys()) {
-            if (k.includes(configId)) streamCache.delete(k);
-        }
-        console.log(`[Cache] Cleared via browser link for ${type} ${id} (configId: ${configId})`);
-        
-        const html = `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Cache Cleared</title>
-            <style>
-                body { background-color: #09090b; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-                h1 { color: #4ade80; }
-                p { color: #94a3b8; }
-            </style>
-        </head>
-        <body>
-            <h1>✅ Cache Cleared!</h1>
-            <p>Closing automatically...</p>
-            <script>
-                setTimeout(() => {
-                    window.close();
-                }, 1500);
-            </script>
-        </body>
-        </html>
-        `;
-        res.status(200).send(html);
-    } catch (e) {
-        res.status(500).send('Error clearing cache.');
-    }
-});
-
-app.use('/c/:configId', (req, res, next) => {
-    // Only intercept Stremio API routes
-    if (req.path === '/manifest.json' || req.path.startsWith('/stream/') || req.path.startsWith('/catalog/')) {
-        try {
-            const { configId } = req.params;
-            let config = userConfigs.get(configId);
-            if (!config) {
-                config = { repoUrl: 'https://raw.githubusercontent.com/D3adlyRocket/All-in-One-Nuvio/refs/heads/main/manifest.json' };
-            }
-            config = JSON.parse(JSON.stringify(config)); // clone
-            config.configId = configId;
-            config.addonHost = req.headers.host;
-            const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
-            config.addonProtocol = protocol.split(',')[0].trim();
-            
-            const addonInterface = createAddon(config);
-            const router = getRouter(addonInterface);
-            return router(req, res, next);
-        } catch (err) {
-            console.error('[Router Error /c/:configId]', err);
-            return res.status(400).send('Invalid configuration');
-        }
-    }
-    next();
-});
-
-app.use('/:configJSON', (req, res, next) => {
-    // Only intercept Stremio API routes
-    if (req.path === '/manifest.json' || req.path.startsWith('/stream/') || req.path.startsWith('/catalog/')) {
-        try {
-            const config = JSON.parse(decodeURIComponent(req.params.configJSON));
-            config.addonHost = req.headers.host;
-            const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
-            config.addonProtocol = protocol.split(',')[0].trim();
-            
-            const addonInterface = createAddon(config);
-            const router = getRouter(addonInterface);
-            
-            // Override req.url so the internal router matches /manifest.json or /stream/...
-            return router(req, res, next);
-        } catch (err) {
-            console.error('[Router Error]', err);
-            return res.status(400).send('Invalid configuration');
-        }
     }
     next();
 });
@@ -640,22 +509,10 @@ if (!process.env.VERCEL) {
     app.listen(PORT, () => {
         console.log(`Stremio Nuvio Meta-Sorter Addon running at http://localhost:${PORT}`);
         console.log(`Configure at http://localhost:${PORT}/configure`);
-        
-        // Notify owner if booting on local Termux
-        setTimeout(() => {
-            const logPath = path.join(__dirname, 'cloudflared.log');
-            if (fs.existsSync(logPath)) {
-                const logs = fs.readFileSync(logPath, 'utf8');
-                const match = logs.match(/https:\/\/[a-zA-Z0-9-]+\.trycloudflare\.com/);
-                if (match) {
-                    telebot.sendMessageToOwner(`✅ **Server is Online!**\n\n🔗 **Addon URL:**\n\`${match[0]}\``);
-                } else {
-                    telebot.sendMessageToOwner(`✅ **Server is Online**\n⚠️ Cloudflare URL not found in logs yet.`);
-                }
-            }
-        }, 5000); // Wait 5 seconds for cloudflare to generate URL
     });
 }
 
 // Export the app for Vercel Serverless Functions
 module.exports = app;
+
+

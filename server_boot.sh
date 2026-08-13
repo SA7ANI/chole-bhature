@@ -3,6 +3,10 @@
 # Nuvio Server Master Boot Script for Termux
 echo "🚀 Booting Nuvio Meta-Sorter Server..."
 
+# Ensure Android does not put the CPU to sleep when screen turns off
+echo "🔋 Acquiring Wake Lock..."
+termux-wake-lock
+
 # Ensure we are in the right directory
 cd "$(dirname "$0")"
 
