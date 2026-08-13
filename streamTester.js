@@ -741,28 +741,6 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
     if (config && config.hideSlow) {
         filteredStreams = filteredStreams.filter(s => s.statusCategory !== 'slow');
     }
-    
-    // True-Probe Device Limitations Filter (Hardware Profile)
-    if (config) {
-        filteredStreams = filteredStreams.filter(s => {
-            const probe = s.trueProbe || {};
-            const meta = parseStreamMetadata(s);
-            
-            // AV1
-            const isAV1 = probe.codec === 'av1' || meta.codec === 'AV1';
-            if (config.disableAV1 && isAV1) return false;
-            
-            // HEVC
-            const isHEVC = probe.codec === 'hevc' || meta.codec === 'HEVC';
-            if (config.disableHEVC && isHEVC) return false;
-            
-            // Dolby Vision
-            const isDV = (probe.profile && probe.profile.toLowerCase().includes('dolby vision')) || meta.hdr.includes('DV') || meta.hdr.includes('Dolby Vision');
-            if (config.disableDV && isDV) return false;
-            
-            return true;
-        });
-    }
     // Auto-Hide CAM, TeleSync, and Screener theater recordings
     if (config && (config.hideCam || config.blockCam)) {
         filteredStreams = filteredStreams.filter(s => {
@@ -987,10 +965,26 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
 
     // Clean up internal properties and ensure behaviorHints.filename is enriched for Nuvio Native Badges
     return filteredStreams.map(s => {
-        const { latency, isDead, statusCategory, originalProvider, ...stremioStream } = s;
+        const { latency, isDead, statusCategory, originalProvider, trueProbe, ...stremioStream } = s;
         
         // Enrich behaviorHints.filename for Nuvio Fusion badges
         const meta = parseStreamMetadata(stremioStream);
+        
+        // 🛠️ TRUE-PROBE METADATA CORRECTION 🛠️
+        if (trueProbe) {
+            // Overwrite Regex codec with absolute proven codec
+            if (trueProbe.codec === 'hevc') meta.codec = 'HEVC';
+            else if (trueProbe.codec === 'av1') meta.codec = 'AV1';
+            else if (trueProbe.codec === 'h264') meta.codec = 'H.264';
+            
+            // Detect Dolby Vision definitively
+            if (trueProbe.profile && trueProbe.profile.toLowerCase().includes('dolby vision')) {
+                if (!meta.hdr.includes('DV')) meta.hdr.push('DV');
+            } else if (trueProbe.color_transfer === 'smpte2084') {
+                if (!meta.hdr.includes('HDR')) meta.hdr.push('HDR');
+            }
+        }
+        
         const tokens = [
             meta.resolution || '1080p',
             meta.quality || 'WEB-DL',
