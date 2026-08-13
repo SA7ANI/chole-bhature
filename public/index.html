@@ -1655,8 +1655,8 @@
                 </div>
 
                 <!-- Mini-Debrid Access (Premium Access Token) -->
-                <div class="setting-item-row" style="flex-direction: column; align-items: stretch; gap: 12px;">
-                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+                <div class="setting-item-row" style="flex-direction: column; align-items: stretch; gap: 16px;">
+                    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
                         <div class="setting-text-block" style="flex: 1; min-width: 240px;">
                             <div class="setting-headline">
                                 💎 Mini-Debrid Premium Access
@@ -1665,14 +1665,20 @@
                             <div class="setting-description">Unlock the built-in Torrent-to-HTTP server. Instead of fetching raw magnet links, Stremio will stream directly via HTTP. Enter your Access Token if you are an authorized user.</div>
                         </div>
                     </div>
-                    <div style="background: var(--bg-surface-secondary); padding: 12px; border-radius: 12px; border: 1px solid var(--border-subtle); display: flex; align-items: center; gap: 12px;">
-                        <span style="font-size: 1.1rem;">🔑</span>
-                        <input type="text" id="accessToken" placeholder="Enter your Access Token" oninput="onSettingChanged()" style="flex: 1; background: transparent; border: none; color: var(--text-primary); font-size: 0.95rem; outline: none; font-weight: 500;">
-                    </div>
-                    <div style="display: flex; justify-content: flex-end; padding-top: 4px;">
-                        <a href="https://t.me/TARSAIAgent_bot" target="_blank" style="color: #60a5fa; text-decoration: none; font-size: 0.85rem; font-weight: 500; display: flex; align-items: center; gap: 4px;">
-                            <span>💬</span> Request Token via Telegram Bot
-                        </a>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <div style="position: relative; display: flex; align-items: center;">
+                            <span style="position: absolute; left: 14px; font-size: 1.1rem; opacity: 0.7;">🔑</span>
+                            <input type="text" id="accessToken" placeholder="Enter your Access Token" oninput="onTokenInput()" 
+                                style="width: 100%; padding: 12px 14px 12px 42px; background: rgba(0,0,0,0.2); border: 1px solid var(--border-subtle); border-radius: 12px; color: var(--text-primary); font-size: 0.95rem; outline: none; font-weight: 500; transition: border-color 0.2s; box-sizing: border-box;">
+                            <span id="tokenStatus" style="position: absolute; right: 14px; font-size: 0.9rem; opacity: 0; transition: opacity 0.3s; font-weight: 600;"></span>
+                        </div>
+                        <div style="display: flex; justify-content: flex-end;">
+                            <a href="https://t.me/TARSAIAgent_bot" target="_blank" style="color: #60a5fa; text-decoration: none; font-size: 0.85rem; font-weight: 500; display: flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 6px; transition: background 0.2s;" onmouseover="this.style.background='rgba(96, 165, 250, 0.1)'" onmouseout="this.style.background='transparent'">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"></path><path d="M22 2L15 22L11 13L2 9L22 2Z"></path></svg>
+                                Request Token via Telegram
+                            </a>
+                        </div>
                     </div>
                 </div>
 
@@ -2173,7 +2179,10 @@
             const initDohProviderEl = document.getElementById('dohProvider');
             if (initDohProviderEl) initDohProviderEl.value = settings.dohProvider || 'cloudflare';
             const initAccessTokenEl = document.getElementById('accessToken');
-            if (initAccessTokenEl) initAccessTokenEl.value = settings.accessToken || '';
+            if (initAccessTokenEl) {
+                initAccessTokenEl.value = settings.accessToken || '';
+                if (settings.accessToken) verifyToken(settings.accessToken);
+            }
             updateSortModeUI(settings.sortBy || 'speed');
             renderLanguageChips();
             
@@ -2509,6 +2518,50 @@
         }
         
         window.addEventListener('DOMContentLoaded', () => syncHealthData());
+
+        // Token Verification Logic
+        let tokenCheckTimeout = null;
+        function onTokenInput() {
+            onSettingChanged(); // Update config URL immediately
+            const token = document.getElementById('accessToken').value.trim();
+            const statusEl = document.getElementById('tokenStatus');
+            
+            if (!token) {
+                statusEl.style.opacity = '0';
+                return;
+            }
+            
+            statusEl.style.opacity = '1';
+            statusEl.innerText = 'Checking...';
+            statusEl.style.color = '#94a3b8';
+            
+            clearTimeout(tokenCheckTimeout);
+            tokenCheckTimeout = setTimeout(() => verifyToken(token), 500);
+        }
+        
+        async function verifyToken(token) {
+            const statusEl = document.getElementById('tokenStatus');
+            if (!statusEl) return;
+            
+            try {
+                // We use the same base URL as the current page (which handles Cloudflare tunnel logic nicely)
+                const res = await fetch(`/api/verify-token/${encodeURIComponent(token)}`);
+                const data = await res.json();
+                
+                statusEl.style.opacity = '1';
+                if (data.valid) {
+                    statusEl.innerText = '✅ Valid';
+                    statusEl.style.color = '#4ade80';
+                } else {
+                    statusEl.innerText = '❌ Invalid';
+                    statusEl.style.color = '#f87171';
+                }
+            } catch (err) {
+                statusEl.style.opacity = '1';
+                statusEl.innerText = '⚠️ Error';
+                statusEl.style.color = '#facc15';
+            }
+        }
 
         // Initialize Analytics visibility based on screen size
         if (window.innerWidth <= 900) {

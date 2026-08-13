@@ -250,23 +250,15 @@ bot.on('callback_query', async (query) => {
         }
     }
     else if (data === 'cmd_addtoken') {
+        const crypto = require('crypto');
+        const newToken = 'chole-bhature-' + crypto.randomBytes(4).toString('hex'); // e.g., 'chole-bhature-a1b2c3d4'
         bot.answerCallbackQuery(query.id);
-        bot.sendMessage(chatId, 'Reply to this message with the new Access Token string you want to ADD:', {
-            reply_markup: { force_reply: true }
-        }).then(sentMsg => {
-            bot.onReplyToMessage(sentMsg.chat.id, sentMsg.message_id, (reply) => {
-                const newToken = reply.text.trim();
-                if (!newToken) return bot.sendMessage(chatId, '❌ Invalid Token.');
-                const tokens = getTokens();
-                if (!tokens.includes(newToken)) {
-                    tokens.push(newToken);
-                    saveTokens(tokens);
-                    bot.sendMessage(chatId, `✅ Created token \`${newToken}\`.`, { parse_mode: 'Markdown' });
-                } else {
-                    bot.sendMessage(chatId, '⚠️ Token already exists.');
-                }
-            });
-        });
+        
+        const tokens = getTokens();
+        tokens.push(newToken);
+        saveTokens(tokens);
+        
+        bot.sendMessage(chatId, `✅ **Generated New Token:**\n\`${newToken}\`\n\nShare this token with the user.`, { parse_mode: 'Markdown' });
     }
     else if (data === 'cmd_removetoken') {
         bot.answerCallbackQuery(query.id);

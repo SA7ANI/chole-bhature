@@ -138,6 +138,23 @@ const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 // Analytics tracker
 const providerAnalytics = new Map();
 
+// Token Verification API
+app.get('/api/verify-token/:token', (req, res) => {
+    const token = req.params.token;
+    const authPath = path.join(__dirname, 'access_tokens.json');
+    if (fs.existsSync(authPath)) {
+        try {
+            const tokens = JSON.parse(fs.readFileSync(authPath, 'utf8'));
+            if (tokens.includes(token)) {
+                return res.json({ valid: true });
+            }
+        } catch (e) {
+            console.error('Error reading access_tokens.json', e);
+        }
+    }
+    res.json({ valid: false });
+});
+
 app.get('/api/analytics', (req, res) => {
     const stats = {};
     for (const [provider, data] of providerAnalytics.entries()) {
