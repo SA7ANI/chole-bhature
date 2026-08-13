@@ -27,7 +27,7 @@ function probeVideo(url) {
     });
 }
 
-const TIMEOUT_MS = 4500;
+const TIMEOUT_MS = 2000; // Reduced from 4500ms for faster scraping
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
 function cleanProviderName(rawName) {
@@ -656,8 +656,10 @@ async function testStream(stream, config = {}) {
         let latency = 0;
         let trueProbe = null;
         try {
-            // Attempt True-Probing with FFmpeg
-            trueProbe = await probeVideo(stream.url);
+            // Only use FFprobe True-Probing if explicitly requested in config (heavy on phone CPU!)
+            if (config && config.enableTrueProbing) {
+                trueProbe = await probeVideo(stream.url);
+            }
             if (trueProbe) {
                 latency = Date.now() - startTime;
             } else {

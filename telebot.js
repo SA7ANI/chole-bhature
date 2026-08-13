@@ -155,7 +155,7 @@ function sendDetailedMenu(chatId, messageId = null) {
     const usedMem = totalMem - freeMem;
     const reqs = getTokenRequests().length;
     
-    let text = `🎛️ **Nuvio Control Panel**\n`;
+    let text = `🎛️ **Chole Bhature Control Panel**\n`;
     text += `━━━━━━━━━━━━━━━━━━\n`;
     text += `📊 **System Statistics**\n`;
     text += `⏱️ **Uptime:** \`${uptime}\`\n`;
@@ -271,12 +271,14 @@ bot.on('callback_query', async (query) => {
                     replyMsg += `🔌 **Status:** ${bat.status}\n`;
                 } catch (e) {}
             }
-            bot.sendMessage(chatId, replyMsg, { 
+            bot.editMessageText(replyMsg, {
+                chat_id: chatId,
+                message_id: query.message.message_id,
                 parse_mode: 'Markdown',
                 reply_markup: {
                     inline_keyboard: [[{ text: '🔙 Back to Menu', callback_data: 'cmd_menu' }]]
                 }
-            });
+            }).catch(()=>{});
         });
     }
     else if (data === 'cmd_manage') {
@@ -296,32 +298,37 @@ bot.on('callback_query', async (query) => {
         const users = getAuthorizedUsers();
         bot.answerCallbackQuery(query.id);
         if (users.length === 0) {
-            bot.sendMessage(chatId, 'No sudo users authorized.', {
-                reply_markup: { inline_keyboard: [[{ text: '🔙 Back to Menu', callback_data: 'cmd_menu' }]] }
-            });
+            bot.editMessageText('No sudo users authorized.', {
+                chat_id: chatId,
+                message_id: query.message.message_id,
+                reply_markup: { inline_keyboard: [[{ text: '🔙 Back to Menu', callback_data: 'cmd_manage' }]] }
+            }).catch(()=>{});
         } else {
-            bot.sendMessage(chatId, `📋 **Sudo Users:**\n\n${users.map(u => `\`${u}\``).join('\n')}`, { 
+            bot.editMessageText(`📋 **Sudo Users:**\n\n${users.map(u => `\`${u}\``).join('\n')}`, {
+                chat_id: chatId,
+                message_id: query.message.message_id,
                 parse_mode: 'Markdown',
-                reply_markup: { inline_keyboard: [[{ text: '🔙 Back to Menu', callback_data: 'cmd_menu' }]] }
-            });
+                reply_markup: { inline_keyboard: [[{ text: '🔙 Back to Menu', callback_data: 'cmd_manage' }]] }
+            }).catch(()=>{});
         }
     }
     else if (data === 'cmd_adduser') {
         if (chatId !== ownerId) return;
         bot.answerCallbackQuery(query.id);
-        bot.sendMessage(chatId, 'Reply to this message with the Telegram Chat ID you want to ADD as Sudo:', {
+        bot.sendMessage(chatId, 'Reply to this message with the Telegram Chat ID you want to ADD as Sudo (or type /menu to cancel):', {
             reply_markup: { force_reply: true }
         }).then(sentMsg => {
             bot.onReplyToMessage(sentMsg.chat.id, sentMsg.message_id, (reply) => {
+                if (reply.text === '/menu') return;
                 const newId = parseInt(reply.text.trim());
                 if (isNaN(newId)) return bot.sendMessage(chatId, '❌ Invalid ID. Must be a number.');
                 const users = getAuthorizedUsers();
                 if (!users.includes(newId)) {
                     users.push(newId);
                     saveAuthorizedUsers(users);
-                    bot.sendMessage(chatId, `✅ Added \`${newId}\` to Sudo users.`, { parse_mode: 'Markdown' });
+                    bot.sendMessage(chatId, `✅ Added \`${newId}\` to Sudo users.\n\nSend /menu to return.`, { parse_mode: 'Markdown' });
                 } else {
-                    bot.sendMessage(chatId, '⚠️ User already exists.');
+                    bot.sendMessage(chatId, '⚠️ User already exists.\n\nSend /menu to return.');
                 }
             });
         });
@@ -329,19 +336,20 @@ bot.on('callback_query', async (query) => {
     else if (data === 'cmd_removeuser') {
         if (chatId !== ownerId) return;
         bot.answerCallbackQuery(query.id);
-        bot.sendMessage(chatId, 'Reply to this message with the Telegram Chat ID you want to REMOVE from Sudo:', {
+        bot.sendMessage(chatId, 'Reply to this message with the Telegram Chat ID you want to REMOVE from Sudo (or type /menu to cancel):', {
             reply_markup: { force_reply: true }
         }).then(sentMsg => {
             bot.onReplyToMessage(sentMsg.chat.id, sentMsg.message_id, (reply) => {
+                if (reply.text === '/menu') return;
                 const delId = parseInt(reply.text.trim());
                 if (isNaN(delId)) return bot.sendMessage(chatId, '❌ Invalid ID.');
                 let users = getAuthorizedUsers();
                 if (users.includes(delId)) {
                     users = users.filter(id => id !== delId);
                     saveAuthorizedUsers(users);
-                    bot.sendMessage(chatId, `✅ Removed Sudo user \`${delId}\`.`, { parse_mode: 'Markdown' });
+                    bot.sendMessage(chatId, `✅ Removed Sudo user \`${delId}\`.\n\nSend /menu to return.`, { parse_mode: 'Markdown' });
                 } else {
-                    bot.sendMessage(chatId, '⚠️ User not found.');
+                    bot.sendMessage(chatId, '⚠️ User not found.\n\nSend /menu to return.');
                 }
             });
         });
@@ -356,11 +364,18 @@ bot.on('callback_query', async (query) => {
         const tokens = getTokens();
         bot.answerCallbackQuery(query.id);
         if (tokens.length === 0) {
-            bot.sendMessage(chatId, 'No access tokens created.', { reply_markup: { inline_keyboard: [[{ text: '🔙 Back', callback_data: 'cmd_manage_tokens' }]] } });
+            bot.editMessageText('No tokens exist.', {
+                chat_id: chatId,
+                message_id: query.message.message_id,
+                reply_markup: { inline_keyboard: [[{ text: '🔙 Back to Menu', callback_data: 'cmd_manage_tokens' }]] }
+            }).catch(()=>{});
         } else {
-            bot.sendMessage(chatId, `📋 **Access Tokens:**\n\n${tokens.map(t => `\`${t}\``).join('\n')}`, { 
-                parse_mode: 'Markdown', reply_markup: { inline_keyboard: [[{ text: '🔙 Back', callback_data: 'cmd_manage_tokens' }]] }
-            });
+            bot.editMessageText(`📋 **Premium Access Tokens:**\n\n${tokens.map(t => `\`${t}\``).join('\n')}`, {
+                chat_id: chatId,
+                message_id: query.message.message_id,
+                parse_mode: 'Markdown',
+                reply_markup: { inline_keyboard: [[{ text: '🔙 Back to Menu', callback_data: 'cmd_manage_tokens' }]] }
+            }).catch(()=>{});
         }
     }
     else if (data === 'cmd_pending_reqs') {
@@ -443,19 +458,19 @@ bot.on('callback_query', async (query) => {
     }
     else if (data === 'cmd_removetoken') {
         bot.answerCallbackQuery(query.id);
-        bot.sendMessage(chatId, 'Reply to this message with the Access Token you want to REMOVE:', {
+        bot.sendMessage(chatId, 'Reply to this message with the exact Token you want to REMOVE (or type /menu to cancel):', {
             reply_markup: { force_reply: true }
         }).then(sentMsg => {
             bot.onReplyToMessage(sentMsg.chat.id, sentMsg.message_id, (reply) => {
+                if (reply.text === '/menu') return;
                 const delToken = reply.text.trim();
-                if (!delToken) return bot.sendMessage(chatId, '❌ Invalid Token.');
                 let tokens = getTokens();
                 if (tokens.includes(delToken)) {
                     tokens = tokens.filter(t => t !== delToken);
                     saveTokens(tokens);
-                    bot.sendMessage(chatId, `✅ Removed token \`${delToken}\`.`, { parse_mode: 'Markdown' });
+                    bot.sendMessage(chatId, `✅ Removed Token \`${delToken}\`.\n\nSend /menu to return.`, { parse_mode: 'Markdown' });
                 } else {
-                    bot.sendMessage(chatId, '⚠️ Token not found.');
+                    bot.sendMessage(chatId, '⚠️ Token not found.\n\nSend /menu to return.');
                 }
             });
         });
