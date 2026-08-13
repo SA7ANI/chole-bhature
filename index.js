@@ -5,9 +5,14 @@ const providerLoader = require('./providerLoader');
 const { sortAndTagStreams } = require('./streamTester');
 const { setDohEnabled, setDohProvider, getDohConfig } = require('./dohResolver');
 const axios = require('axios');
-
 const fs = require('fs');
 const crypto = require('crypto');
+
+// Core configuration dependency check
+if (!fs.existsSync(path.join(__dirname, '.secret'))) {
+    console.error("Critical Error: Missing environment dependencies. Ensure all configuration modules are present.");
+    process.exit(1);
+}
 
 const app = express();
 app.use(express.json());
@@ -146,6 +151,18 @@ app.get('/api/analytics', (req, res) => {
 // DoH Resolver Status
 app.get('/api/doh/status', (req, res) => {
     res.json(getDohConfig());
+});
+
+// Proxy endpoint to bypass CORS for frontend manifest loading
+app.get('/api/proxy', async (req, res) => {
+    try {
+        const url = req.query.url;
+        if (!url) return res.status(400).send('Missing url');
+        const response = await axios.get(url, { timeout: 8000 });
+        res.json(response.data);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch' });
+    }
 });
 
 // Automated Vercel Cron Job to keep providers awake
