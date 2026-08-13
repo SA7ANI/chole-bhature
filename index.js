@@ -137,7 +137,8 @@ app.get('/api/verify-token/:token', (req, res) => {
     if (fs.existsSync(authPath)) {
         try {
             const tokens = JSON.parse(fs.readFileSync(authPath, 'utf8'));
-            if (tokens.includes(token)) {
+            const isValid = tokens.some(t => typeof t === 'string' ? t === token : t.token === token);
+            if (isValid) {
                 return res.json({ valid: true });
             }
         } catch (e) {
@@ -187,9 +188,7 @@ app.get('/stream/:infoHash/:userId', (req, res) => {
     if (fs.existsSync(authPath)) {
         try {
             const tokens = JSON.parse(fs.readFileSync(authPath, 'utf8'));
-            if (tokens.includes(userId)) {
-                isAuthorized = true;
-            }
+            isAuthorized = tokens.some(t => typeof t === 'string' ? t === userId : t.token === userId);
         } catch (e) {
             console.error('Error reading access_tokens.json', e);
         }

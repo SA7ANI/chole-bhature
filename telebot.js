@@ -31,6 +31,30 @@ try {
 
 console.log('[TeleBot] Initialized and polling for commands.');
 
+// Persist CF Tunnel across restarts
+const cfFile = path.join(__dirname, 'cf_tunnel.json');
+const cfErrLog = path.join(__dirname, 'cf_err.log');
+
+global.cfUrl = null;
+global.cfPid = null;
+
+if (fs.existsSync(cfFile)) {
+    try {
+        const data = JSON.parse(fs.readFileSync(cfFile, 'utf8'));
+        if (data.pid) {
+            try {
+                process.kill(data.pid, 0); // Check if process is still running
+                global.cfPid = data.pid;
+                global.cfUrl = data.url;
+                console.log('[TeleBot] Restored active CF Tunnel:', data.url);
+            } catch (e) {
+                // Process is dead
+                fs.unlinkSync(cfFile);
+            }
+        }
+    } catch (e) {}
+}
+
 // Helpers
 function getAuthorizedUsers() {
     try { return JSON.parse(fs.readFileSync(authFilePath, 'utf8')); } 
@@ -74,8 +98,8 @@ function isAuthorized(chatId) {
 const MAIN_MENU = {
     reply_markup: {
         inline_keyboard: [
-            [{ text: '🌐 Manage CF Tunnel', callback_data: 'cmd_manage_cf' }],
-            [{ text: '🚀 Deploy & Restart', callback_data: 'cmd_deploy' }, { text: '🔋 Hardware Status', callback_data: 'cmd_status' }],
+            [{ text: '🚀 Deploy & Restart', callback_data: 'cmd_deploy' }],
+            [{ text: '🌐 Manage CF Tunnel', callback_data: 'cmd_manage_cf' }, { text: '🔋 Hardware Status', callback_data: 'cmd_status' }],
             [{ text: '👥 Manage Sudo Users', callback_data: 'cmd_manage' }],
             [{ text: '🔑 Manage Access Tokens', callback_data: 'cmd_manage_tokens' }]
         ]
@@ -211,48 +235,70 @@ bot.on('callback_query', async (query) => {
         }).catch(()=>{});
     }
     else if (data === 'cmd_cf_tunnel') {
-        if (global.cfProcess) {
+        if (global.cfPid) {
             return bot.answerCallbackQuery(query.id, { text: '⚠️ Tunnel is already running!', show_alert: true });
         }
         bot.answerCallbackQuery(query.id);
         
-        bot.editMessageText('🌐 Starting Cloudflare Tunnel... Please wait.', {
+        bot.editMessageText('🌐 Starting Cloudflare Tunnel (Detached mode)... Please wait.', {
             chat_id: chatId,
             message_id: query.message.message_id,
             parse_mode: 'Markdown'
         }).catch(()=>{});
 
+        if (fs.existsSync(cfErrLog)) fs.writeFileSync(cfErrLog, ''); // Clear old log
+
         const { spawn } = require('child_process');
+        const out = fs.openSync(path.join(__dirname, 'cf_out.log'), 'a');
+        const err = fs.openSync(cfErrLog, 'a');
         
-        global.cfProcess = spawn('cloudflared', ['tunnel', '--url', 'http://localhost:7000']);
+        const cfProc = spawn('cloudflared', ['tunnel', '--url', 'http://localhost:7000'], {
+            detached: true,
+            stdio: ['ignore', out, err]
+        });
         
-        global.cfProcess.stderr.on('data', (out) => {
-            const str = out.toString();
-            const match = str.match(/https:\/\/[a-zA-Z0-9-]+\.trycloudflare\.com/);
-            if (match && !global.cfUrl) {
-                global.cfUrl = match[0];
-                let text = `🌐 **Cloudflare Tunnel Management**\n\n✅ **Tunnel is ACTIVE**\n🔗 \`${global.cfUrl}/configure\`\n\n_Share this link with your users!_`;
-                bot.editMessageText(text, {
-                    chat_id: chatId,
-                    message_id: query.message.message_id,
-                    parse_mode: 'Markdown',
-                    reply_markup: { inline_keyboard: [[{ text: '🛑 Stop Tunnel', callback_data: 'cmd_stop_cf_tunnel' }], [{ text: '🔙 Back to Menu', callback_data: 'cmd_menu' }]] }
-                }).catch(()=>{});
+        cfProc.unref(); // Detach completely from Node.js
+        global.cfPid = cfProc.pid;
+        
+        let attempts = 0;
+        const interval = setInterval(() => {
+            attempts++;
+            if (attempts > 30) {
+                clearInterval(interval);
+                bot.sendMessage(chatId, '⚠️ Cloudflare Tunnel started, but taking too long to generate URL.');
+                return;
             }
-        });
-        
-        global.cfProcess.on('close', () => {
-            global.cfUrl = null;
-            global.cfProcess = null;
-            bot.sendMessage(chatId, '⚠️ Cloudflare Tunnel stopped.');
-        });
+            if (fs.existsSync(cfErrLog)) {
+                const logData = fs.readFileSync(cfErrLog, 'utf8');
+                const match = logData.match(/https:\/\/[a-zA-Z0-9-]+\.trycloudflare\.com/);
+                if (match && !global.cfUrl) {
+                    global.cfUrl = match[0];
+                    fs.writeFileSync(cfFile, JSON.stringify({ pid: global.cfPid, url: global.cfUrl }));
+                    
+                    let text = `🌐 **Cloudflare Tunnel Management**\n\n✅ **Tunnel is ACTIVE**\n🔗 \`${global.cfUrl}/configure\`\n\n_Share this link with your users!_`;
+                    bot.editMessageText(text, {
+                        chat_id: chatId,
+                        message_id: query.message.message_id,
+                        parse_mode: 'Markdown',
+                        reply_markup: { inline_keyboard: [[{ text: '🛑 Stop Tunnel', callback_data: 'cmd_stop_cf_tunnel' }], [{ text: '🔙 Back to Menu', callback_data: 'cmd_menu' }]] }
+                    }).catch(()=>{});
+                    clearInterval(interval);
+                }
+            }
+        }, 500);
     }
     else if (data === 'cmd_stop_cf_tunnel') {
         bot.answerCallbackQuery(query.id, { text: 'Stopping tunnel...' });
-        if (global.cfProcess) {
-            global.cfProcess.kill();
-            global.cfProcess = null;
+        if (global.cfPid) {
+            try { process.kill(global.cfPid, 'SIGTERM'); } catch(e) {}
+            setTimeout(() => {
+                try { process.kill(global.cfPid, 'SIGKILL'); } catch(e) {}
+            }, 500);
+            
+            global.cfPid = null;
             global.cfUrl = null;
+            if (fs.existsSync(cfFile)) fs.unlinkSync(cfFile);
+            
             let text = `🌐 **Cloudflare Tunnel Management**\n\n❌ **Tunnel is OFFLINE**\n\nStart the tunnel to generate a public URL.`;
             bot.editMessageText(text, {
                 chat_id: chatId,
@@ -416,7 +462,11 @@ bot.on('callback_query', async (query) => {
                 reply_markup: { inline_keyboard: [[{ text: '🔙 Back to Menu', callback_data: 'cmd_manage_tokens' }]] }
             }).catch(()=>{});
         } else {
-            bot.editMessageText(`📋 **Premium Access Tokens:**\n\n${tokens.map(t => `\`${t}\``).join('\n')}`, {
+            const tokenList = tokens.map(t => {
+                if (typeof t === 'string') return `\`${t}\` (Legacy)`;
+                return `👤 **${t.username}** (\`${t.userId}\`)\n🔑 \`${t.token}\``;
+            }).join('\n\n');
+            bot.editMessageText(`📋 **Premium Access Tokens:**\n\n${tokenList}`, {
                 chat_id: chatId,
                 message_id: query.message.message_id,
                 parse_mode: 'Markdown',
@@ -457,7 +507,12 @@ bot.on('callback_query', async (query) => {
         const newToken = 'chole-bhature-' + crypto.randomBytes(4).toString('hex');
         
         const tokens = getTokens();
-        tokens.push(newToken);
+        tokens.push({
+            token: newToken,
+            userId: targetId,
+            username: reqs[reqIndex].username || 'Unknown',
+            date: new Date().toISOString()
+        });
         saveTokens(tokens);
         
         // Remove Request
@@ -497,29 +552,54 @@ bot.on('callback_query', async (query) => {
         bot.answerCallbackQuery(query.id);
         
         const tokens = getTokens();
-        tokens.push(newToken);
+        tokens.push({
+            token: newToken,
+            userId: 'Manual',
+            username: 'Manual Generation',
+            date: new Date().toISOString()
+        });
         saveTokens(tokens);
         
         bot.sendMessage(chatId, `✅ **Generated New Token:**\n\`${newToken}\`\n\nShare this token with the user.`, { parse_mode: 'Markdown' });
     }
     else if (data === 'cmd_removetoken') {
+        const tokens = getTokens();
         bot.answerCallbackQuery(query.id);
-        bot.sendMessage(chatId, 'Reply to this message with the exact Token you want to REMOVE (or type /menu to cancel):', {
-            reply_markup: { force_reply: true }
-        }).then(sentMsg => {
-            bot.onReplyToMessage(sentMsg.chat.id, sentMsg.message_id, (reply) => {
-                if (reply.text === '/menu') return;
-                const delToken = reply.text.trim();
-                let tokens = getTokens();
-                if (tokens.includes(delToken)) {
-                    tokens = tokens.filter(t => t !== delToken);
-                    saveTokens(tokens);
-                    bot.sendMessage(chatId, `✅ Removed Token \`${delToken}\`.\n\nSend /menu to return.`, { parse_mode: 'Markdown' });
-                } else {
-                    bot.sendMessage(chatId, '⚠️ Token not found.\n\nSend /menu to return.');
-                }
-            });
+        if (tokens.length === 0) {
+            return bot.editMessageText('No tokens exist to remove.', {
+                chat_id: chatId,
+                message_id: query.message.message_id,
+                reply_markup: { inline_keyboard: [[{ text: '🔙 Back to Menu', callback_data: 'cmd_manage_tokens' }]] }
+            }).catch(()=>{});
+        }
+        
+        const kb = tokens.map((t, index) => {
+            const label = typeof t === 'string' ? `Legacy: ${t.substring(0, 15)}...` : `${t.username} (${t.userId})`;
+            return [{ text: `❌ ${label}`, callback_data: `cmd_deltoken_${index}` }];
         });
+        kb.push([{ text: '🔙 Back to Menu', callback_data: 'cmd_manage_tokens' }]);
+
+        bot.editMessageText('Select a token to REMOVE:', {
+            chat_id: chatId,
+            message_id: query.message.message_id,
+            reply_markup: { inline_keyboard: kb }
+        }).catch(()=>{});
+    }
+    else if (data.startsWith('cmd_deltoken_')) {
+        const idx = parseInt(data.replace('cmd_deltoken_', ''));
+        bot.answerCallbackQuery(query.id);
+        let tokens = getTokens();
+        if (idx >= 0 && idx < tokens.length) {
+            const deleted = tokens.splice(idx, 1)[0];
+            const tokenStr = typeof deleted === 'string' ? deleted : deleted.token;
+            saveTokens(tokens);
+            bot.editMessageText(`✅ Removed Token:\n\`${tokenStr}\``, {
+                chat_id: chatId,
+                message_id: query.message.message_id,
+                parse_mode: 'Markdown',
+                reply_markup: { inline_keyboard: [[{ text: '🔙 Back to Menu', callback_data: 'cmd_manage_tokens' }]] }
+            }).catch(()=>{});
+        }
     }
 });
 
