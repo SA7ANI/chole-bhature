@@ -74,8 +74,8 @@ function isAuthorized(chatId) {
 const MAIN_MENU = {
     reply_markup: {
         inline_keyboard: [
-            [{ text: '🚀 Deploy & Restart', callback_data: 'cmd_deploy' }],
-            [{ text: '🔋 Hardware Status', callback_data: 'cmd_status' }],
+            [{ text: '🌐 Start CF Tunnel', callback_data: 'cmd_cf_tunnel' }, { text: '🛑 Stop Tunnel', callback_data: 'cmd_stop_cf_tunnel' }],
+            [{ text: '🚀 Deploy & Restart', callback_data: 'cmd_deploy' }, { text: '🔋 Hardware Status', callback_data: 'cmd_status' }],
             [{ text: '👥 Manage Sudo Users', callback_data: 'cmd_manage' }],
             [{ text: '🔑 Manage Access Tokens', callback_data: 'cmd_manage_tokens' }]
         ]
@@ -144,8 +144,38 @@ bot.onText(/\/(start|menu) ?(.*)/, (msg, match) => {
         bot.sendMessage(chatId, '⛔ Unauthorized access.');
         return;
     }
-    bot.sendMessage(chatId, '🎛️ **Nuvio Control Panel**\nSelect a command below:', Object.assign({ parse_mode: 'Markdown' }, MAIN_MENU));
+    
+    sendDetailedMenu(chatId);
 });
+
+function sendDetailedMenu(chatId, messageId = null) {
+    const uptime = (os.uptime() / 60 / 60).toFixed(1) + 'h';
+    const totalMem = (os.totalmem() / 1024 / 1024).toFixed(0);
+    const freeMem = (os.freemem() / 1024 / 1024).toFixed(0);
+    const usedMem = totalMem - freeMem;
+    const reqs = getTokenRequests().length;
+    
+    let text = `🎛️ **Nuvio Control Panel**\n`;
+    text += `━━━━━━━━━━━━━━━━━━\n`;
+    text += `📊 **System Statistics**\n`;
+    text += `⏱️ **Uptime:** \`${uptime}\`\n`;
+    text += `🧠 **RAM:** \`${usedMem}MB / ${totalMem}MB\`\n`;
+    text += `📨 **Pending Tokens:** \`${reqs} Requests\`\n\n`;
+    text += `🌐 **Cloudflare Tunnel Status**\n`;
+    text += `${global.cfUrl ? `✅ Online: \n\`${global.cfUrl}\`` : '❌ Offline'}\n`;
+    text += `━━━━━━━━━━━━━━━━━━\n`;
+    text += `Select a command below:`;
+
+    const opts = Object.assign({ parse_mode: 'Markdown' }, MAIN_MENU);
+    
+    if (messageId) {
+        opts.chat_id = chatId;
+        opts.message_id = messageId;
+        bot.editMessageText(text, opts).catch(()=>{});
+    } else {
+        bot.sendMessage(chatId, text, opts);
+    }
+}
 
 bot.on('callback_query', async (query) => {
     const chatId = query.message.chat.id;
@@ -157,13 +187,50 @@ bot.on('callback_query', async (query) => {
     }
 
     if (data === 'cmd_menu') {
-        bot.editMessageText('🎛️ **Nuvio Control Panel**\nSelect a command below:', Object.assign({
-            chat_id: chatId,
-            message_id: query.message.message_id,
-            parse_mode: 'Markdown'
-        }, MAIN_MENU));
         bot.answerCallbackQuery(query.id);
-    } 
+        sendDetailedMenu(chatId, query.message.message_id);
+    }
+    else if (data === 'cmd_cf_tunnel') {
+        bot.answerCallbackQuery(query.id, { text: 'Starting tunnel...' });
+        
+        if (global.cfProcess) {
+            return bot.sendMessage(chatId, '⚠️ Tunnel is already running!');
+        }
+        
+        bot.sendMessage(chatId, '🌐 Starting Cloudflare Tunnel...');
+        const { spawn } = require('child_process');
+        
+        global.cfProcess = spawn('cloudflared', ['tunnel', '--url', 'http://localhost:7000']);
+        
+        global.cfProcess.stderr.on('data', (out) => {
+            const str = out.toString();
+            const match = str.match(/https:\/\/[a-zA-Z0-9-]+\.trycloudflare\.com/);
+            if (match && !global.cfUrl) {
+                global.cfUrl = match[0];
+                bot.sendMessage(chatId, `✅ **Cloudflare Tunnel is ONLINE!**\n\n🔗 **Public Addon URL:**\n\`${global.cfUrl}/configure\`\n\n_Share this link with your users!_`, { parse_mode: 'Markdown' });
+                sendDetailedMenu(chatId);
+            }
+        });
+        
+        global.cfProcess.on('close', () => {
+            global.cfUrl = null;
+            global.cfProcess = null;
+            bot.sendMessage(chatId, '⚠️ Cloudflare Tunnel stopped.');
+            sendDetailedMenu(chatId);
+        });
+    }
+    else if (data === 'cmd_stop_cf_tunnel') {
+        bot.answerCallbackQuery(query.id, { text: 'Stopping tunnel...' });
+        if (global.cfProcess) {
+            global.cfProcess.kill();
+            global.cfProcess = null;
+            global.cfUrl = null;
+            bot.sendMessage(chatId, '🛑 Tunnel stopped successfully.');
+            sendDetailedMenu(chatId, query.message.message_id);
+        } else {
+            bot.sendMessage(chatId, '⚠️ Tunnel is not running.');
+        }
+    }
     else if (data === 'cmd_deploy') {
         bot.answerCallbackQuery(query.id, { text: 'Deploying...' });
         bot.sendMessage(chatId, '🚀 Pulling from GitHub and installing dependencies...');
