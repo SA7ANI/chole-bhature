@@ -18,7 +18,7 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "node-fetch": "^2.7.0",
-    "node-telegram-bot-api": "^1.2.0",
+    "node-telegram-bot-api": "^0.66.0",
     "stremio-addon-sdk": "^1.6.10"
   }
 }
