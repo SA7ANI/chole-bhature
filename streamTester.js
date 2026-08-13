@@ -496,7 +496,8 @@ function getSeederScore(stream) {
     return meta.seeders || 0;
 }
 
-async function testStream(stream, showSeeders = true) {
+async function testStream(stream, config = {}) {
+    const showSeeders = config.showSeeders !== false;
     const startTime = Date.now();
     const originalName = stream.name || 'Stream';
     const providerName = cleanProviderName(originalName);
@@ -563,6 +564,15 @@ async function testStream(stream, showSeeders = true) {
                 statusCategory = 'fast';
                 p2pLatency = Math.max(120, Math.round(520 - Math.min(seeders, 500) * 0.8));
             }
+        }
+
+        const hash = stream.infoHash || (stream.url && stream.url.match(/urn:btih:([a-zA-Z0-9]+)/i)?.[1]);
+        
+        // Mini-Debrid URL Rewriter
+        if (hash && config && (config.accessToken || config.telegramId) && config.addonHost) {
+            const token = config.accessToken || config.telegramId;
+            stream.url = `${config.addonProtocol || 'https'}://${config.addonHost}/stream/${hash}/${token}`;
+            delete stream.infoHash; // Force Stremio to use our HTTP URL instead of its internal torrent engine
         }
 
         const labels = formatStreamLabels(stream, p2pLatency, true, isDead, showSeeders);
@@ -718,7 +728,7 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
 
     // Run tests concurrently
     const testedStreams = await Promise.all(
-        uniqueStreams.map(stream => testStream(stream, showSeeders))
+        uniqueStreams.map(stream => testStream(stream, config))
     );
 
     // Record Analytics

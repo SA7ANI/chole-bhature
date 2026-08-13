@@ -1654,6 +1654,23 @@
                     </div>
                 </div>
 
+                <!-- Mini-Debrid Access (Premium Access Token) -->
+                <div class="setting-item-row" style="flex-direction: column; align-items: stretch; gap: 12px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+                        <div class="setting-text-block" style="flex: 1; min-width: 240px;">
+                            <div class="setting-headline">
+                                💎 Mini-Debrid Premium Access
+                                <span class="tag-pill-badge" style="background: rgba(234, 179, 8, 0.15); border-color: rgba(234, 179, 8, 0.4); color: #facc15;">HTTP Engine</span>
+                            </div>
+                            <div class="setting-description">Unlock the built-in Torrent-to-HTTP server. Instead of fetching raw magnet links, Stremio will stream directly via HTTP. Enter your Access Token if you are an authorized user.</div>
+                        </div>
+                    </div>
+                    <div style="background: var(--bg-surface-secondary); padding: 12px; border-radius: 12px; border: 1px solid var(--border-subtle); display: flex; align-items: center; gap: 12px;">
+                        <span style="font-size: 1.1rem;">🔑</span>
+                        <input type="text" id="accessToken" placeholder="Enter your Access Token" oninput="onSettingChanged()" style="flex: 1; background: transparent; border: none; color: var(--text-primary); font-size: 0.95rem; outline: none; font-weight: 500;">
+                    </div>
+                </div>
+
                 <!-- DNS-over-HTTPS (DoH) ISP Censorship Bypass -->
                 <div class="setting-item-row" style="flex-direction: column; align-items: stretch; gap: 12px;">
                     <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
@@ -1956,6 +1973,8 @@
             const deduplicateStreamsEl = document.getElementById('deduplicateStreams');
             const enableDohEl = document.getElementById('enableDoh');
             const dohProviderEl = document.getElementById('dohProvider');
+            const accessTokenEl = document.getElementById('accessToken');
+            
             if (hideDeadEl) settings.hideDead = hideDeadEl.checked;
             if (hideSlowEl) settings.hideSlow = hideSlowEl.checked;
             if (hideCamEl) settings.hideCam = hideCamEl.checked;
@@ -1963,6 +1982,7 @@
             if (deduplicateStreamsEl) settings.deduplicateStreams = deduplicateStreamsEl.checked;
             if (enableDohEl) settings.enableDoh = enableDohEl.checked;
             if (dohProviderEl) settings.dohProvider = dohProviderEl.value;
+            if (accessTokenEl) settings.accessToken = accessTokenEl.value.trim();
             
             settings.prioritizeQuality = (settings.sortBy === 'quality');
             settings.preferredLanguages = settings.preferredLanguages || [];
@@ -2004,6 +2024,7 @@
                 deduplicateStreams: settings.deduplicateStreams !== false,
                 enableDoh: settings.enableDoh !== false,
                 dohProvider: settings.dohProvider || 'cloudflare',
+                accessToken: settings.accessToken || '',
                 sortBy: settings.sortBy || 'speed',
                 sortMode: settings.sortBy || 'speed',
                 prioritizeQuality: settings.sortBy === 'quality',
@@ -2063,6 +2084,8 @@
             if (cfg.deduplicateStreams !== undefined) settings.deduplicateStreams = cfg.deduplicateStreams;
             if (cfg.enableDoh !== undefined) settings.enableDoh = cfg.enableDoh;
             if (cfg.dohProvider) settings.dohProvider = cfg.dohProvider;
+            if (cfg.accessToken) settings.accessToken = cfg.accessToken;
+            else if (cfg.telegramId) settings.accessToken = cfg.telegramId; // Backwards compatibility
             if (cfg.sortBy) settings.sortBy = cfg.sortBy;
             else if (cfg.prioritizeQuality !== undefined) settings.sortBy = cfg.prioritizeQuality ? 'quality' : 'speed';
             if (cfg.preferredLanguages && Array.isArray(cfg.preferredLanguages)) {
@@ -2144,6 +2167,8 @@
             if (initDohEl) initDohEl.checked = settings.enableDoh !== false;
             const initDohProviderEl = document.getElementById('dohProvider');
             if (initDohProviderEl) initDohProviderEl.value = settings.dohProvider || 'cloudflare';
+            const initAccessTokenEl = document.getElementById('accessToken');
+            if (initAccessTokenEl) initAccessTokenEl.value = settings.accessToken || '';
             updateSortModeUI(settings.sortBy || 'speed');
             renderLanguageChips();
             

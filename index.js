@@ -8,6 +8,7 @@ const axios = require('axios');
 const fs = require('fs');
 const crypto = require('crypto');
 const telebot = require('./telebot');
+const torrentEngine = require('./torrentEngine');
 
 telebot.init();
 
@@ -163,6 +164,34 @@ app.get('/api/wakeup', async (req, res) => {
         console.error('[Cron] Wakeup failed:', err.message);
         res.status(500).send('Wakeup failed');
     }
+});
+
+// Mini-Debrid HTTP Streaming Engine
+app.get('/stream/:infoHash/:userId', (req, res) => {
+    const userId = req.params.userId;
+    const infoHash = req.params.infoHash;
+
+    // Verify User Authorization
+    const authPath = path.join(__dirname, 'authorized_users.json');
+    let isAuthorized = false;
+    
+    if (fs.existsSync(authPath)) {
+        try {
+            const users = JSON.parse(fs.readFileSync(authPath, 'utf8'));
+            if (users.includes(userId)) {
+                isAuthorized = true;
+            }
+        } catch (e) {
+            console.error('Error reading authorized_users.json', e);
+        }
+    }
+
+    if (!isAuthorized) {
+        return res.status(403).send('Unauthorized. Please ensure your Telegram ID is added by the server owner.');
+    }
+
+    // Hand off to Torrent Engine
+    torrentEngine.handleStreamRequest(req, res);
 });
 
 const TMDB_API_KEYS = [

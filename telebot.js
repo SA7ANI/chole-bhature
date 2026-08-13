@@ -176,22 +176,22 @@ bot.on('callback_query', async (query) => {
     else if (data === 'cmd_adduser') {
         if (chatId !== ownerId) return;
         bot.answerCallbackQuery(query.id);
-        bot.sendMessage(chatId, 'Reply to this message with the Telegram Chat ID you want to ADD:', {
+        bot.sendMessage(chatId, 'Reply to this message with the Access Token you want to ADD:', {
             reply_markup: { force_reply: true }
         }).then(sentMsg => {
             bot.onReplyToMessage(sentMsg.chat.id, sentMsg.message_id, (reply) => {
-                const newId = parseInt(reply.text.trim());
-                if (isNaN(newId)) {
-                    bot.sendMessage(chatId, '❌ Invalid ID. Must be a number.');
+                const newToken = reply.text.trim();
+                if (!newToken) {
+                    bot.sendMessage(chatId, '❌ Invalid Token.');
                     return;
                 }
                 const users = getAuthorizedUsers();
-                if (!users.includes(newId)) {
-                    users.push(newId);
+                if (!users.includes(newToken)) {
+                    users.push(newToken);
                     saveAuthorizedUsers(users);
-                    bot.sendMessage(chatId, `✅ Added \`${newId}\` to authorized users.`, { parse_mode: 'Markdown' });
+                    bot.sendMessage(chatId, `✅ Added \`${newToken}\` to authorized users.`, { parse_mode: 'Markdown' });
                 } else {
-                    bot.sendMessage(chatId, '⚠️ User already exists.');
+                    bot.sendMessage(chatId, '⚠️ Token already exists.');
                 }
             });
         });
@@ -199,19 +199,19 @@ bot.on('callback_query', async (query) => {
     else if (data === 'cmd_removeuser') {
         if (chatId !== ownerId) return;
         bot.answerCallbackQuery(query.id);
-        bot.sendMessage(chatId, 'Reply to this message with the Telegram Chat ID you want to REMOVE:', {
+        bot.sendMessage(chatId, 'Reply to this message with the Access Token you want to REMOVE:', {
             reply_markup: { force_reply: true }
         }).then(sentMsg => {
             bot.onReplyToMessage(sentMsg.chat.id, sentMsg.message_id, (reply) => {
-                const delId = parseInt(reply.text.trim());
-                if (isNaN(delId)) return bot.sendMessage(chatId, '❌ Invalid ID.');
+                const delToken = reply.text.trim();
+                if (!delToken) return bot.sendMessage(chatId, '❌ Invalid Token.');
                 let users = getAuthorizedUsers();
-                if (users.includes(delId)) {
-                    users = users.filter(id => id !== delId);
+                if (users.includes(delToken)) {
+                    users = users.filter(id => id !== delToken);
                     saveAuthorizedUsers(users);
-                    bot.sendMessage(chatId, `✅ Removed \`${delId}\`.`, { parse_mode: 'Markdown' });
+                    bot.sendMessage(chatId, `✅ Removed \`${delToken}\`.`, { parse_mode: 'Markdown' });
                 } else {
-                    bot.sendMessage(chatId, '⚠️ User not found.');
+                    bot.sendMessage(chatId, '⚠️ Token not found.');
                 }
             });
         });
