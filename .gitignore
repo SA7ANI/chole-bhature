@@ -3,3 +3,4 @@ node_modules/
 user_configs.json
 test_suite.js
 
+authorized_users.json
