@@ -74,7 +74,7 @@ function isAuthorized(chatId) {
 const MAIN_MENU = {
     reply_markup: {
         inline_keyboard: [
-            [{ text: '🌐 Start CF Tunnel', callback_data: 'cmd_cf_tunnel' }, { text: '🛑 Stop Tunnel', callback_data: 'cmd_stop_cf_tunnel' }],
+            [{ text: '🌐 Manage CF Tunnel', callback_data: 'cmd_manage_cf' }],
             [{ text: '🚀 Deploy & Restart', callback_data: 'cmd_deploy' }, { text: '🔋 Hardware Status', callback_data: 'cmd_status' }],
             [{ text: '👥 Manage Sudo Users', callback_data: 'cmd_manage' }],
             [{ text: '🔑 Manage Access Tokens', callback_data: 'cmd_manage_tokens' }]
@@ -190,14 +190,38 @@ bot.on('callback_query', async (query) => {
         bot.answerCallbackQuery(query.id);
         sendDetailedMenu(chatId, query.message.message_id);
     }
-    else if (data === 'cmd_cf_tunnel') {
-        bot.answerCallbackQuery(query.id, { text: 'Starting tunnel...' });
-        
-        if (global.cfProcess) {
-            return bot.sendMessage(chatId, '⚠️ Tunnel is already running!');
+    else if (data === 'cmd_manage_cf') {
+        bot.answerCallbackQuery(query.id);
+        let text = `🌐 **Cloudflare Tunnel Management**\n\n`;
+        let kb = [];
+        if (global.cfUrl) {
+            text += `✅ **Tunnel is ACTIVE**\n🔗 \`${global.cfUrl}/configure\`\n\n_Share this link with your users!_`;
+            kb.push([{ text: '🛑 Stop Tunnel', callback_data: 'cmd_stop_cf_tunnel' }]);
+        } else {
+            text += `❌ **Tunnel is OFFLINE**\n\nStart the tunnel to generate a public URL.`;
+            kb.push([{ text: '🌐 Start CF Tunnel', callback_data: 'cmd_cf_tunnel' }]);
         }
+        kb.push([{ text: '🔙 Back to Menu', callback_data: 'cmd_menu' }]);
         
-        bot.sendMessage(chatId, '🌐 Starting Cloudflare Tunnel...');
+        bot.editMessageText(text, {
+            chat_id: chatId,
+            message_id: query.message.message_id,
+            parse_mode: 'Markdown',
+            reply_markup: { inline_keyboard: kb }
+        }).catch(()=>{});
+    }
+    else if (data === 'cmd_cf_tunnel') {
+        if (global.cfProcess) {
+            return bot.answerCallbackQuery(query.id, { text: '⚠️ Tunnel is already running!', show_alert: true });
+        }
+        bot.answerCallbackQuery(query.id);
+        
+        bot.editMessageText('🌐 Starting Cloudflare Tunnel... Please wait.', {
+            chat_id: chatId,
+            message_id: query.message.message_id,
+            parse_mode: 'Markdown'
+        }).catch(()=>{});
+
         const { spawn } = require('child_process');
         
         global.cfProcess = spawn('cloudflared', ['tunnel', '--url', 'http://localhost:7000']);
@@ -207,8 +231,13 @@ bot.on('callback_query', async (query) => {
             const match = str.match(/https:\/\/[a-zA-Z0-9-]+\.trycloudflare\.com/);
             if (match && !global.cfUrl) {
                 global.cfUrl = match[0];
-                bot.sendMessage(chatId, `✅ **Cloudflare Tunnel is ONLINE!**\n\n🔗 **Public Addon URL:**\n\`${global.cfUrl}/configure\`\n\n_Share this link with your users!_`, { parse_mode: 'Markdown' });
-                sendDetailedMenu(chatId);
+                let text = `🌐 **Cloudflare Tunnel Management**\n\n✅ **Tunnel is ACTIVE**\n🔗 \`${global.cfUrl}/configure\`\n\n_Share this link with your users!_`;
+                bot.editMessageText(text, {
+                    chat_id: chatId,
+                    message_id: query.message.message_id,
+                    parse_mode: 'Markdown',
+                    reply_markup: { inline_keyboard: [[{ text: '🛑 Stop Tunnel', callback_data: 'cmd_stop_cf_tunnel' }], [{ text: '🔙 Back to Menu', callback_data: 'cmd_menu' }]] }
+                }).catch(()=>{});
             }
         });
         
@@ -216,7 +245,6 @@ bot.on('callback_query', async (query) => {
             global.cfUrl = null;
             global.cfProcess = null;
             bot.sendMessage(chatId, '⚠️ Cloudflare Tunnel stopped.');
-            sendDetailedMenu(chatId);
         });
     }
     else if (data === 'cmd_stop_cf_tunnel') {
@@ -225,21 +253,39 @@ bot.on('callback_query', async (query) => {
             global.cfProcess.kill();
             global.cfProcess = null;
             global.cfUrl = null;
-            bot.sendMessage(chatId, '🛑 Tunnel stopped successfully.');
-            sendDetailedMenu(chatId, query.message.message_id);
+            let text = `🌐 **Cloudflare Tunnel Management**\n\n❌ **Tunnel is OFFLINE**\n\nStart the tunnel to generate a public URL.`;
+            bot.editMessageText(text, {
+                chat_id: chatId,
+                message_id: query.message.message_id,
+                parse_mode: 'Markdown',
+                reply_markup: { inline_keyboard: [[{ text: '🌐 Start CF Tunnel', callback_data: 'cmd_cf_tunnel' }], [{ text: '🔙 Back to Menu', callback_data: 'cmd_menu' }]] }
+            }).catch(()=>{});
         } else {
-            bot.sendMessage(chatId, '⚠️ Tunnel is not running.');
+            bot.answerCallbackQuery(query.id, { text: '⚠️ Tunnel is not running.', show_alert: true });
         }
     }
     else if (data === 'cmd_deploy') {
         bot.answerCallbackQuery(query.id, { text: 'Deploying...' });
-        bot.sendMessage(chatId, '🚀 Pulling from GitHub and installing dependencies...');
+        bot.editMessageText('🚀 Pulling from GitHub and installing dependencies...', {
+            chat_id: chatId,
+            message_id: query.message.message_id
+        }).catch(()=>{});
         
         exec('git pull origin main && npm install', (error, stdout, stderr) => {
             if (error) {
-                bot.sendMessage(chatId, `❌ **Deploy Failed:**\n\`\`\`\n${stderr || error.message}\n\`\`\``, { parse_mode: 'Markdown' });
+                bot.editMessageText(`❌ **Deploy Failed:**\n\`\`\`\n${stderr || error.message}\n\`\`\``, { 
+                    chat_id: chatId,
+                    message_id: query.message.message_id,
+                    parse_mode: 'Markdown',
+                    reply_markup: { inline_keyboard: [[{ text: '🔙 Back to Menu', callback_data: 'cmd_menu' }]] }
+                }).catch(()=>{});
             } else {
-                bot.sendMessage(chatId, `✅ **Deploy Successful:**\n\`\`\`\n${stdout.substring(0, 500)}\n\`\`\`\n\n🔄 Restarting server in 2 seconds...`, { parse_mode: 'Markdown' });
+                bot.editMessageText(`✅ **Deploy Successful:**\n\`\`\`\n${stdout.substring(0, 500)}\n\`\`\`\n\n🔄 Restarting server in 2 seconds...`, { 
+                    chat_id: chatId,
+                    message_id: query.message.message_id,
+                    parse_mode: 'Markdown',
+                    reply_markup: { inline_keyboard: [[{ text: '🔙 Back to Menu', callback_data: 'cmd_menu' }]] }
+                }).catch(()=>{});
                 setTimeout(() => {
                     process.exit(0); // Assuming PM2 or loop script will restart it
                 }, 2000);
