@@ -1,5 +1,31 @@
 const axios = require('axios');
+const { exec } = require('child_process');
 const { dohHttpAgent, dohHttpsAgent } = require('./dohResolver');
+
+function probeVideo(url) {
+    return new Promise((resolve) => {
+        // -probesize 32768 (32kb) -analyzeduration 0 for ultra-fast header parsing
+        const cmd = `ffprobe -v quiet -print_format json -show_format -show_streams -probesize 32768 -analyzeduration 0 "${url}"`;
+        exec(cmd, { timeout: 3500 }, (error, stdout) => {
+            if (error || !stdout) return resolve(null);
+            try {
+                const data = JSON.parse(stdout);
+                if (data.streams && data.streams.length > 0) {
+                    const videoStream = data.streams.find(s => s.codec_type === 'video');
+                    if (videoStream) {
+                        return resolve({
+                            codec: videoStream.codec_name, // e.g. 'hevc', 'av1'
+                            profile: videoStream.profile, // e.g. 'Dolby Vision'
+                            color_space: videoStream.color_space,
+                            color_transfer: videoStream.color_transfer // 'smpte2084'
+                        });
+                    }
+                }
+            } catch(e) {}
+            resolve(null);
+        });
+    });
+}
 
 const TIMEOUT_MS = 4500;
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
@@ -616,17 +642,24 @@ async function testStream(stream, showSeeders = true) {
             }
         }
 
-        // Standard latency probe
+        // Standard latency probe & True-Probing
         let latency = 0;
+        let trueProbe = null;
         try {
-            await axios.head(origin, {
-                timeout: TIMEOUT_MS,
-                headers: probeHeaders,
-                httpAgent: dohHttpAgent,
-                httpsAgent: dohHttpsAgent,
-                validateStatus: (status) => status < 500
-            });
-            latency = Date.now() - startTime;
+            // Attempt True-Probing with FFmpeg
+            trueProbe = await probeVideo(stream.url);
+            if (trueProbe) {
+                latency = Date.now() - startTime;
+            } else {
+                await axios.head(origin, {
+                    timeout: TIMEOUT_MS,
+                    headers: probeHeaders,
+                    httpAgent: dohHttpAgent,
+                    httpsAgent: dohHttpsAgent,
+                    validateStatus: (status) => status < 500
+                });
+                latency = Date.now() - startTime;
+            }
         } catch (e) {
             try {
                 await axios.get(stream.url, {
@@ -652,6 +685,7 @@ async function testStream(stream, showSeeders = true) {
         return {
             ...stream,
             name: labels.name,
+            trueProbe: trueProbe,
             title: labels.title,
             latency: latency,
             isDead: false,
@@ -706,6 +740,28 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
     }
     if (config && config.hideSlow) {
         filteredStreams = filteredStreams.filter(s => s.statusCategory !== 'slow');
+    }
+    
+    // True-Probe Device Limitations Filter (Hardware Profile)
+    if (config) {
+        filteredStreams = filteredStreams.filter(s => {
+            const probe = s.trueProbe || {};
+            const meta = parseStreamMetadata(s);
+            
+            // AV1
+            const isAV1 = probe.codec === 'av1' || meta.codec === 'AV1';
+            if (config.disableAV1 && isAV1) return false;
+            
+            // HEVC
+            const isHEVC = probe.codec === 'hevc' || meta.codec === 'HEVC';
+            if (config.disableHEVC && isHEVC) return false;
+            
+            // Dolby Vision
+            const isDV = (probe.profile && probe.profile.toLowerCase().includes('dolby vision')) || meta.hdr.includes('DV') || meta.hdr.includes('Dolby Vision');
+            if (config.disableDV && isDV) return false;
+            
+            return true;
+        });
     }
     // Auto-Hide CAM, TeleSync, and Screener theater recordings
     if (config && (config.hideCam || config.blockCam)) {

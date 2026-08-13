@@ -1705,6 +1705,40 @@
                     </div>
                 </div>
 
+                <!-- Device Hardware Limitations (True-Probing) -->
+                <div class="setting-item-row" style="flex-direction: column; align-items: flex-start; gap: 10px;">
+                    <div class="setting-text-block" style="width: 100%;">
+                        <div class="setting-headline">
+                            Device Hardware Limitations
+                            <span class="tag-pill-badge" style="background: rgba(168, 85, 247, 0.15); border-color: rgba(168, 85, 247, 0.35); color: #c084fc;">True-Probing</span>
+                        </div>
+                        <div class="setting-description">Hide specific video codecs using FFmpeg header-probing. Useful for older TVs that show a black screen on Dolby Vision or AV1 streams.</div>
+                    </div>
+                    <div class="dual-filter-group" style="width: 100%; display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px;">
+                        <label class="filter-capsule" title="Hide Dolby Vision (DoVi) streams">
+                            <span class="filter-capsule-text">🚫 Hide Dolby Vision</span>
+                            <div class="switch-toggle">
+                                <input type="checkbox" id="disableDV" onchange="onSettingChanged()">
+                                <span class="switch-slider"></span>
+                            </div>
+                        </label>
+                        <label class="filter-capsule" title="Hide AV1 codec streams">
+                            <span class="filter-capsule-text">🚫 Hide AV1</span>
+                            <div class="switch-toggle">
+                                <input type="checkbox" id="disableAV1" onchange="onSettingChanged()">
+                                <span class="switch-slider"></span>
+                            </div>
+                        </label>
+                        <label class="filter-capsule" title="Hide HEVC/H.265 streams">
+                            <span class="filter-capsule-text">🚫 Hide HEVC</span>
+                            <div class="switch-toggle">
+                                <input type="checkbox" id="disableHEVC" onchange="onSettingChanged()">
+                                <span class="switch-slider"></span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
                 <!-- Multi-Language & Regional Audio Priority -->
                 <div class="setting-item-row" style="flex-direction: column; align-items: flex-start; gap: 10px;">
                     <div class="setting-text-block" style="width: 100%;">
@@ -1957,6 +1991,10 @@
             const enableDohEl = document.getElementById('enableDoh');
             const dohProviderEl = document.getElementById('dohProvider');
             
+            const disableDVEl = document.getElementById('disableDV');
+            const disableAV1El = document.getElementById('disableAV1');
+            const disableHEVCEl = document.getElementById('disableHEVC');
+            
             if (hideDeadEl) settings.hideDead = hideDeadEl.checked;
             if (hideSlowEl) settings.hideSlow = hideSlowEl.checked;
             if (hideCamEl) settings.hideCam = hideCamEl.checked;
@@ -1964,6 +2002,11 @@
             if (deduplicateStreamsEl) settings.deduplicateStreams = deduplicateStreamsEl.checked;
             if (enableDohEl) settings.enableDoh = enableDohEl.checked;
             if (dohProviderEl) settings.dohProvider = dohProviderEl.value;
+            
+            if (disableDVEl) settings.disableDV = disableDVEl.checked;
+            if (disableAV1El) settings.disableAV1 = disableAV1El.checked;
+            if (disableHEVCEl) settings.disableHEVC = disableHEVCEl.checked;
+            
             settings.prioritizeQuality = (settings.sortBy === 'quality');
             settings.preferredLanguages = settings.preferredLanguages || [];
             settings.prioritizeHindi = settings.preferredLanguages.includes('Hindi');
@@ -2003,6 +2046,9 @@
                 showSeeders: settings.showSeeders !== false,
                 deduplicateStreams: settings.deduplicateStreams !== false,
                 enableDoh: settings.enableDoh !== false,
+                disableDV: settings.disableDV || false,
+                disableAV1: settings.disableAV1 || false,
+                disableHEVC: settings.disableHEVC || false,
                 dohProvider: settings.dohProvider || 'cloudflare',
                 sortBy: settings.sortBy || 'speed',
                 sortMode: settings.sortBy || 'speed',
@@ -2062,6 +2108,9 @@
             if (cfg.showSeeders !== undefined) settings.showSeeders = cfg.showSeeders;
             if (cfg.deduplicateStreams !== undefined) settings.deduplicateStreams = cfg.deduplicateStreams;
             if (cfg.enableDoh !== undefined) settings.enableDoh = cfg.enableDoh;
+            if (cfg.disableDV !== undefined) settings.disableDV = cfg.disableDV;
+            if (cfg.disableAV1 !== undefined) settings.disableAV1 = cfg.disableAV1;
+            if (cfg.disableHEVC !== undefined) settings.disableHEVC = cfg.disableHEVC;
             if (cfg.dohProvider) settings.dohProvider = cfg.dohProvider;
             if (cfg.sortBy) settings.sortBy = cfg.sortBy;
             else if (cfg.prioritizeQuality !== undefined) settings.sortBy = cfg.prioritizeQuality ? 'quality' : 'speed';
@@ -2139,6 +2188,14 @@
             document.getElementById('showSeeders').checked = settings.showSeeders !== false;
             const dedupeEl = document.getElementById('deduplicateStreams');
             if (dedupeEl) dedupeEl.checked = settings.deduplicateStreams !== false;
+            
+            const disableDVEl = document.getElementById('disableDV');
+            if (disableDVEl) disableDVEl.checked = settings.disableDV || false;
+            const disableAV1El = document.getElementById('disableAV1');
+            if (disableAV1El) disableAV1El.checked = settings.disableAV1 || false;
+            const disableHEVCEl = document.getElementById('disableHEVC');
+            if (disableHEVCEl) disableHEVCEl.checked = settings.disableHEVC || false;
+
             const initDohEl = document.getElementById('enableDoh');
             if (initDohEl) initDohEl.checked = settings.enableDoh !== false;
             const initDohProviderEl = document.getElementById('dohProvider');
