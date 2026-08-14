@@ -55,16 +55,6 @@ Choose how your streams are ranked in the configuration dashboard:
 
 ## 🚀 Getting Started
 
-### 🌐 Hosted / Cloud Deployment (Recommended)
-You can deploy Chole Bhature directly to **Vercel** with zero server management:
-
-1. Push this repository to your GitHub account.
-2. Import the project in [Vercel](https://vercel.com).
-3. Open your Vercel deployment URL (e.g. `https://your-addon.vercel.app/configure`).
-4. Customize your repositories, language preferences, and sorting modes.
-5. Click **🚀 Install Addon** to add directly to Stremio or Nuvio!
-
----
 
 ### 💻 Running Locally
 
@@ -83,6 +73,7 @@ npm start
 Open [http://localhost:7000/configure](http://localhost:7000/configure) in your browser.
 
 ---
+
 
 ## 🛠️ Tech Stack & Architecture
 
