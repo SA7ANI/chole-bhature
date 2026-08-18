@@ -5,7 +5,7 @@
   # Chole Bhature
   ### High-Performance Stream Meta-Sorter & Priority Engine for Nuvio & Stremio
 
-  [![Version](https://img.shields.io/badge/version-3.0.1-indigo.svg?style=for-the-badge)](https://github.com)
+  [![Version](https://img.shields.io/badge/version-3.1.0-indigo.svg?style=for-the-badge)](https://github.com)
   [![Platform](https://img.shields.io/badge/Platform-Nuvio%20%7C%20Stremio-purple.svg?style=for-the-badge)](https://stremio.com)
   [![License](https://img.shields.io/badge/License-ISC-amber.svg?style=for-the-badge)](LICENSE)
   [![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-emerald.svg?style=for-the-badge)](https://nodejs.org)
@@ -37,6 +37,8 @@ Instead of waiting through buffering wheels or clicking broken links, Chole Bhat
 | 🌐 **Regional & Multi-Audio Priority** | Float preferred languages (`Hindi`, `Tamil`, `Telugu`, `Malayalam`, `Dual-Audio`, `Anime/Jap`, etc.) directly to the top of your stream list. |
 | 🧩 **Multi-Source Deduplication** | Merges identical streams found across different providers into unified entries with multi-source badges (e.g. `CinemaHD + Torrentio`) and maximum seeder counts. |
 | 🛡️ **DNS-over-HTTPS (DoH)** | Built-in DoH engine with Cloudflare, Google, AdGuard, and Quad9 resolvers to bypass ISP-level domain blocks with zero latency impact. |
+| 📊 **Live Analytics Dashboard** | Real-time web UI dashboard that displays millisecond-accurate ping latencies, success rates, and health statuses for all scrapers. |
+| 🚀 **Stale-While-Revalidate Caching** | Advanced caching system returns streams instantly from stale cache while silently re-testing scrapers in the background for blazing fast subsequent loads. |
 | ☁️ **Instant Cloud Sync** | Save your configuration once on the web UI and changes sync live to your player—no need to reinstall the addon! |
 | 🏷️ **Rich Metadata Badges** | Automatically extracts and displays badges for `HDR10`, `Dolby Vision`, `IMAX`, `REMUX`, `HEVC`, `Dolby Atmos`, `5.1/7.1 Audio`, and file size. |
 
@@ -78,7 +80,7 @@ Open [http://localhost:7000/configure](http://localhost:7000/configure) in your 
 ## 🛠️ Tech Stack & Architecture
 
 * **Runtime:** Node.js (ES6+)
-* **Server Framework:** Express.js (Vercel Serverless Compatible)
+* **Server Framework:** Express.js
 * **SDK:** Stremio Addon SDK (`stremio-addon-sdk`)
 * **Scraper Engine:** Axios, Cheerio, Crypto-JS (AES / CryptoJS decryptors)
 * **Frontend:** Vanilla HTML5, CSS3 Glassmorphism, Responsive PWA with Service Worker `v7` offline shell

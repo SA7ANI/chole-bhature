@@ -1764,6 +1764,18 @@
                     </div>
 
                 </div>
+                
+                <!-- Provider Breakdown -->
+                <div style="margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 0 4px;">
+                        <span style="font-size: 14px; font-weight: 600; color: var(--text-primary);">Provider Breakdown</span>
+                        <span style="font-size: 12px; color: var(--text-muted);" id="provider-count-label">0 active</span>
+                    </div>
+                    <div id="analytics-provider-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto; padding-right: 4px;">
+                        <!-- JS injected rows -->
+                    </div>
+                </div>
+
                 <button class="action-btn action-btn-save" style="width: 100%;" onclick="refreshHealthMetrics(this)"><span>🔄</span> Refresh Health Metrics</button>
             </div>
         </div>
@@ -2436,7 +2448,67 @@
                 const res = await fetch('/api/analytics');
                 const data = await res.json();
                 let fast = 0, slow = 0, dead = 0;
-                Object.values(data).forEach(d => { fast += d.fast || 0; slow += d.slow || 0; dead += d.dead || 0 });
+                
+                const providerList = document.getElementById('analytics-provider-list');
+                const providerCountLabel = document.getElementById('provider-count-label');
+                if (providerList) providerList.innerHTML = '';
+                
+                const providerEntries = Object.entries(data).map(([name, d]) => {
+                    fast += d.fast || 0; 
+                    slow += d.slow || 0; 
+                    dead += d.dead || 0;
+                    
+                    const totalReqs = (d.fast || 0) + (d.slow || 0) + (d.dead || 0);
+                    const avgMs = (d.count > 0 && d.totalLatency > 0) ? Math.round(d.totalLatency / d.count) : null;
+                    let statusColor = '#10b981'; // Green
+                    let statusText = avgMs ? `${avgMs}ms` : 'Healthy';
+                    let sortScore = 0;
+                    
+                    if (d.dead > 0 && d.dead >= totalReqs * 0.5) {
+                        statusColor = '#f43f5e'; // Red
+                        statusText = 'Failing';
+                        sortScore = 10000;
+                    } else if (avgMs && avgMs >= 800) {
+                        statusColor = '#f59e0b'; // Yellow
+                        sortScore = avgMs;
+                    } else if (avgMs) {
+                        sortScore = avgMs;
+                    }
+                    
+                    return { name, totalReqs, avgMs, statusColor, statusText, sortScore, fast: d.fast||0, slow: d.slow||0, dead: d.dead||0 };
+                });
+                
+                // Sort by highest score (failing/slowest at the top)
+                providerEntries.sort((a, b) => b.sortScore - a.sortScore);
+                
+                if (providerCountLabel) providerCountLabel.innerText = `${providerEntries.length} active`;
+                
+                if (providerList) {
+                    if (providerEntries.length === 0) {
+                        providerList.innerHTML = '<div class="empty-placeholder" style="padding: 24px;">No provider analytics available yet. Try fetching a stream in Stremio first.</div>';
+                    } else {
+                        providerEntries.forEach(p => {
+                            const row = document.createElement('div');
+                            row.className = 'provider-item';
+                            row.style = 'display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; margin-bottom: 0;';
+                            row.innerHTML = `
+                                <div style="display: flex; flex-direction: column; gap: 4px;">
+                                    <span style="font-weight: 600; color: var(--text-primary); font-size: 14px;">${p.name}</span>
+                                    <div style="display: flex; gap: 8px; font-size: 11px;">
+                                        <span style="color: #10b981;">${p.fast} Fast</span>
+                                        <span style="color: #f59e0b;">${p.slow} Slow</span>
+                                        <span style="color: #f43f5e;">${p.dead} Dead</span>
+                                    </div>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span style="font-size: 13px; font-weight: 700; color: ${p.statusColor}; background: ${p.statusColor}1A; padding: 4px 8px; border-radius: 6px;">${p.statusText}</span>
+                                </div>
+                            `;
+                            providerList.appendChild(row);
+                        });
+                    }
+                }
+
                 const total = fast + slow + dead;
                 
                 let uptimeNum = 99.8;

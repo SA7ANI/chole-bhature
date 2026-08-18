@@ -692,10 +692,14 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
         testedStreams.forEach(s => {
             const p = s.originalProvider;
             if (!providerAnalytics.has(p)) {
-                providerAnalytics.set(p, { fast: 0, slow: 0, dead: 0 });
+                providerAnalytics.set(p, { fast: 0, slow: 0, dead: 0, totalLatency: 0, count: 0 });
             }
             const stats = providerAnalytics.get(p);
             stats[s.statusCategory]++;
+            if (typeof s.latency === 'number' && !isNaN(s.latency) && s.latency < 90000) {
+                stats.totalLatency = (stats.totalLatency || 0) + s.latency;
+                stats.count = (stats.count || 0) + 1;
+            }
         });
     }
 
