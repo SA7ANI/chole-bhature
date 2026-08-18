@@ -8,6 +8,10 @@ const axios = require('axios');
 const fs = require('fs');
 const crypto = require('crypto');
 
+// Live Analytics and Quarantine Registries
+const providerAnalytics = new Map();
+const quarantineRegistry = new Map();
+
 // Core configuration dependency check
 if (!fs.existsSync(path.join(__dirname, '.secret'))) {
     console.error("Critical Error: Missing environment dependencies. Ensure all configuration modules are present.");
@@ -330,6 +334,14 @@ function createAddon(config) {
 
             await Promise.all(allProviders.map(async (provider) => {
                 try {
+                    if (config.enableQuarantine !== false) {
+                        const qRecord = quarantineRegistry.get(provider.name);
+                        if (qRecord && qRecord.quarantineUntil > Date.now()) {
+                            console.log(`[Quarantine] Skipping provider ${provider.name} (Quarantined)`);
+                            return;
+                        }
+                    }
+
                     let nuvioType = type;
                     if (type === 'series' || type === 'tv') nuvioType = 'tv';
                     else if (type === 'movie') nuvioType = 'movie';
@@ -344,11 +356,24 @@ function createAddon(config) {
 
                     const streams = await Promise.race([scrapePromise, timeoutPromise]);
                     
+                    if (config.enableQuarantine !== false) {
+                        quarantineRegistry.delete(provider.name);
+                    }
+                    
                     if (Array.isArray(streams)) {
                         streams.forEach(s => s.name = s.name || provider.name);
                         allStreams = allStreams.concat(streams);
                     }
                 } catch (err) {
+                    if (config.enableQuarantine !== false) {
+                        const qRecord = quarantineRegistry.get(provider.name) || { strikes: 0, quarantineUntil: 0 };
+                        qRecord.strikes++;
+                        if (qRecord.strikes >= 3) {
+                            qRecord.quarantineUntil = Date.now() + (30 * 60 * 1000); // 30 minutes
+                            console.error(`[Quarantine] ${provider.name} failed 3 times. Quarantined for 30m.`);
+                        }
+                        quarantineRegistry.set(provider.name, qRecord);
+                    }
                     console.error(`[Provider] ${provider.name} failed or timed out:`, err.message);
                 }
             }));

@@ -1611,6 +1611,13 @@
                                 <span class="switch-slider"></span>
                             </div>
                         </label>
+                        <label class="filter-capsule" title="Automatically quarantine scrapers that fail 3 times consecutively">
+                            <span class="filter-capsule-text">🛑 Auto-Quarantine</span>
+                            <div class="switch-toggle">
+                                <input type="checkbox" id="enableQuarantine" checked onchange="onSettingChanged()">
+                                <span class="switch-slider"></span>
+                            </div>
+                        </label>
                     </div>
                 </div>
 
@@ -1972,6 +1979,8 @@
             if (hideDeadEl) settings.hideDead = hideDeadEl.checked;
             if (hideSlowEl) settings.hideSlow = hideSlowEl.checked;
             if (hideCamEl) settings.hideCam = hideCamEl.checked;
+            const enableQuarantineEl = document.getElementById('enableQuarantine');
+            if (enableQuarantineEl) settings.enableQuarantine = enableQuarantineEl.checked;
             if (showSeedersEl) settings.showSeeders = showSeedersEl.checked;
             if (deduplicateStreamsEl) settings.deduplicateStreams = deduplicateStreamsEl.checked;
             if (enableDohEl) settings.enableDoh = enableDohEl.checked;
@@ -1995,6 +2004,7 @@
                 if (settings.hideDead) filters.push('Dead');
                 if (settings.hideSlow) filters.push('Slow');
                 if (settings.hideCam) filters.push('No-CAM');
+                if (settings.enableQuarantine !== false) filters.push('Quarantine');
                 if (settings.deduplicateStreams !== false) filters.push('Dedupe');
                 if (settings.enableDoh !== false) {
                     const pKey = settings.dohProvider || 'cloudflare';
@@ -2012,6 +2022,7 @@
                 hideDead: settings.hideDead,
                 hideSlow: settings.hideSlow,
                 hideCam: settings.hideCam,
+                enableQuarantine: settings.enableQuarantine !== false,
                 showSeeders: settings.showSeeders !== false,
                 deduplicateStreams: settings.deduplicateStreams !== false,
                 enableDoh: settings.enableDoh !== false,
@@ -2071,6 +2082,7 @@
             if (cfg.hideDead !== undefined) settings.hideDead = cfg.hideDead;
             if (cfg.hideSlow !== undefined) settings.hideSlow = cfg.hideSlow;
             if (cfg.hideCam !== undefined) settings.hideCam = cfg.hideCam;
+            if (cfg.enableQuarantine !== undefined) settings.enableQuarantine = cfg.enableQuarantine;
             if (cfg.showSeeders !== undefined) settings.showSeeders = cfg.showSeeders;
             if (cfg.deduplicateStreams !== undefined) settings.deduplicateStreams = cfg.deduplicateStreams;
             if (cfg.enableDoh !== undefined) settings.enableDoh = cfg.enableDoh;
@@ -2095,6 +2107,8 @@
             document.getElementById('hideSlow').checked = settings.hideSlow || false;
             const hideCamEl = document.getElementById('hideCam');
             if (hideCamEl) hideCamEl.checked = settings.hideCam !== false;
+            const quarantineEl = document.getElementById('enableQuarantine');
+            if (quarantineEl) quarantineEl.checked = settings.enableQuarantine !== false;
             document.getElementById('showSeeders').checked = settings.showSeeders !== false;
             const dedupeEl = document.getElementById('deduplicateStreams');
             if (dedupeEl) dedupeEl.checked = settings.deduplicateStreams !== false;
@@ -2148,6 +2162,8 @@
             document.getElementById('hideSlow').checked = settings.hideSlow || false;
             const hideCamEl = document.getElementById('hideCam');
             if (hideCamEl) hideCamEl.checked = settings.hideCam !== false;
+            const quarantineInitEl = document.getElementById('enableQuarantine');
+            if (quarantineInitEl) quarantineInitEl.checked = settings.enableQuarantine !== false;
             document.getElementById('showSeeders').checked = settings.showSeeders !== false;
             const dedupeEl = document.getElementById('deduplicateStreams');
             if (dedupeEl) dedupeEl.checked = settings.deduplicateStreams !== false;
