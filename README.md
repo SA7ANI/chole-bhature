@@ -5,7 +5,7 @@
   # Chole Bhature
   ### High-Performance Stream Meta-Sorter & Priority Engine for Nuvio & Stremio
 
-  [![Version](https://img.shields.io/badge/version-2.2.0-indigo.svg?style=for-the-badge)](https://github.com)
+  [![Version](https://img.shields.io/badge/version-3.0.1-indigo.svg?style=for-the-badge)](https://github.com)
   [![Platform](https://img.shields.io/badge/Platform-Nuvio%20%7C%20Stremio-purple.svg?style=for-the-badge)](https://stremio.com)
   [![License](https://img.shields.io/badge/License-ISC-amber.svg?style=for-the-badge)](LICENSE)
   [![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-emerald.svg?style=for-the-badge)](https://nodejs.org)
