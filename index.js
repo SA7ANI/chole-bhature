@@ -269,109 +269,123 @@ function createAddon(config) {
             };
         };
 
-        if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+        const FRESH_TTL_MS = 15 * 60 * 1000; // 15 minutes
+        const STALE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+        const fetchAndCacheStreams = async () => {
+            let imdbId = id;
+            let season = null;
+            let episode = null;
+
+            if (type === 'series') {
+                const parts = id.split(':');
+                imdbId = parts[0];
+                season = parts[1];
+                episode = parts[2];
+            }
+
+            const tmdbId = await getTmdbId(imdbId, type);
+            if (!tmdbId) {
+                console.log('[Stremio] Could not resolve TMDB ID for', imdbId);
+                return [];
+            }
+
+            let manifestUrls = [];
+            if (config.repoUrl) {
+                manifestUrls = [config.repoUrl];
+            } else if (config.urls && Array.isArray(config.urls)) {
+                manifestUrls = config.urls;
+            } else if (config.repos && Array.isArray(config.repos)) {
+                manifestUrls = config.repos;
+            } else if (config.url) {
+                manifestUrls = [config.url];
+            }
+            
+            if (manifestUrls.length === 0) {
+                console.log('[Stremio] No repository URLs configured');
+                return [];
+            }
+
+            let allProviders = [];
+            for (const url of manifestUrls) {
+                try {
+                    const providers = await providerLoader.loadProviders(url);
+                    allProviders = allProviders.concat(providers);
+                } catch (e) {
+                    console.error(`[ProviderLoader] Failed to load from ${url}:`, e.message);
+                }
+            }
+            
+            // Filter providers
+            if (config.provider) {
+                allProviders = allProviders.filter(p => p.name === config.provider);
+            } else if (config.disabled && Array.isArray(config.disabled)) {
+                allProviders = allProviders.filter(p => !config.disabled.includes(p.name));
+            }
+
+            let allStreams = [];
+
+            // Execute all providers in parallel with an increased timeout of 26 seconds per provider
+            const PROVIDER_TIMEOUT_MS = 26000;
+
+            await Promise.all(allProviders.map(async (provider) => {
+                try {
+                    let nuvioType = type;
+                    if (type === 'series' || type === 'tv') nuvioType = 'tv';
+                    else if (type === 'movie') nuvioType = 'movie';
+                    else if (type === 'anime') nuvioType = (season && episode) ? 'tv' : 'movie';
+                    
+                    const scrapePromise = provider.getStreams(tmdbId, nuvioType, season, episode, config);
+                    
+                    // Timeout promise
+                    const timeoutPromise = new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('Scrape Timeout')), PROVIDER_TIMEOUT_MS)
+                    );
+
+                    const streams = await Promise.race([scrapePromise, timeoutPromise]);
+                    
+                    if (Array.isArray(streams)) {
+                        streams.forEach(s => s.name = s.name || provider.name);
+                        allStreams = allStreams.concat(streams);
+                    }
+                } catch (err) {
+                    console.error(`[Provider] ${provider.name} failed or timed out:`, err.message);
+                }
+            }));
+
+            console.log(`[Stremio] Collected ${allStreams.length} total streams. Testing speeds...`);
+            const sortedAndTaggedStreams = await sortAndTagStreams(allStreams, {
+                hideDead: config.hideDead,
+                hideSlow: config.hideSlow,
+                hideCam: config.hideCam || config.blockCam,
+                sortBy: config.sortBy || (config.prioritizeQuality ? 'quality' : 'speed'),
+                sortMode: config.sortMode || config.sortBy,
+                prioritizeQuality: config.sortBy === 'quality' || config.prioritizeQuality,
+                prioritizeHindi: config.prioritizeHindi,
+                preferredLanguages: config.preferredLanguages || (config.prioritizeHindi ? ['Hindi', 'Dual-Audio'] : []),
+                showSeeders: config.showSeeders !== false,
+                deduplicateStreams: config.deduplicateStreams !== false
+            }, providerAnalytics);
+
+            // Save to cache
+            streamCache.set(cacheKey, { timestamp: Date.now(), streams: sortedAndTaggedStreams });
+            return sortedAndTaggedStreams;
+        };
+
+        if (cached && Date.now() - cached.timestamp < STALE_TTL_MS) {
             console.log(`[Stremio] Serving cached results for ${type} ${id}`);
+            
+            // Stale-While-Revalidate
+            if (Date.now() - cached.timestamp > FRESH_TTL_MS) {
+                console.log(`[Stremio] Cache is stale, revalidating in background for ${type} ${id}`);
+                fetchAndCacheStreams().catch(e => console.error('[Background Fetch Error]', e));
+            }
+            
             const frStream = getForceRefreshStream();
             return { streams: frStream ? [frStream, ...cached.streams] : cached.streams };
         }
 
-        let imdbId = id;
-        let season = null;
-        let episode = null;
-
-        if (type === 'series') {
-            const parts = id.split(':');
-            imdbId = parts[0];
-            season = parts[1];
-            episode = parts[2];
-        }
-
-        const tmdbId = await getTmdbId(imdbId, type);
-        if (!tmdbId) {
-            console.log('[Stremio] Could not resolve TMDB ID for', imdbId);
-            return { streams: [] };
-        }
-
-        let manifestUrls = [];
-        if (config.repoUrl) {
-            manifestUrls = [config.repoUrl];
-        } else if (config.urls && Array.isArray(config.urls)) {
-            manifestUrls = config.urls;
-        } else if (config.repos && Array.isArray(config.repos)) {
-            manifestUrls = config.repos;
-        } else if (config.url) {
-            manifestUrls = [config.url];
-        }
-        
-        if (manifestUrls.length === 0) {
-            console.log('[Stremio] No repository URLs configured');
-            return { streams: [] };
-        }
-
-        let allProviders = [];
-        for (const url of manifestUrls) {
-            try {
-                const providers = await providerLoader.loadProviders(url);
-                allProviders = allProviders.concat(providers);
-            } catch (e) {
-                console.error(`[ProviderLoader] Failed to load from ${url}:`, e.message);
-            }
-        }
-        
-        // Filter providers
-        if (config.provider) {
-            allProviders = allProviders.filter(p => p.name === config.provider);
-        } else if (config.disabled && Array.isArray(config.disabled)) {
-            allProviders = allProviders.filter(p => !config.disabled.includes(p.name));
-        }
-
-        let allStreams = [];
-
-        // Execute all providers in parallel with an increased timeout of 26 seconds per provider
-        const PROVIDER_TIMEOUT_MS = 26000;
-
-        await Promise.all(allProviders.map(async (provider) => {
-            try {
-                let nuvioType = type;
-                if (type === 'series' || type === 'tv') nuvioType = 'tv';
-                else if (type === 'movie') nuvioType = 'movie';
-                else if (type === 'anime') nuvioType = (season && episode) ? 'tv' : 'movie';
-                
-                const scrapePromise = provider.getStreams(tmdbId, nuvioType, season, episode, config);
-                
-                // Timeout promise
-                const timeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Scrape Timeout')), PROVIDER_TIMEOUT_MS)
-                );
-
-                const streams = await Promise.race([scrapePromise, timeoutPromise]);
-                
-                if (Array.isArray(streams)) {
-                    streams.forEach(s => s.name = s.name || provider.name);
-                    allStreams = allStreams.concat(streams);
-                }
-            } catch (err) {
-                console.error(`[Provider] ${provider.name} failed or timed out:`, err.message);
-            }
-        }));
-
-        console.log(`[Stremio] Collected ${allStreams.length} total streams. Testing speeds...`);
-        const sortedAndTaggedStreams = await sortAndTagStreams(allStreams, {
-            hideDead: config.hideDead,
-            hideSlow: config.hideSlow,
-            hideCam: config.hideCam || config.blockCam,
-            sortBy: config.sortBy || (config.prioritizeQuality ? 'quality' : 'speed'),
-            sortMode: config.sortMode || config.sortBy,
-            prioritizeQuality: config.sortBy === 'quality' || config.prioritizeQuality,
-            prioritizeHindi: config.prioritizeHindi,
-            preferredLanguages: config.preferredLanguages || (config.prioritizeHindi ? ['Hindi', 'Dual-Audio'] : []),
-            showSeeders: config.showSeeders !== false,
-            deduplicateStreams: config.deduplicateStreams !== false
-        }, providerAnalytics);
-
-        // Save to cache
-        streamCache.set(cacheKey, { timestamp: Date.now(), streams: sortedAndTaggedStreams });
-
+        const sortedAndTaggedStreams = await fetchAndCacheStreams();
         const frStream = getForceRefreshStream();
         return { streams: frStream ? [frStream, ...sortedAndTaggedStreams] : sortedAndTaggedStreams };
     });
