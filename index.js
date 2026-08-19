@@ -141,8 +141,7 @@ app.get('/:configJSON/configure', (req, res) => {
 const streamCache = new Map();
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
-// Analytics tracker
-const providerAnalytics = new Map();
+// Analytics tracker (already declared at top)
 
 app.get('/api/analytics', (req, res) => {
     const stats = {};
@@ -165,7 +164,8 @@ app.get('/api/proxy', async (req, res) => {
         const response = await axios.get(url, { timeout: 8000 });
         res.json(response.data);
     } catch (err) {
-        res.status(500).json({ error: 'Failed to fetch' });
+        console.error('[Proxy Error]', err.message);
+        res.status(500).json({ error: 'Failed to fetch: ' + err.message });
     }
 });
 

@@ -1611,7 +1611,20 @@
                                 <span class="switch-slider"></span>
                             </div>
                         </label>
-                        <label class="filter-capsule" title="Automatically quarantine scrapers that fail 3 times consecutively">
+                    </div>
+                </div>
+
+                <!-- Provider Auto-Quarantine -->
+                <div class="setting-item-row">
+                    <div class="setting-text-block">
+                        <div class="setting-headline">
+                            Provider Auto-Quarantine System
+                            <span class="tag-pill-badge" style="background: rgba(244, 63, 94, 0.12); border-color: rgba(244, 63, 94, 0.35); color: #f43f5e;">🛑 Bypass Delays</span>
+                        </div>
+                        <div class="setting-description">Automatically isolates broken, rate-limited, or offline scrapers for 30 minutes after 3 consecutive failures. This completely eliminates the brutal 26-second delay penalties caused by dead scrapers timing out during a search.</div>
+                    </div>
+                    <div class="dual-filter-group">
+                        <label class="filter-capsule" title="Enable automatic quarantine for failing providers">
                             <span class="filter-capsule-text">🛑 Auto-Quarantine</span>
                             <div class="switch-toggle">
                                 <input type="checkbox" id="enableQuarantine" checked onchange="onSettingChanged()">
@@ -1818,8 +1831,8 @@
 
         <!-- Providers List -->
         <div class="section-wrap">
-            <div class="section-label-bar" style="display: flex; justify-content: space-between; align-items: center;">
-                <span class="section-label">🧩 Scrapers & Providers</span>
+            <div class="section-label-bar" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;">
+                <span class="section-label" style="white-space: nowrap;">🔌 Scrapers & Providers</span>
                 <div style="display: flex; gap: 8px;">
                     <button class="action-btn" style="padding: 4px 12px; font-size: 12px; min-height: unset; border-radius: 6px; background: rgba(34, 197, 94, 0.1); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.2);" onclick="setAllProviders(true)">Enable All</button>
                     <button class="action-btn" style="padding: 4px 12px; font-size: 12px; min-height: unset; border-radius: 6px; background: rgba(244, 63, 94, 0.1); color: #f43f5e; border: 1px solid rgba(244, 63, 94, 0.2);" onclick="setAllProviders(false)">Disable All</button>
@@ -2231,6 +2244,7 @@
                             <div>
                                 <h3>Failed to load repository</h3>
                                 <p class="url">${url}</p>
+                                <p style="color: #f43f5e; font-size: 11px; margin-top: 4px;">Error: ${err.message}</p>
                             </div>
                             <div>
                                 <button class="btn-delete-icon" title="Remove Repository" onclick="removeRepo(${i})">✕</button>
