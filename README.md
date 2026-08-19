@@ -5,7 +5,7 @@
   # Chole Bhature
   ### High-Performance Stream Meta-Sorter & Priority Engine for Nuvio & Stremio
 
-  [![Version](https://img.shields.io/badge/version-3.1.0-indigo.svg?style=for-the-badge)](https://github.com)
+  [![Version](https://img.shields.io/badge/version-3.3.0-indigo.svg?style=for-the-badge)](https://github.com)
   [![Platform](https://img.shields.io/badge/Platform-Nuvio%20%7C%20Stremio-purple.svg?style=for-the-badge)](https://stremio.com)
   [![License](https://img.shields.io/badge/License-ISC-amber.svg?style=for-the-badge)](LICENSE)
   [![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-emerald.svg?style=for-the-badge)](https://nodejs.org)
@@ -31,6 +31,8 @@ Instead of waiting through buffering wheels or clicking broken links, Chole Bhat
 | Feature | Description |
 | :--- | :--- |
 | ⚡ **Real-Time Latency Probing** | Concurrently tests HTTP/HLS streams via lightweight `HEAD`/`Range` requests. Dynamically tags links with `🟢 FAST (<800ms)`, `🟡 SLOW (≥800ms)`, or `🔴 DEAD`. |
+| 🛑 **Provider Quarantine System** | Automatically isolates failing or offline scrapers for 30 minutes after 3 consecutive failures to eliminate 26-second delay penalties. |
+| 🎛️ **Granular Scraper Toggles** | Manage scrapers individually with the new Sources tab. Instantly bulk enable/disable hundreds of providers at once. |
 | 🎬 **Strict 4K UHD Hierarchy** | Strict resolution-first ordering (`4K UHD` > `1080p FHD` > `720p HD` > `480p SD`). Lower resolutions will never leapfrog 4K content in Quality mode. |
 | 🚫 **Auto-Hide CAM & Theater Rips** | Automatically filters out blurry theater recordings (`CAM`, `HDCAM`, `TeleSync`, `TC`, and `Screeners`). |
 | 🧲 **Smart P2P Torrent Health** | Accurately maps torrent swarm seeders to health badges (`🟢 20+ Healthy`, `🟡 5–19 Moderate`, `🔴 1–4 Buffering Risk`) to prevent stalled playback. |
