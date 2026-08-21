@@ -780,9 +780,32 @@
             min-width: 0;
         }
 
-        input[type="url"]:focus, input[type="text"]:focus {
+        .input-bar-group select {
+            flex-grow: 1;
+            background-color: var(--bg-input);
+            border: 1px solid var(--border-subtle);
+            color: white;
+            padding: 12px 36px 12px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s;
+            min-width: 0;
+            appearance: none;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>');
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+        }
+
+        input[type="url"]:focus, input[type="text"]:focus, .input-bar-group select:focus {
             border-color: var(--accent-primary);
             box-shadow: 0 0 16px rgba(99, 102, 241, 0.25);
+        }
+        
+        .input-bar-group select option {
+            background-color: #151821;
+            color: #f8fafc;
+            font-weight: 600;
         }
 
         .btn-submit-action {
@@ -1457,7 +1480,7 @@
                 <div class="brand-content">
                     <div class="brand-header-row">
                         <h1 class="brand-title">Chole Bhature</h1>
-                        <span class="brand-version">v3.0.0</span>
+                        <span class="brand-version">v3.4.0</span>
                         <button onclick="toggleTheme()" title="Cycle Theme (Dark/AMOLED/Light)" style="cursor: pointer; padding: 0 4px; font-size: 14px; background: transparent; border: none; display: inline-flex; align-items: center; justify-content: center; margin-left: 2px; transition: all 0.2s;">
                             <span id="theme-icon">🌙</span>
                         </button>
@@ -1574,17 +1597,13 @@
                             <div class="setting-description">Unlock premium high-speed streaming by automatically unrestricting links through your Debrid account. Required for caching torrents.</div>
                         </div>
                     </div>
-                    <div class="doh-provider-wrap">
-                        <span class="doh-provider-label">Debrid Provider:</span>
-                        <select id="debridProvider" class="doh-provider-select" onchange="onSettingChanged()">
+                    <div class="input-bar-group" style="margin-top: 12px; flex-wrap: wrap;">
+                        <select id="debridProvider" onchange="onSettingChanged()" style="font-weight: 600; cursor: pointer; flex: 1; min-width: 220px; font-family: inherit; color-scheme: dark;">
                             <option value="none">❌ None (Free Links Only)</option>
                             <option value="realdebrid">🟢 Real-Debrid</option>
                             <option value="alldebrid">🔵 AllDebrid</option>
                         </select>
-                    </div>
-                    <div class="doh-provider-wrap">
-                        <span class="doh-provider-label">API Key:</span>
-                        <input type="text" id="debridApiKey" placeholder="Enter your API Key here..." onchange="onSettingChanged()" style="flex-grow: 1; background-color: var(--bg-surface-secondary); color: white; border: 1px solid var(--border-subtle); padding: 7px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; outline: none;">
+                        <input type="text" id="debridApiKey" placeholder="Enter your Debrid API Key..." onchange="onSettingChanged()" style="flex: 2; min-width: 240px;">
                     </div>
                 </div>
             </div>
@@ -1726,9 +1745,8 @@
                             </label>
                         </div>
                     </div>
-                    <div id="doh-provider-wrap" class="doh-provider-wrap">
-                        <span class="doh-provider-label">DoH Resolver Provider:</span>
-                        <select id="dohProvider" class="doh-provider-select" onchange="onSettingChanged()">
+                    <div id="doh-provider-wrap" class="input-bar-group" style="margin-top: 8px;">
+                        <select id="dohProvider" onchange="onSettingChanged()" style="flex: 1; font-weight: 600; cursor: pointer; font-family: inherit; color-scheme: dark;">
                             <option value="cloudflare">⚡ Cloudflare (1.1.1.1) - Fastest</option>
                             <option value="google">🌐 Google DNS (8.8.8.8) - Reliable</option>
                             <option value="adguard">🛡️ AdGuard DNS - Privacy Focused</option>
@@ -2008,7 +2026,33 @@
             onSettingChanged();
         }
 
+        function toggleDohProviderVisibility() {
+            const enableDohEl = document.getElementById('enableDoh');
+            const dohProviderWrapEl = document.getElementById('doh-provider-wrap');
+            if (enableDohEl && dohProviderWrapEl) {
+                if (enableDohEl.checked) {
+                    dohProviderWrapEl.style.display = 'flex';
+                } else {
+                    dohProviderWrapEl.style.display = 'none';
+                }
+            }
+        }
+
+        function toggleDebridApiKeyVisibility() {
+            const debridProviderEl = document.getElementById('debridProvider');
+            const debridApiKeyEl = document.getElementById('debridApiKey');
+            if (debridProviderEl && debridApiKeyEl) {
+                if (debridProviderEl.value === 'none') {
+                    debridApiKeyEl.style.display = 'none';
+                } else {
+                    debridApiKeyEl.style.display = '';
+                }
+            }
+        }
+
         function onSettingChanged() {
+            toggleDohProviderVisibility();
+            toggleDebridApiKeyVisibility();
             saveSettingsLocal();
             saveConfigurationToServer(false);
             const saveBtn = document.getElementById('save-btn');
@@ -2177,6 +2221,9 @@
             if (debridProviderEl) debridProviderEl.value = settings.debridProvider || 'none';
             const debridApiKeyEl = document.getElementById('debridApiKey');
             if (debridApiKeyEl) debridApiKeyEl.value = settings.debridApiKey || '';
+            toggleDebridApiKeyVisibility();
+            toggleDohProviderVisibility();
+            
             updateSortModeUI(settings.sortBy || 'speed');
             renderLanguageChips();
             
@@ -2236,6 +2283,9 @@
             if (initDebridProviderEl) initDebridProviderEl.value = settings.debridProvider || 'none';
             const initDebridApiKeyEl = document.getElementById('debridApiKey');
             if (initDebridApiKeyEl) initDebridApiKeyEl.value = settings.debridApiKey || '';
+            toggleDebridApiKeyVisibility();
+            toggleDohProviderVisibility();
+            
             updateSortModeUI(settings.sortBy || 'speed');
             renderLanguageChips();
             
