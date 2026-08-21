@@ -322,7 +322,7 @@ function deduplicateAndMergeStreams(streams, enabled = true) {
     return result;
 }
 
-function formatStreamLabels(stream, latency = 150, isP2P = false, isDead = false, showSeeders = true) {
+function formatStreamLabels(stream, latency = 150, isP2P = false, isDead = false, showSeeders = true, config = {}) {
     const originalName = stream.name || 'Stream';
     const originalTitle = stream.title || stream.description || stream.quality || '';
     const rawProviderName = cleanProviderName(originalName);
@@ -345,7 +345,15 @@ function formatStreamLabels(stream, latency = 150, isP2P = false, isDead = false
         }
     }
 
+    let debridBadge = null;
+    if (isP2P && config.debridProvider === 'realdebrid') {
+        debridBadge = '⚡ [RD+]';
+    } else if (isP2P && config.debridProvider === 'alldebrid') {
+        debridBadge = '⚡ [AD+]';
+    }
+
     const badgeTokens = [
+        debridBadge,
         meta.resolution,
         meta.quality,
         ...meta.hdr,
@@ -470,7 +478,7 @@ function getSeederScore(stream) {
     return meta.seeders || 0;
 }
 
-async function testStream(stream, showSeeders = true) {
+async function testStream(stream, showSeeders = true, config = {}) {
     const startTime = Date.now();
     const originalName = stream.name || 'Stream';
     const providerName = cleanProviderName(originalName);
@@ -493,7 +501,7 @@ async function testStream(stream, showSeeders = true) {
     // If stream already has pre-computed test results (e.g. from cache or mock tests)
     if (stream._pretested || (typeof stream.latency === 'number' && stream.statusCategory)) {
         const isDead = Boolean(stream.isDead || stream.statusCategory === 'dead' || stream.latency >= 90000);
-        const labels = formatStreamLabels(stream, stream.latency, false, isDead, showSeeders);
+        const labels = formatStreamLabels(stream, stream.latency, false, isDead, showSeeders, config);
         return {
             ...stream,
             name: labels.name,
@@ -539,7 +547,7 @@ async function testStream(stream, showSeeders = true) {
             }
         }
 
-        const labels = formatStreamLabels(stream, p2pLatency, true, isDead, showSeeders);
+        const labels = formatStreamLabels(stream, p2pLatency, true, isDead, showSeeders, config);
         return {
             ...stream,
             name: labels.name,
@@ -553,7 +561,7 @@ async function testStream(stream, showSeeders = true) {
 
     // Handle external links or YouTube links
     if (stream.externalUrl || stream.ytId) {
-        const labels = formatStreamLabels(stream, 100, true, false, showSeeders);
+        const labels = formatStreamLabels(stream, 100, true, false, showSeeders, config);
         return {
             ...stream,
             name: labels.name,
@@ -566,7 +574,7 @@ async function testStream(stream, showSeeders = true) {
     }
 
     if (!stream.url || !stream.url.startsWith('http')) {
-        const labels = formatStreamLabels(stream, 99999, false, true, showSeeders);
+        const labels = formatStreamLabels(stream, 99999, false, true, showSeeders, config);
         return {
             ...stream,
             name: labels.name,
@@ -600,7 +608,7 @@ async function testStream(stream, showSeeders = true) {
                 });
                 const data = typeof hcRes.data === 'string' ? hcRes.data.toLowerCase() : '';
                 if (data.includes('file deleted') || data.includes('file not found') || data.includes('file was deleted') || data.includes('page not found') || hcRes.status === 404) {
-                    const labels = formatStreamLabels(stream, 99999, false, true, showSeeders);
+                    const labels = formatStreamLabels(stream, 99999, false, true, showSeeders, config);
                     return {
                         ...stream,
                         name: labels.name,
@@ -647,7 +655,7 @@ async function testStream(stream, showSeeders = true) {
         }
 
         const statusCategory = latency < 800 ? 'fast' : 'slow';
-        const labels = formatStreamLabels(stream, latency, false, false, showSeeders);
+        const labels = formatStreamLabels(stream, latency, false, false, showSeeders, config);
 
         return {
             ...stream,
@@ -660,7 +668,7 @@ async function testStream(stream, showSeeders = true) {
         };
 
     } catch (err) {
-        const labels = formatStreamLabels(stream, 1200, false, false, showSeeders);
+        const labels = formatStreamLabels(stream, 1200, false, false, showSeeders, config);
         return {
             ...stream,
             name: labels.name,
@@ -684,7 +692,7 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
 
     // Run tests concurrently
     const testedStreams = await Promise.all(
-        uniqueStreams.map(stream => testStream(stream, showSeeders))
+        uniqueStreams.map(stream => testStream(stream, showSeeders, config))
     );
 
     // Record Analytics
@@ -937,6 +945,18 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
     return filteredStreams.map(s => {
         const { latency, isDead, statusCategory, originalProvider, ...stremioStream } = s;
         
+        if (config.debridProvider && config.debridProvider !== 'none' && config.debridApiKey && config.addonHost) {
+            const isP2P = (stremioStream.url && stremioStream.url.startsWith('magnet:')) || stremioStream.infoHash;
+            if (isP2P) {
+                const hash = stremioStream.infoHash || normalizeTorrentHash(stremioStream.url);
+                if (hash) {
+                    const protocol = config.addonProtocol || 'https';
+                    stremioStream.url = `${protocol}://${config.addonHost}/debrid/${config.debridProvider}/${config.debridApiKey}/${hash}`;
+                    delete stremioStream.infoHash;
+                }
+            }
+        }
+
         // Enrich behaviorHints.filename for Nuvio Fusion badges
         const meta = parseStreamMetadata(stremioStream);
         const tokens = [

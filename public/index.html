@@ -1558,6 +1558,38 @@
 
         <!-- Tab: Settings -->
         <div id="tab-settings" class="tab-content">
+        <!-- Premium Services (Debrid) -->
+        <div class="section-wrap">
+            <div class="section-label-bar">
+                <span class="section-label">💎 Premium Services (Debrid)</span>
+            </div>
+            <div class="section-card">
+                <div class="setting-item-row" style="flex-direction: column; align-items: stretch; gap: 12px; padding-top: 0;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+                        <div class="setting-text-block" style="flex: 1; min-width: 240px;">
+                            <div class="setting-headline">
+                                ⚡ Real-Debrid / AllDebrid
+                                <span class="tag-pill-badge" style="background: rgba(234, 179, 8, 0.12); border-color: rgba(234, 179, 8, 0.35); color: #facc15;">Buffering-Free</span>
+                            </div>
+                            <div class="setting-description">Unlock premium high-speed streaming by automatically unrestricting links through your Debrid account. Required for caching torrents.</div>
+                        </div>
+                    </div>
+                    <div class="doh-provider-wrap">
+                        <span class="doh-provider-label">Debrid Provider:</span>
+                        <select id="debridProvider" class="doh-provider-select" onchange="onSettingChanged()">
+                            <option value="none">❌ None (Free Links Only)</option>
+                            <option value="realdebrid">🟢 Real-Debrid</option>
+                            <option value="alldebrid">🔵 AllDebrid</option>
+                        </select>
+                    </div>
+                    <div class="doh-provider-wrap">
+                        <span class="doh-provider-label">API Key:</span>
+                        <input type="text" id="debridApiKey" placeholder="Enter your API Key here..." onchange="onSettingChanged()" style="flex-grow: 1; background-color: var(--bg-surface-secondary); color: white; border: 1px solid var(--border-subtle); padding: 7px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; outline: none;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Stream Priority & Optimization Suite -->
         <div class="section-wrap">
             <div class="section-label-bar">
@@ -1992,6 +2024,8 @@
             const deduplicateStreamsEl = document.getElementById('deduplicateStreams');
             const enableDohEl = document.getElementById('enableDoh');
             const dohProviderEl = document.getElementById('dohProvider');
+            const debridProviderEl = document.getElementById('debridProvider');
+            const debridApiKeyEl = document.getElementById('debridApiKey');
             
             if (hideDeadEl) settings.hideDead = hideDeadEl.checked;
             if (hideSlowEl) settings.hideSlow = hideSlowEl.checked;
@@ -2002,6 +2036,8 @@
             if (deduplicateStreamsEl) settings.deduplicateStreams = deduplicateStreamsEl.checked;
             if (enableDohEl) settings.enableDoh = enableDohEl.checked;
             if (dohProviderEl) settings.dohProvider = dohProviderEl.value;
+            if (debridProviderEl) settings.debridProvider = debridProviderEl.value;
+            if (debridApiKeyEl) settings.debridApiKey = debridApiKeyEl.value;
             settings.prioritizeQuality = (settings.sortBy === 'quality');
             settings.preferredLanguages = settings.preferredLanguages || [];
             settings.prioritizeHindi = settings.preferredLanguages.includes('Hindi');
@@ -2044,6 +2080,8 @@
                 deduplicateStreams: settings.deduplicateStreams !== false,
                 enableDoh: settings.enableDoh !== false,
                 dohProvider: settings.dohProvider || 'cloudflare',
+                debridProvider: settings.debridProvider || 'none',
+                debridApiKey: settings.debridApiKey || '',
                 sortBy: settings.sortBy || 'speed',
                 sortMode: settings.sortBy || 'speed',
                 prioritizeQuality: settings.sortBy === 'quality',
@@ -2104,6 +2142,8 @@
             if (cfg.deduplicateStreams !== undefined) settings.deduplicateStreams = cfg.deduplicateStreams;
             if (cfg.enableDoh !== undefined) settings.enableDoh = cfg.enableDoh;
             if (cfg.dohProvider) settings.dohProvider = cfg.dohProvider;
+            if (cfg.debridProvider) settings.debridProvider = cfg.debridProvider;
+            if (cfg.debridApiKey !== undefined) settings.debridApiKey = cfg.debridApiKey;
             if (cfg.sortBy) settings.sortBy = cfg.sortBy;
             else if (cfg.prioritizeQuality !== undefined) settings.sortBy = cfg.prioritizeQuality ? 'quality' : 'speed';
             if (cfg.preferredLanguages && Array.isArray(cfg.preferredLanguages)) {
@@ -2133,6 +2173,10 @@
             if (enableDohEl) enableDohEl.checked = settings.enableDoh !== false;
             const dohProviderEl = document.getElementById('dohProvider');
             if (dohProviderEl) dohProviderEl.value = settings.dohProvider || 'cloudflare';
+            const debridProviderEl = document.getElementById('debridProvider');
+            if (debridProviderEl) debridProviderEl.value = settings.debridProvider || 'none';
+            const debridApiKeyEl = document.getElementById('debridApiKey');
+            if (debridApiKeyEl) debridApiKeyEl.value = settings.debridApiKey || '';
             updateSortModeUI(settings.sortBy || 'speed');
             renderLanguageChips();
             
@@ -2188,6 +2232,10 @@
             if (initDohEl) initDohEl.checked = settings.enableDoh !== false;
             const initDohProviderEl = document.getElementById('dohProvider');
             if (initDohProviderEl) initDohProviderEl.value = settings.dohProvider || 'cloudflare';
+            const initDebridProviderEl = document.getElementById('debridProvider');
+            if (initDebridProviderEl) initDebridProviderEl.value = settings.debridProvider || 'none';
+            const initDebridApiKeyEl = document.getElementById('debridApiKey');
+            if (initDebridApiKeyEl) initDebridApiKeyEl.value = settings.debridApiKey || '';
             updateSortModeUI(settings.sortBy || 'speed');
             renderLanguageChips();
             
