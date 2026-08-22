@@ -125,27 +125,28 @@
             left: 50%;
             transform: translateX(-50%);
             z-index: 1000;
-            width: min(940px, calc(100% - 24px));
+            width: min(960px, calc(100% - 20px));
             background: rgba(14, 16, 24, 0.88);
             backdrop-filter: blur(28px);
             -webkit-backdrop-filter: blur(28px);
             border: 1px solid var(--border-subtle);
             border-radius: var(--radius-pill);
-            padding: 7px 12px;
+            padding: 6px 10px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 10px;
+            gap: 8px;
             box-sizing: border-box;
             box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
             transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            overflow: visible;
         }
 
         .nav-brand-pill {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 4px 10px 4px 4px;
+            gap: 8px;
+            padding: 3px 6px 3px 3px;
             border-radius: var(--radius-pill);
             text-decoration: none;
             color: var(--text-primary);
@@ -158,8 +159,8 @@
         }
 
         .nav-brand-logo {
-            width: 32px;
-            height: 32px;
+            width: 30px;
+            height: 30px;
             border-radius: 50%;
             object-fit: cover;
             box-shadow: 0 2px 8px rgba(0,0,0,0.4);
@@ -167,18 +168,18 @@
 
         .nav-brand-name {
             font-family: 'Outfit', sans-serif;
-            font-size: 15px;
+            font-size: 14.5px;
             font-weight: 800;
             letter-spacing: -0.2px;
             white-space: nowrap;
         }
 
         .nav-brand-version {
-            font-size: 10.5px;
+            font-size: 10px;
             font-weight: 700;
             background: rgba(139, 92, 246, 0.2);
             color: #c4b5fd;
-            padding: 2px 7px;
+            padding: 2px 6px;
             border-radius: 6px;
             border: 1px solid rgba(139, 92, 246, 0.35);
         }
@@ -186,17 +187,17 @@
         .nav-pill-group {
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 3px;
         }
 
         .nav-pill-item {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            padding: 8px 18px;
+            gap: 5px;
+            padding: 6px 13px;
             border-radius: var(--radius-pill);
             color: var(--text-secondary);
-            font-size: 13.5px;
+            font-size: 13px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
@@ -221,7 +222,7 @@
         .nav-actions-pill {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             flex-shrink: 0;
         }
 
@@ -231,9 +232,9 @@
             align-items: center;
             justify-content: center;
             gap: 6px;
-            padding: 8px 16px;
+            padding: 7px 14px;
             border-radius: var(--radius-pill);
-            font-size: 13px;
+            font-size: 12.5px;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
@@ -248,26 +249,78 @@
         }
 
         .pill-btn-icon-only {
-            width: 36px;
-            height: 36px;
-            min-width: 36px;
+            width: 34px;
+            height: 34px;
+            min-width: 34px;
             padding: 0;
             border-radius: 50%;
-            font-size: 15px;
+            font-size: 14px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             background: rgba(16, 19, 28, 0.85);
-            backdrop-filter: blur(28px);
-            color: var(--text-primary);
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
             border: 1px solid var(--border-subtle);
-            box-sizing: border-box;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            flex-shrink: 0;
+            user-select: none;
         }
 
         .pill-btn-icon-only:hover {
             background: rgba(255, 255, 255, 0.12);
-            transform: scale(1.06);
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-1px);
+        }
+
+        .pill-btn-emerald {
+            background: rgba(16, 185, 129, 0.15);
+            border-color: rgba(16, 185, 129, 0.4);
+            color: #34d399;
+            height: 34px;
+            padding: 0 13px;
+        }
+
+        @media (max-width: 1040px) and (min-width: 769px) {
+            .top-nav-bar {
+                padding: 5px 8px;
+                gap: 5px;
+            }
+            .nav-brand-pill {
+                gap: 5px;
+                padding: 2px 4px;
+            }
+            .nav-brand-name {
+                font-size: 13.5px;
+            }
+            .nav-brand-version {
+                display: none;
+            }
+            .nav-pill-item {
+                padding: 5px 9px;
+                font-size: 12px;
+                gap: 4px;
+            }
+            .nav-pill-item svg {
+                width: 13px;
+                height: 13px;
+            }
+            .sync-status-pill {
+                max-width: 90px;
+                padding: 0 6px;
+                font-size: 10px;
+            }
+        }
+
+        @media (max-width: 860px) and (min-width: 769px) {
+            .sync-status-pill {
+                display: none !important;
+            }
+            .nav-pill-item {
+                padding: 5px 7px;
+                font-size: 11.5px;
+            }
         }
 
         .pill-btn-white {
@@ -393,12 +446,30 @@
             display: flex;
             flex-direction: column;
             gap: clamp(10px, 2vw, 16px);
-            transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: transform, opacity;
         }
 
-        .hero-content.slide-fading {
+        .hero-content.slide-out-left {
+            transform: translateX(-35px);
             opacity: 0;
-            transform: translateY(6px);
+        }
+
+        .hero-content.slide-out-right {
+            transform: translateX(35px);
+            opacity: 0;
+        }
+
+        .hero-content.slide-in-from-right {
+            transform: translateX(35px);
+            opacity: 0;
+            transition: none !important;
+        }
+
+        .hero-content.slide-in-from-left {
+            transform: translateX(-35px);
+            opacity: 0;
+            transition: none !important;
         }
 
         .hero-badge-row {
@@ -1520,7 +1591,7 @@
             .top-nav-bar {
                 top: calc(10px + env(safe-area-inset-top));
                 width: calc(100% - 20px);
-                padding: 6px 12px;
+                padding: 6px 10px;
                 gap: 6px;
                 min-height: 48px;
             }
@@ -1531,30 +1602,27 @@
                 display: none;
             }
             .top-nav-bar .nav-brand-name {
-                font-size: 14.5px;
+                font-size: 14px;
                 font-weight: 800;
             }
             .nav-brand-pill {
                 padding: 2px 4px;
-                gap: 8px;
+                gap: 6px;
             }
             .nav-brand-logo {
                 width: 28px;
                 height: 28px;
             }
             .nav-actions-pill {
-                gap: 6px;
+                gap: 5px;
                 flex-shrink: 0;
             }
             .sync-status-pill {
-                height: 32px;
-                padding: 0 9px;
-                font-size: 10.5px;
-                gap: 4px;
+                display: none !important;
             }
             .pill-btn-emerald {
                 height: 32px;
-                padding: 0 11px;
+                padding: 0 10px;
                 font-size: 11.5px;
                 gap: 4px;
             }
@@ -1666,10 +1734,6 @@
 
         <!-- Quick Actions Pill -->
         <div class="nav-actions-pill">
-            <span id="sync-badge" class="sync-status-pill" style="display: none;">
-                <span class="pulse-dot"></span>
-                <span id="sync-text">Synced</span>
-            </span>
             <a href="https://github.com/SA7ANI/chole-bhature" target="_blank" rel="noopener noreferrer" class="pill-btn pill-btn-icon-only" title="GitHub Repository" style="text-decoration: none; color: inherit;">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
             </a>
@@ -1827,6 +1891,27 @@
 
         <!-- ==================== TAB 2: SETTINGS ==================== -->
         <div id="tab-settings" class="tab-content">
+
+            <!-- Cloud Configuration Profile -->
+            <div class="section-wrap" id="section-cloud-sync">
+                <div class="section-label-bar">
+                    <span class="section-label">☁️ Cloud Configuration Profile</span>
+                </div>
+                <div class="section-card" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 14px 18px;">
+                    <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+                        <span class="pulse-dot"></span>
+                        <div style="display: flex; flex-direction: column; min-width: 0;">
+                            <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted);">Active Cloud Sync ID</span>
+                            <span id="settings-sync-id" style="font-family: 'JetBrains Mono', monospace, sans-serif; font-size: 14px; font-weight: 700; color: #34d399; letter-spacing: 0.5px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                                loading...
+                            </span>
+                        </div>
+                    </div>
+                    <button type="button" onclick="copySyncId()" class="pill-btn pill-btn-glass" style="padding: 7px 14px; font-size: 12px; gap: 6px; flex-shrink: 0;" title="Copy Sync ID to clipboard">
+                        <span>📋</span> Copy ID
+                    </button>
+                </div>
+            </div>
 
             <!-- Premium Services (Debrid) -->
             <div class="section-wrap" id="section-debrid">
@@ -2338,10 +2423,31 @@
         function showSyncBadge(text) {
             const badge = document.getElementById('sync-badge');
             const syncText = document.getElementById('sync-text');
+            const settingsSyncId = document.getElementById('settings-sync-id');
+            const cleanId = text.replace(/^ID:\s*/i, '');
+            
             if (badge && syncText) {
-                syncText.innerText = text.replace(/^ID:\s*/i, '');
+                syncText.innerText = cleanId;
                 badge.style.display = 'inline-flex';
             }
+            if (settingsSyncId) {
+                settingsSyncId.innerText = cleanId;
+            }
+        }
+
+        function copySyncId() {
+            if (!configId) return;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(configId);
+            } else {
+                const tempInput = document.createElement('input');
+                tempInput.value = configId;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+            }
+            showToast(`📋 <b>Copied:</b> Sync ID <code>${configId}</code> copied!`);
         }
 
         function getOrCreateConfigId() {
@@ -3322,7 +3428,7 @@
         let currentHeroSlide = 0;
         let heroSlideTimer = null;
 
-        function renderHeroSlide(index) {
+        function renderHeroSlide(index, direction = 'next') {
             const slide = HERO_SLIDES[index];
             if (!slide) return;
             const content = document.getElementById('hero-slide-content');
@@ -3333,7 +3439,10 @@
             const btn2 = document.getElementById('hero-btn-secondary');
             const dots = document.querySelectorAll('#hero-dots .pagination-dot');
 
-            if (content) content.classList.add('slide-fading');
+            if (content) {
+                content.classList.remove('slide-in-from-right', 'slide-in-from-left', 'slide-out-left', 'slide-out-right');
+                content.classList.add(direction === 'next' ? 'slide-out-left' : 'slide-out-right');
+            }
 
             setTimeout(() => {
                 if (badges) {
@@ -3363,23 +3472,32 @@
                     else dot.classList.remove('active-bar');
                 });
 
-                if (content) content.classList.remove('slide-fading');
-            }, 200);
+                if (content) {
+                    content.classList.remove('slide-out-left', 'slide-out-right');
+                    content.classList.add(direction === 'next' ? 'slide-in-from-right' : 'slide-in-from-left');
+                    
+                    // Trigger browser reflow
+                    void content.offsetWidth;
+                    
+                    content.classList.remove('slide-in-from-right', 'slide-in-from-left');
+                }
+            }, 140);
         }
 
         function nextHeroSlide() {
             currentHeroSlide = (currentHeroSlide + 1) % HERO_SLIDES.length;
-            renderHeroSlide(currentHeroSlide);
+            renderHeroSlide(currentHeroSlide, 'next');
         }
 
         function prevHeroSlide() {
             currentHeroSlide = (currentHeroSlide - 1 + HERO_SLIDES.length) % HERO_SLIDES.length;
-            renderHeroSlide(currentHeroSlide);
+            renderHeroSlide(currentHeroSlide, 'prev');
         }
 
         function goToHeroSlide(index) {
+            const direction = index >= currentHeroSlide ? 'next' : 'prev';
             currentHeroSlide = index;
-            renderHeroSlide(index);
+            renderHeroSlide(index, direction);
             startHeroSlideTimer();
         }
 
