@@ -5,10 +5,10 @@
   # Chole Bhature
   ### High-Performance Stream Meta-Sorter & Priority Engine for Nuvio & Stremio
 
-  [![Version](https://img.shields.io/badge/version-3.4.0-indigo.svg?style=for-the-badge)](https://github.com)
-  [![Platform](https://img.shields.io/badge/Platform-Nuvio%20%7C%20Stremio-purple.svg?style=for-the-badge)](https://stremio.com)
-  [![License](https://img.shields.io/badge/License-ISC-amber.svg?style=for-the-badge)](LICENSE)
-  [![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-emerald.svg?style=for-the-badge)](https://nodejs.org)
+  [![Version](https://img.shields.io/badge/version-4.0.0-indigo.svg?style=for-the-badge)](https://github.com/SA7ANI/chole-bhature)
+  [![Platform](https://img.shields.io/badge/Platform-Nuvio%20%7C%20Stremio-purple.svg?style=for-the-badge)](https://github.com/SA7ANI/chole-bhature)
+  [![License](https://img.shields.io/badge/License-GNU%20AGPLv3-amber.svg?style=for-the-badge)](LICENSE)
+  [![Author](https://img.shields.io/badge/Author-SA7ANI-blue.svg?style=for-the-badge)](https://github.com/SA7ANI)
 
   <br>
 
@@ -80,16 +80,19 @@ Open [http://localhost:7000/configure](http://localhost:7000/configure) in your 
 ---
 
 
-## 🛠️ Tech Stack & Architecture
+## ⚖️ Attribution & Anti-Leech Policy
 
-* **Runtime:** Node.js (ES6+)
-* **Server Framework:** Express.js
-* **SDK:** Stremio Addon SDK (`stremio-addon-sdk`)
-* **Scraper Engine:** Axios, Cheerio, Crypto-JS (AES / CryptoJS decryptors)
-* **Frontend:** Vanilla HTML5, CSS3 Glassmorphism, Responsive PWA with Service Worker `v7` offline shell
+This project is free and open-source under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
+
+If you fork, self-host, or redistribute any portion of this software (including modified versions running over a network/cloud service like Vercel, Render, HuggingFace, or Docker):
+1. **Mandatory Credit**: You **MUST** retain visible attribution to the original author (**SA7ANI**) and link back to the official repository: [`https://github.com/SA7ANI/chole-bhature`](https://github.com/SA7ANI/chole-bhature).
+2. **No De-Branding**: Stripping author credits, repository links, or branding from the UI, API responses, terminal logs, or manifest without explicit permission is a direct violation of the GNU AGPLv3 license terms.
+3. **Open Source Requirement**: Any network-accessible deployment running modified code must provide the full corresponding source code under the same AGPL-3.0 license.
 
 ---
 
-## 📝 License
+## 📝 License & Copyright
 
-This project is open-source and licensed under the **ISC License**.
+Copyright (C) 2026 **SA7ANI** (<https://github.com/SA7ANI/chole-bhature>)
+
+Licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**. See the [LICENSE](LICENSE) and [NOTICE](NOTICE) files for full legal terms.

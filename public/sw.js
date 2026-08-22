@@ -1,4 +1,4 @@
-const CACHE_NAME = 'chole-bhature-v11';
+const CACHE_NAME = 'chole-bhature-v12';
 const STATIC_ASSETS = [
   '/',
   '/configure',

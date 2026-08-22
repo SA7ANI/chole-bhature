@@ -1,0 +1,30 @@
+Chole Bhature - Stream Meta-Sorter & Priority Engine
+Copyright (c) 2026 SA7ANI (https://github.com/SA7ANI/chole-bhature)
+
+===============================================================================
+ATTRIBUTION & ANTI-LEECH POLICY (GNU AGPLv3 Section 7)
+===============================================================================
+
+This project is open-source under the terms of the GNU Affero General Public
+License version 3 (AGPL-3.0).
+
+Pursuant to Section 7 of the GNU AGPLv3, the following additional conditions
+apply to all copies, modified versions, and networked deployments:
+
+1. PRESERVATION OF AUTHOR ATTRIBUTION:
+   Any person or entity deploying, hosting, or distributing this software (or
+   derivatives thereof) over a computer network (including but not limited to
+   Vercel, Render, Railway, HuggingFace, Docker, or self-hosted servers) MUST
+   preserve all visible author credits, notices, and links back to the original
+   repository: https://github.com/SA7ANI/chole-bhature
+
+2. PROHIBITION OF DE-BRANDING / RE-BRANDING WITHOUT CREDIT:
+   Removing or obscuring the creator's name ('SA7ANI'), the project name ('Chole
+   Bhature'), or official repository hyperlinks from the user interface,
+   console logs, HTTP headers, or manifest descriptions without explicit
+   written permission is strictly prohibited under the license terms.
+
+3. NETWORK COPYLEFT REQUIREMENT:
+   If you modify this program and run it on a server accessible to users over
+   a network, you MUST make the complete corresponding source code of your
+   modified version available to all users under the GNU AGPLv3.

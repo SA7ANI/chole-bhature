@@ -21,6 +21,15 @@ if (!fs.existsSync(path.join(__dirname, '.secret'))) {
 const app = express();
 app.use(express.json());
 
+// Anti-Leech & Author Attribution Headers (GNU AGPL-3.0)
+app.use((req, res, next) => {
+    res.setHeader('X-Powered-By', 'Chole-Bhature (https://github.com/SA7ANI/chole-bhature)');
+    res.setHeader('X-Addon-Author', 'SA7ANI (https://github.com/SA7ANI/chole-bhature)');
+    res.setHeader('X-Repository', 'https://github.com/SA7ANI/chole-bhature');
+    res.setHeader('X-License', 'GNU AGPL-3.0');
+    next();
+});
+
 // Persistent User Configuration Store
 const CONFIGS_FILE = path.join(__dirname, 'user_configs.json');
 const userConfigs = new Map();
@@ -307,9 +316,9 @@ function createAddon(config) {
 
     const builder = new addonBuilder({
         id: addonId,
-        version: '3.4.0',
+        version: '4.0.0',
         name: addonName,
-        description: 'Dynamically loads Nuvio providers, tests stream speed, and sorts them.',
+        description: 'High-Performance Stream Meta-Sorter & Priority Engine for Nuvio & Stremio. Scrapes, verifies, filters dead links, and organizes streams by speed, quality, and language.',
         logo: addonLogo,
         catalogs: [],
         resources: ['stream'],
@@ -626,8 +635,16 @@ app.use('/:configJSON', (req, res, next) => {
 const PORT = process.env.PORT || 7000;
 if (!process.env.VERCEL) {
     app.listen(PORT, () => {
-        console.log(`Stremio Nuvio Meta-Sorter Addon running at http://localhost:${PORT}`);
-        console.log(`Configure at http://localhost:${PORT}/configure`);
+        console.log(`
+========================================================================
+  🌶️  CHOLE BHATURE • Meta-Sorter & Priority Engine v4.0.0
+  ⚡  Created by SA7ANI | https://github.com/SA7ANI/chole-bhature
+  🛡️  Licensed under GNU AGPL-3.0 • Attribution Required
+========================================================================
+  🚀 Local Sorter Server: http://localhost:${PORT}
+  ⚙️  Configuration UI:    http://localhost:${PORT}/configure
+========================================================================
+        `);
     });
 }
 
