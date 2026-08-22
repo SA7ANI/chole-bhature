@@ -67,15 +67,29 @@
         body.theme-amoled .repo-item-card,
         body.theme-amoled .stat-card,
         body.theme-amoled .provider-item-card,
-        body.theme-amoled .hero-banner-card,
-        body.theme-amoled .floating-nav-pill,
-        body.theme-amoled .bottom-nav-bar,
-        body.theme-amoled .header-bar,
-        body.theme-amoled .nav-brand-pill {
+        body.theme-amoled .hero-banner-card {
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
             background: #000000 !important;
             border-color: rgba(255, 255, 255, 0.15) !important;
+        }
+
+        body.theme-amoled .top-nav-bar {
+            background: rgba(0, 0, 0, 0.58) !important;
+            backdrop-filter: blur(26px) saturate(190%) !important;
+            -webkit-backdrop-filter: blur(26px) saturate(190%) !important;
+            border-color: rgba(255, 255, 255, 0.16) !important;
+        }
+
+        body.theme-amoled .bottom-nav-bar {
+            background: rgba(0, 0, 0, 0.62) !important;
+            backdrop-filter: blur(26px) saturate(190%) !important;
+            -webkit-backdrop-filter: blur(26px) saturate(190%) !important;
+            border-color: rgba(255, 255, 255, 0.16) !important;
+        }
+
+        body.theme-amoled .bottom-nav-bar.scrolled {
+            background: rgba(0, 0, 0, 0.75) !important;
         }
 
         * {
@@ -126,10 +140,10 @@
             transform: translateX(-50%);
             z-index: 1000;
             width: min(960px, calc(100% - 20px));
-            background: rgba(14, 16, 24, 0.88);
-            backdrop-filter: blur(28px);
-            -webkit-backdrop-filter: blur(28px);
-            border: 1px solid var(--border-subtle);
+            background: rgba(12, 15, 23, 0.50);
+            backdrop-filter: blur(26px) saturate(190%);
+            -webkit-backdrop-filter: blur(26px) saturate(190%);
+            border: 1px solid rgba(255, 255, 255, 0.13);
             border-radius: var(--radius-pill);
             padding: 6px 10px;
             display: flex;
@@ -137,7 +151,7 @@
             justify-content: space-between;
             gap: 8px;
             box-sizing: border-box;
-            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
             transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
             overflow: visible;
         }
@@ -258,6 +272,7 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
+            line-height: 0;
             background: rgba(16, 19, 28, 0.85);
             border: 1px solid var(--border-subtle);
             color: var(--text-primary);
@@ -265,6 +280,16 @@
             transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
             flex-shrink: 0;
             user-select: none;
+            overflow: hidden;
+        }
+
+        .pill-btn-icon-only span,
+        .pill-btn-icon-only svg {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 0;
+            margin: auto;
         }
 
         .pill-btn-icon-only:hover {
@@ -1398,15 +1423,15 @@
             transform: translateX(-50%);
             width: min(390px, calc(100% - 24px));
             height: 62px;
-            background: rgba(14, 16, 24, 0.92);
-            backdrop-filter: blur(28px);
-            -webkit-backdrop-filter: blur(28px);
-            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(12, 15, 23, 0.55);
+            backdrop-filter: blur(26px) saturate(190%);
+            -webkit-backdrop-filter: blur(26px) saturate(190%);
+            border: 1px solid rgba(255, 255, 255, 0.13);
             border-radius: var(--radius-pill);
             justify-content: space-around;
             align-items: center;
             z-index: 1000;
-            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
             padding: 4px;
             box-sizing: border-box;
             gap: 2px;
@@ -1421,8 +1446,8 @@
             height: 48px;
             width: min(300px, calc(100% - 32px));
             padding: 3px;
-            box-shadow: 0 20px 48px rgba(0, 0, 0, 0.85);
-            background: rgba(12, 14, 22, 0.95);
+            box-shadow: 0 20px 48px rgba(0, 0, 0, 0.75);
+            background: rgba(10, 12, 18, 0.72);
         }
 
         .nav-item {
@@ -1473,13 +1498,14 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.25s ease;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .nav-icon svg {
             width: 20px;
             height: 20px;
-            transition: all 0.25s ease;
+            stroke-width: 2;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .bottom-nav-bar.scrolled .nav-icon svg {
@@ -1488,9 +1514,9 @@
         }
 
         .nav-item.active .nav-icon svg {
-            transform: scale(1.06);
-            stroke: #ffffff;
-            fill: #ffffff;
+            transform: scale(1.08);
+            color: #ffffff;
+            filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.35));
         }
 
         .nav-label {
@@ -1715,19 +1741,19 @@
         <!-- Desktop Navigation Tabs -->
         <div class="nav-pill-group">
             <a class="nav-pill-item active" onclick="switchTab('tab-home', this)">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" style="opacity: 0.9;"><path d="M12 3L2 12h3v8h6v-6h2v6h6v-8h3L12 3z"/></svg>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.95;"><path d="M3 10.182V20a2 2 0 0 0 2 2h4a1 1 0 0 0 1-1v-4a2 2 0 0 1 2-2 2 2 0 0 1 2 2v4a1 1 0 0 0 1 1h4a2 2 0 0 0 2-2V10.182a2 2 0 0 0-.757-1.565l-7-5.444a2 2 0 0 0-2.486 0l-7 5.444A2 2 0 0 0 3 10.182z"/></svg>
                 Home
             </a>
             <a class="nav-pill-item" onclick="switchTab('tab-settings', this)">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.9;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.95;"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
                 Settings
             </a>
             <a class="nav-pill-item" onclick="switchTab('tab-sources', this)">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.9;"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.95;"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 12.5-9.17 4.16a2 2 0 0 1-1.66 0L2 12.5"/><path d="m22 17.5-9.17 4.16a2 2 0 0 1-1.66 0L2 17.5"/></svg>
                 Sources
             </a>
             <a class="nav-pill-item" onclick="switchTab('tab-analytics', this)">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.9;"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.95;"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
                 Analytics
             </a>
         </div>
@@ -2316,25 +2342,25 @@
     <nav class="bottom-nav-bar">
         <a class="nav-item active" onclick="switchTab('tab-home', this)">
             <div class="nav-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3L2 12h3v8h6v-6h2v6h6v-8h3L12 3z"/></svg>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.182V20a2 2 0 0 0 2 2h4a1 1 0 0 0 1-1v-4a2 2 0 0 1 2-2 2 2 0 0 1 2 2v4a1 1 0 0 0 1 1h4a2 2 0 0 0 2-2V10.182a2 2 0 0 0-.757-1.565l-7-5.444a2 2 0 0 0-2.486 0l-7 5.444A2 2 0 0 0 3 10.182z"/></svg>
             </div>
             <span class="nav-label">Home</span>
         </a>
         <a class="nav-item" onclick="switchTab('tab-settings', this)">
             <div class="nav-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
             </div>
             <span class="nav-label">Settings</span>
         </a>
         <a class="nav-item" onclick="switchTab('tab-sources', this)">
             <div class="nav-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 12.5-9.17 4.16a2 2 0 0 1-1.66 0L2 12.5"/><path d="m22 17.5-9.17 4.16a2 2 0 0 1-1.66 0L2 17.5"/></svg>
             </div>
             <span class="nav-label">Sources</span>
         </a>
         <a class="nav-item" onclick="switchTab('tab-analytics', this)">
             <div class="nav-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
             </div>
             <span class="nav-label">Analytics</span>
         </a>
@@ -3125,7 +3151,10 @@
 
         // Theme System (Glass Dark 🌙 ⟷ Pure AMOLED Black 🌑)
         const themes = ['glass', 'amoled'];
-        const themeIcons = { 'glass': '🌙', 'amoled': '🌑' };
+        const themeSVGs = {
+            'glass': '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #facc15;"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>',
+            'amoled': '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" style="color: #ffffff;"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/><path d="M12 3a9 9 0 0 1 0 18z"/></svg>'
+        };
         let currentTheme = localStorage.getItem('nuvio_theme') || 'glass';
         if (!themes.includes(currentTheme)) currentTheme = 'glass';
 
@@ -3138,7 +3167,7 @@
             }
             document.getElementById('meta-theme-color').setAttribute('content', metaColor);
             const iconEl = document.getElementById('theme-icon');
-            if (iconEl) iconEl.innerText = themeIcons[theme] || '🌙';
+            if (iconEl) iconEl.innerHTML = themeSVGs[theme] || themeSVGs.glass;
             localStorage.setItem('nuvio_theme', theme);
         }
         applyTheme(currentTheme);
