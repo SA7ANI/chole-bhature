@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
     <meta name="description" content="High-Performance Stream Meta-Sorter & Priority Engine for Nuvio & Stremio. Sort by speed, quality, language. Supports Real-Debrid, AllDebrid, and DoH ISP bypass.">
-    <meta name="theme-color" content="#06070a" id="meta-theme-color">
+    <meta name="theme-color" content="#08090e" id="meta-theme-color">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" id="meta-status-bar">
     <meta name="application-name" content="Chole Bhature">
     <link rel="manifest" href="/manifest.json?v=4">
     <link rel="shortcut icon" href="icon-192.png?v=4">
@@ -115,7 +115,7 @@
             color: var(--text-primary);
             min-height: 100vh;
             min-height: 100dvh;
-            padding-top: calc(84px + env(safe-area-inset-top));
+            padding-top: calc(88px + env(safe-area-inset-top));
             padding-bottom: calc(100px + env(safe-area-inset-bottom));
             padding-left: clamp(10px, 3vw, 24px);
             padding-right: clamp(10px, 3vw, 24px);
@@ -135,11 +135,11 @@
         }        /* ===== UNIFIED FLOATING TOP PILL NAVIGATION BAR ===== */
         .top-nav-bar {
             position: fixed;
-            top: calc(12px + env(safe-area-inset-top));
+            top: calc(20px + env(safe-area-inset-top));
             left: 50%;
             transform: translateX(-50%);
             z-index: 1000;
-            width: min(960px, calc(100% - 20px));
+            width: min(940px, calc(100% - clamp(20px, 6vw, 48px)));
             background: rgba(12, 15, 23, 0.50);
             backdrop-filter: blur(26px) saturate(190%);
             -webkit-backdrop-filter: blur(26px) saturate(190%);
@@ -1611,12 +1611,12 @@
         /* ===== RESPONSIVE MEDIA QUERIES ===== */
         @media (max-width: 768px) {
             body {
-                padding-top: calc(70px + env(safe-area-inset-top));
+                padding-top: calc(78px + env(safe-area-inset-top));
                 padding-bottom: calc(96px + env(safe-area-inset-bottom));
             }
             .top-nav-bar {
-                top: calc(10px + env(safe-area-inset-top));
-                width: calc(100% - 20px);
+                top: calc(16px + env(safe-area-inset-top));
+                width: calc(100% - 24px);
                 padding: 6px 10px;
                 gap: 6px;
                 min-height: 48px;
@@ -2334,7 +2334,7 @@
     </main>
 
     <!-- Floating Donate FAB -->
-    <a href="https://ko-fi.com/" target="_blank" class="fab-donate" title="Support the Project">
+    <a href="https://t.me/SA7ANI?text=Hi%20SA7ANI%2C%20I%20love%20using%20Chole%20Bhature%21%20I%20would%20like%20to%20support%20the%20development%20with%20a%20donation.%20%E2%9D%A4%EF%B8%8F%F0%9F%8D%9B" target="_blank" rel="noopener noreferrer" class="fab-donate" title="Donate & Support SA7ANI">
         💖
     </a>
 
