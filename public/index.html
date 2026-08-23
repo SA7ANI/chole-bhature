@@ -103,6 +103,29 @@
         html {
             background-color: var(--bg-base);
             scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+            text-rendering: optimizeLegibility;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* 120Hz & 144Hz High-Refresh Rate GPU Compositing & Physics */
+        .top-nav-bar,
+        .bottom-nav-bar,
+        .hero-banner-card,
+        .section-card,
+        .stat-card,
+        .repo-item-card,
+        .provider-item-card,
+        .pill-btn,
+        .fab-donate,
+        .toast-notification {
+            transform: translate3d(0, 0, 0);
+            -webkit-transform: translate3d(0, 0, 0);
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            perspective: 1000px;
+            will-change: transform, opacity;
         }
 
         body {
@@ -122,6 +145,7 @@
             display: flex;
             justify-content: center;
             -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
             overflow-x: hidden;
             transition: background-color 0.3s ease, color 0.3s ease;
         }
@@ -2123,7 +2147,7 @@
                     </div>
 
                     <!-- Smart Stream Deduplication -->
-                    <div class="setting-item-row" id="section-dedupe">
+                    <div class="setting-item-row" id="section-dedupe" style="border-bottom: none; padding-bottom: 0;">
                         <div class="setting-text-block">
                             <div class="setting-headline">
                                 Smart Stream Deduplication
@@ -2136,26 +2160,6 @@
                                 <span class="filter-capsule-text">🗂️ Deduplicate</span>
                                 <div class="switch-toggle">
                                     <input type="checkbox" id="deduplicateStreams" checked onchange="onSettingChanged()">
-                                    <span class="switch-slider"></span>
-                                </div>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Mobile Haptic Feedback -->
-                    <div class="setting-item-row" id="section-haptics" style="border-bottom: none; padding-bottom: 0;">
-                        <div class="setting-text-block">
-                            <div class="setting-headline">
-                                📳 Tactile Haptic Feedback
-                                <span class="tag-pill-badge" style="background: rgba(139, 92, 246, 0.15); border-color: rgba(139, 92, 246, 0.35); color: #c4b5fd;">🍎 Apple Style</span>
-                            </div>
-                            <div class="setting-description">Delivers subtle, crisp vibration pulses on tab navigation, toggle switches, and button presses on mobile.</div>
-                        </div>
-                        <div class="dual-filter-group">
-                            <label class="filter-capsule" title="Toggle tactile vibration feedback on mobile">
-                                <span class="filter-capsule-text">📳 Tactile Haptics</span>
-                                <div class="switch-toggle">
-                                    <input type="checkbox" id="hapticFeedback" checked onchange="onSettingChanged()">
                                     <span class="switch-slider"></span>
                                 </div>
                             </label>
@@ -2394,9 +2398,8 @@
         let settings = JSON.parse(localStorage.getItem('nuvio_settings') || '{"hideDead": false, "hideSlow": false, "sortBy": "speed", "prioritizeHindi": false, "showSeeders": true, "deduplicateStreams": true, "hapticFeedback": true, "preferredLanguages": [], "disabledProviders": []}');
         let allProvidersData = [];
 
-        // Apple-style Tactile Haptic Engine
+        // Apple-style Native Tactile Haptic Engine
         function triggerHaptic(type = 'light') {
-            if (settings.hapticFeedback === false) return;
             if (!('vibrate' in navigator)) return;
             try {
                 switch (type) {
@@ -2677,7 +2680,6 @@
             const hideCamEl = document.getElementById('hideCam');
             const showSeedersEl = document.getElementById('showSeeders');
             const deduplicateStreamsEl = document.getElementById('deduplicateStreams');
-            const hapticEl = document.getElementById('hapticFeedback');
             const enableDohEl = document.getElementById('enableDoh');
             const dohProviderEl = document.getElementById('dohProvider');
             const debridProviderEl = document.getElementById('debridProvider');
@@ -2690,7 +2692,6 @@
             if (enableQuarantineEl) settings.enableQuarantine = enableQuarantineEl.checked;
             if (showSeedersEl) settings.showSeeders = showSeedersEl.checked;
             if (deduplicateStreamsEl) settings.deduplicateStreams = deduplicateStreamsEl.checked;
-            if (hapticEl) settings.hapticFeedback = hapticEl.checked;
             if (enableDohEl) settings.enableDoh = enableDohEl.checked;
             if (dohProviderEl) settings.dohProvider = dohProviderEl.value;
             if (debridProviderEl) settings.debridProvider = debridProviderEl.value;
@@ -2831,8 +2832,6 @@
             document.getElementById('showSeeders').checked = settings.showSeeders !== false;
             const dedupeEl = document.getElementById('deduplicateStreams');
             if (dedupeEl) dedupeEl.checked = settings.deduplicateStreams !== false;
-            const hapticEl = document.getElementById('hapticFeedback');
-            if (hapticEl) hapticEl.checked = settings.hapticFeedback !== false;
             const enableDohEl = document.getElementById('enableDoh');
             if (enableDohEl) enableDohEl.checked = settings.enableDoh !== false;
             const dohProviderEl = document.getElementById('dohProvider');
@@ -2901,8 +2900,6 @@
             document.getElementById('showSeeders').checked = settings.showSeeders !== false;
             const dedupeEl = document.getElementById('deduplicateStreams');
             if (dedupeEl) dedupeEl.checked = settings.deduplicateStreams !== false;
-            const initHapticEl = document.getElementById('hapticFeedback');
-            if (initHapticEl) initHapticEl.checked = settings.hapticFeedback !== false;
             const initDohEl = document.getElementById('enableDoh');
             if (initDohEl) initDohEl.checked = settings.enableDoh !== false;
             const initDohProviderEl = document.getElementById('dohProvider');
