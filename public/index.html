@@ -2123,7 +2123,7 @@
                     </div>
 
                     <!-- Smart Stream Deduplication -->
-                    <div class="setting-item-row" id="section-dedupe" style="border-bottom: none; padding-bottom: 0;">
+                    <div class="setting-item-row" id="section-dedupe">
                         <div class="setting-text-block">
                             <div class="setting-headline">
                                 Smart Stream Deduplication
@@ -2136,6 +2136,26 @@
                                 <span class="filter-capsule-text">🗂️ Deduplicate</span>
                                 <div class="switch-toggle">
                                     <input type="checkbox" id="deduplicateStreams" checked onchange="onSettingChanged()">
+                                    <span class="switch-slider"></span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Mobile Haptic Feedback -->
+                    <div class="setting-item-row" id="section-haptics" style="border-bottom: none; padding-bottom: 0;">
+                        <div class="setting-text-block">
+                            <div class="setting-headline">
+                                📳 Tactile Haptic Feedback
+                                <span class="tag-pill-badge" style="background: rgba(139, 92, 246, 0.15); border-color: rgba(139, 92, 246, 0.35); color: #c4b5fd;">🍎 Apple Style</span>
+                            </div>
+                            <div class="setting-description">Delivers subtle, crisp vibration pulses on tab navigation, toggle switches, and button presses on mobile.</div>
+                        </div>
+                        <div class="dual-filter-group">
+                            <label class="filter-capsule" title="Toggle tactile vibration feedback on mobile">
+                                <span class="filter-capsule-text">📳 Tactile Haptics</span>
+                                <div class="switch-toggle">
+                                    <input type="checkbox" id="hapticFeedback" checked onchange="onSettingChanged()">
                                     <span class="switch-slider"></span>
                                 </div>
                             </label>
@@ -2371,8 +2391,38 @@
         let configId = null;
         let storedRepos = localStorage.getItem('nuvio_repos');
         let repos = storedRepos !== null ? JSON.parse(storedRepos) : [];
-        let settings = JSON.parse(localStorage.getItem('nuvio_settings') || '{"hideDead": false, "hideSlow": false, "sortBy": "speed", "prioritizeHindi": false, "showSeeders": true, "deduplicateStreams": true, "preferredLanguages": [], "disabledProviders": []}');
+        let settings = JSON.parse(localStorage.getItem('nuvio_settings') || '{"hideDead": false, "hideSlow": false, "sortBy": "speed", "prioritizeHindi": false, "showSeeders": true, "deduplicateStreams": true, "hapticFeedback": true, "preferredLanguages": [], "disabledProviders": []}');
         let allProvidersData = [];
+
+        // Apple-style Tactile Haptic Engine
+        function triggerHaptic(type = 'light') {
+            if (settings.hapticFeedback === false) return;
+            if (!('vibrate' in navigator)) return;
+            try {
+                switch (type) {
+                    case 'light':
+                        navigator.vibrate(8);
+                        break;
+                    case 'medium':
+                        navigator.vibrate(16);
+                        break;
+                    case 'heavy':
+                        navigator.vibrate(26);
+                        break;
+                    case 'success':
+                        navigator.vibrate([10, 30, 15]);
+                        break;
+                    case 'warning':
+                        navigator.vibrate([20, 40, 20]);
+                        break;
+                    case 'error':
+                        navigator.vibrate([30, 50, 30, 50, 30]);
+                        break;
+                    default:
+                        navigator.vibrate(10);
+                }
+            } catch (e) {}
+        }
 
         const SUPPORTED_LANGUAGES = [
             { id: 'Hindi', code: 'HI', label: 'Hindi', desc: 'Hindi Dub & Audio' },
@@ -2420,6 +2470,7 @@
         }
 
         function toggleLanguage(langId) {
+            triggerHaptic('light');
             settings.preferredLanguages = settings.preferredLanguages || [];
             const index = settings.preferredLanguages.indexOf(langId);
             if (index > -1) {
@@ -2462,6 +2513,7 @@
         }
 
         function copySyncId() {
+            triggerHaptic('success');
             if (!configId) return;
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(configId);
@@ -2502,6 +2554,7 @@
         }
 
         function switchTab(tabId, navElement) {
+            triggerHaptic('light');
             // Hide all tabs
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active-tab'));
             
@@ -2597,6 +2650,7 @@
         }
 
         function handleTopAction() {
+            triggerHaptic('success');
             if (!isInstalled) {
                 installAddon();
             } else {
@@ -2605,6 +2659,7 @@
         }
 
         function onSettingChanged() {
+            triggerHaptic('light');
             toggleDohProviderVisibility();
             toggleDebridApiKeyVisibility();
             saveSettingsLocal();
@@ -2622,6 +2677,7 @@
             const hideCamEl = document.getElementById('hideCam');
             const showSeedersEl = document.getElementById('showSeeders');
             const deduplicateStreamsEl = document.getElementById('deduplicateStreams');
+            const hapticEl = document.getElementById('hapticFeedback');
             const enableDohEl = document.getElementById('enableDoh');
             const dohProviderEl = document.getElementById('dohProvider');
             const debridProviderEl = document.getElementById('debridProvider');
@@ -2634,6 +2690,7 @@
             if (enableQuarantineEl) settings.enableQuarantine = enableQuarantineEl.checked;
             if (showSeedersEl) settings.showSeeders = showSeedersEl.checked;
             if (deduplicateStreamsEl) settings.deduplicateStreams = deduplicateStreamsEl.checked;
+            if (hapticEl) settings.hapticFeedback = hapticEl.checked;
             if (enableDohEl) settings.enableDoh = enableDohEl.checked;
             if (dohProviderEl) settings.dohProvider = dohProviderEl.value;
             if (debridProviderEl) settings.debridProvider = debridProviderEl.value;
@@ -2744,6 +2801,7 @@
             if (cfg.enableQuarantine !== undefined) settings.enableQuarantine = cfg.enableQuarantine;
             if (cfg.showSeeders !== undefined) settings.showSeeders = cfg.showSeeders;
             if (cfg.deduplicateStreams !== undefined) settings.deduplicateStreams = cfg.deduplicateStreams;
+            if (cfg.hapticFeedback !== undefined) settings.hapticFeedback = cfg.hapticFeedback;
             if (cfg.enableDoh !== undefined) settings.enableDoh = cfg.enableDoh;
             if (cfg.dohProvider) settings.dohProvider = cfg.dohProvider;
             if (cfg.debridProvider) settings.debridProvider = cfg.debridProvider;
@@ -2773,6 +2831,8 @@
             document.getElementById('showSeeders').checked = settings.showSeeders !== false;
             const dedupeEl = document.getElementById('deduplicateStreams');
             if (dedupeEl) dedupeEl.checked = settings.deduplicateStreams !== false;
+            const hapticEl = document.getElementById('hapticFeedback');
+            if (hapticEl) hapticEl.checked = settings.hapticFeedback !== false;
             const enableDohEl = document.getElementById('enableDoh');
             if (enableDohEl) enableDohEl.checked = settings.enableDoh !== false;
             const dohProviderEl = document.getElementById('dohProvider');
@@ -2841,6 +2901,8 @@
             document.getElementById('showSeeders').checked = settings.showSeeders !== false;
             const dedupeEl = document.getElementById('deduplicateStreams');
             if (dedupeEl) dedupeEl.checked = settings.deduplicateStreams !== false;
+            const initHapticEl = document.getElementById('hapticFeedback');
+            if (initHapticEl) initHapticEl.checked = settings.hapticFeedback !== false;
             const initDohEl = document.getElementById('enableDoh');
             if (initDohEl) initDohEl.checked = settings.enableDoh !== false;
             const initDohProviderEl = document.getElementById('dohProvider');
@@ -3050,6 +3112,7 @@
         }
 
         function removeProvider(name) {
+            triggerHaptic('medium');
             settings.disabledProviders = settings.disabledProviders || [];
             if (!settings.disabledProviders.includes(name)) {
                 settings.disabledProviders.push(name);
@@ -3062,6 +3125,7 @@
         }
 
         function removeRepo(index) {
+            triggerHaptic('warning');
             if (index < 0 || index >= repos.length) return;
             repos.splice(index, 1);
             localStorage.setItem('nuvio_repos', JSON.stringify(repos));
@@ -3075,6 +3139,7 @@
 
         document.getElementById('install-form').addEventListener('submit', function(e) {
             e.preventDefault();
+            triggerHaptic('success');
             const url = document.getElementById('manifestUrl').value.trim();
             if (!url) return;
             
@@ -3104,6 +3169,7 @@
         }
 
         async function installAddon() {
+            triggerHaptic('success');
             if (repos.length === 0) {
                 alert("Please add at least one repository first.");
                 switchTab('tab-sources', document.querySelectorAll('.nav-pill-item')[2]);
@@ -3131,6 +3197,7 @@
         }
         
         function copyLink() {
+            triggerHaptic('success');
             const copyText = document.getElementById("generatedUrl");
             copyText.select();
             document.execCommand("copy");
@@ -3138,6 +3205,7 @@
         }
 
         function toggleAnalytics() {
+            triggerHaptic('light');
             const card = document.getElementById('analytics-card');
             const icon = document.getElementById('analytics-toggle-icon');
             if (card.style.display === 'none') {
@@ -3173,6 +3241,7 @@
         applyTheme(currentTheme);
 
         function toggleTheme() {
+            triggerHaptic('medium');
             currentTheme = (currentTheme === 'glass') ? 'amoled' : 'glass';
             applyTheme(currentTheme);
         }
