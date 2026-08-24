@@ -17,12 +17,95 @@ function cleanProviderName(rawName) {
     return clean || 'Stream';
 }
 
+function extractCleanTitleAndDetails(rawText) {
+    if (!rawText || typeof rawText !== 'string') {
+        return { cleanTitle: '', year: null, seasonEpisode: null, releaseGroup: null, dvProfile: null };
+    }
+
+    let text = rawText.split('\n')[0].trim();
+    // Strip file extensions (.mkv, .mp4, .avi, .ts, etc.)
+    text = text.replace(/\.(mkv|mp4|avi|mov|ts|m2ts|webm)$/i, '');
+
+    // 1. Extract Release Group at the end (e.g. -FraMeSToR, -FLUX, [PSA], -NTb, etc.)
+    let releaseGroup = null;
+    const groupMatch = text.match(/[-_]([A-Za-z0-9]+)$/) || text.match(/\[([A-Za-z0-9]+)\]$/);
+    if (groupMatch) {
+        const potentialGroup = groupMatch[1];
+        if (!/^(mkv|mp4|avi|2160p|1080p|720p|480p|hevc|x265|x264|aac|ac3|dvd|hd|uhd|web|dl|rip)$/i.test(potentialGroup)) {
+            releaseGroup = potentialGroup;
+        }
+    }
+
+    // 2. Extract DV Profile (e.g., Profile 5, Profile 7, Profile 8, P8, P5, P7)
+    let dvProfile = null;
+    const dvMatch = text.match(/\bprofile[\s._-]?([578])\b/i) || text.match(/\b(?:dv|dovi)[\s._-]?p?([578])\b/i);
+    if (dvMatch) {
+        dvProfile = `Profile ${dvMatch[1]}`;
+    }
+
+    // 3. Extract Season & Episode (e.g., S01E05, S01-S03, 1x04)
+    let seasonEpisode = null;
+    const seMatch = text.match(/\b(S\d{1,2}(?:[\s._-]?E\d{1,3}(?:-E\d{1,3})?|[\s._-]?S\d{1,2})?|\d{1,2}x\d{1,3})\b/i);
+    if (seMatch) {
+        seasonEpisode = seMatch[1].toUpperCase().replace(/[\s._-]+/g, '');
+    }
+
+    // 4. Extract 4-digit Year (1920-2035)
+    let year = null;
+    const yearMatch = text.match(/\b(19\d\d|20[0-3]\d)\b/);
+    if (yearMatch) {
+        year = yearMatch[1];
+    }
+
+    // 5. Tokenizer boundary regex: identify where scene metadata starts
+    const tokenRegex = /\b(?:2160p|1080p|720p|480p|4k|uhd|fhd|hd|bluray|blu-ray|bdrip|brrip|web-dl|webdl|webrip|web|hdtv|dvdrip|remux|imax|hdr|hdr10|hdr10\+|dv|dovi|dolby|atmos|truehd|ddp|dd\+|eac3|ac3|dts|flac|aac|hevc|h265|x265|h264|x264|av1|10bit|hindi|tamil|telugu|malayalam|kannada|english|japanese|multi|dual|subs?|complete|repack|proper)\b/i;
+    
+    let titlePortion = text;
+    if (year) {
+        const yearIdx = text.indexOf(year);
+        if (yearIdx > 2) {
+            titlePortion = text.substring(0, yearIdx);
+        }
+    } else if (seasonEpisode && seMatch) {
+        const seIdx = text.indexOf(seMatch[1]);
+        if (seIdx > 2) {
+            titlePortion = text.substring(0, seIdx);
+        }
+    } else {
+        const tokenMatch = text.match(tokenRegex);
+        if (tokenMatch && tokenMatch.index > 2) {
+            titlePortion = text.substring(0, tokenMatch.index);
+        }
+    }
+
+    // Clean dots, underscores, brackets, and extra spaces
+    titlePortion = titlePortion
+        .replace(/[\._]/g, ' ')
+        .replace(/[\[\]\(\)\{\}]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    return {
+        cleanTitle: titlePortion || text.replace(/[\._]/g, ' ').trim(),
+        year: year,
+        seasonEpisode: seasonEpisode,
+        releaseGroup: releaseGroup,
+        dvProfile: dvProfile
+    };
+}
+
 function parseStreamMetadata(stream) {
     const rawName = stream.name || '';
     const rawTitle = stream.title || stream.description || stream.quality || '';
     const fullText = `${rawName} ${rawTitle}`;
+    const sceneDetails = extractCleanTitleAndDetails(rawTitle || rawName);
 
     const metadata = {
+        cleanTitle: sceneDetails.cleanTitle,
+        year: sceneDetails.year,
+        seasonEpisode: sceneDetails.seasonEpisode,
+        releaseGroup: sceneDetails.releaseGroup,
+        dvProfile: sceneDetails.dvProfile,
         resolution: null,
         quality: null,
         hdr: [],
@@ -352,36 +435,121 @@ function formatStreamLabels(stream, latency = 150, isP2P = false, isDead = false
         debridBadge = '⚡ [AD+]';
     }
 
-    const badgeTokens = [
+    // High-impact top badges for stream.name
+    const topBadges = [
         debridBadge,
-        meta.resolution,
-        meta.quality,
+        meta.resolution === '2160p' ? '4K UHD' : (meta.resolution === '1080p' ? '1080p FHD' : meta.resolution),
         ...meta.hdr,
-        ...meta.special,
-        meta.codec,
-        ...meta.audio,
-        meta.channels,
-        ...meta.languages,
-        seederBadge
+        meta.special.includes('REMUX') ? 'REMUX' : (meta.quality || null),
+        meta.audio.includes('Dolby Atmos') ? 'Atmos' : (meta.audio.includes('TrueHD') ? 'TrueHD' : (meta.audio.includes('DTS-HD MA') ? 'DTS-HD' : null)),
+        meta.languages.includes('Hindi') ? 'Hindi' : (meta.languages.includes('Dual-Audio') ? 'Dual' : null)
     ].filter(Boolean);
 
-    const uniqueBadges = [...new Set(badgeTokens)];
-    const badgeSuffix = uniqueBadges.length > 0 ? ` | ${uniqueBadges.join(' • ')}` : '';
+    const uniqueTopBadges = [...new Set(topBadges)];
+    const topBadgeStr = uniqueTopBadges.length > 0 ? ` • ${uniqueTopBadges.slice(0, 4).join(' • ')}` : '';
 
     let nameLine = '';
     if (isDead) {
-        nameLine = `🔴 DEAD • ${providerLabel}${badgeSuffix}`;
+        nameLine = `🔴 DEAD • ${providerLabel}${topBadgeStr}`;
     } else if (isP2P) {
-        nameLine = `🧲 P2P • ${providerLabel}${badgeSuffix}`;
+        nameLine = `🧲 P2P • ${providerLabel}${topBadgeStr}`;
     } else {
         const statusEmoji = latency < 800 ? '🟢' : '🟡';
         const statusTag = latency < 800 ? 'FAST' : 'SLOW';
-        nameLine = `${statusEmoji} ${statusTag} | ${latency}ms • ${providerLabel}${badgeSuffix}`;
+        nameLine = `${statusEmoji} ${statusTag} (${latency}ms) • ${providerLabel}${topBadgeStr}`;
     }
+
+    // If user explicitly disabled cleanTitles, fallback to raw description
+    if (config.cleanTitles === false) {
+        return {
+            name: nameLine,
+            title: originalTitle
+        };
+    }
+
+    // Build Ultra-Clean Formatted Description Card (stream.title)
+    const cardLines = [];
+
+    // Line 1: Header (Title, Year, Episode, Main Release Specs)
+    const titleHeaderParts = [];
+    if (meta.cleanTitle) {
+        let titleHeader = meta.cleanTitle;
+        if (meta.year) titleHeader += ` (${meta.year})`;
+        if (meta.seasonEpisode) titleHeader += ` • ${meta.seasonEpisode}`;
+        titleHeaderParts.push(titleHeader);
+    }
+    const qualityTags = [
+        meta.resolution ? (meta.resolution === '2160p' ? '4K UHD' : meta.resolution === '1080p' ? '1080p FHD' : meta.resolution) : null,
+        meta.special.includes('REMUX') ? 'REMUX' : (meta.quality || null),
+        meta.special.includes('IMAX Enhanced') ? 'IMAX Enhanced' : (meta.special.includes('IMAX') ? 'IMAX' : null),
+        meta.codec || null,
+        meta.special.includes('10bit') ? '10-bit' : null
+    ].filter(Boolean);
+
+    if (qualityTags.length > 0) {
+        titleHeaderParts.push(`[${qualityTags.join(' • ')}]`);
+    }
+    if (titleHeaderParts.length > 0) {
+        cardLines.push(`🎬 ${titleHeaderParts.join(' ')}`);
+    }
+
+    // Line 2: Audio & Visual Studio Badges
+    const avBadges = [];
+    if (meta.hdr && meta.hdr.length > 0) {
+        meta.hdr.forEach(h => {
+            if (h === 'Dolby Vision' && meta.dvProfile) avBadges.push(`Dolby Vision ${meta.dvProfile}`);
+            else avBadges.push(h);
+        });
+    }
+    if (meta.audio && meta.audio.length > 0) {
+        const audioStr = meta.audio.join(' + ');
+        const chanStr = meta.channels ? ` ${meta.channels}` : '';
+        avBadges.push(`${audioStr}${chanStr}`);
+    } else if (meta.channels) {
+        avBadges.push(`Audio ${meta.channels}`);
+    }
+    if (avBadges.length > 0) {
+        cardLines.push(`💎 ${avBadges.join(' • ')}`);
+    }
+
+    // Line 3: Languages & Dubs (if present)
+    if (meta.languages && meta.languages.length > 0) {
+        const langTags = meta.languages.map(l => {
+            if (l === 'Hindi') return '🇮🇳 Hindi Dub';
+            if (l === 'Tamil') return 'Tamil';
+            if (l === 'Telugu') return 'Telugu';
+            if (l === 'Malayalam') return 'Malayalam';
+            if (l === 'Kannada') return 'Kannada';
+            if (l === 'Japanese') return '🇯🇵 Japanese Audio/Sub';
+            if (l === 'English') return '🇬🇧 English';
+            if (l === 'Dual-Audio') return '🌐 Dual-Audio';
+            if (l === 'Multi-Audio') return '🌐 Multi-Audio';
+            return l;
+        });
+        cardLines.push(`🌐 ${langTags.join(' • ')}`);
+    }
+
+    // Line 4: Media Specs Row (File Size, Health, Release Group, Providers)
+    const metaRow = [];
+    if (meta.size && config.showFileSize !== false) {
+        metaRow.push(`📦 ${meta.size}`);
+    }
+    if (seederBadge && showSeeders !== false) {
+        metaRow.push(seederBadge);
+    }
+    if (meta.releaseGroup && config.showReleaseGroup !== false) {
+        metaRow.push(`🏷️ ${meta.releaseGroup}`);
+    }
+    metaRow.push(`🔗 ${providerLabel}`);
+    if (metaRow.length > 0) {
+        cardLines.push(metaRow.join(' • '));
+    }
+
+    const cleanTitleCard = cardLines.join('\n');
 
     return {
         name: nameLine,
-        title: originalTitle
+        title: cleanTitleCard || originalTitle
     };
 }
 
@@ -985,6 +1153,7 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
 module.exports = { 
     sortAndTagStreams,
     parseStreamMetadata,
+    extractCleanTitleAndDetails,
     formatStreamLabels,
     formatProviderLabel,
     getAudioScore,
