@@ -754,6 +754,38 @@ async function testStream(stream, showSeeders = true, config = {}) {
         };
     }
 
+    // Fast Eco Mode for Vercel Free-Tier (Zero-Blocking CPU / Instant Heuristics < 5ms)
+    // Disabled by default; user can enable via Settings / Admin tab
+    const isEcoMode = Boolean(config.vercelEcoMode === true);
+    if (isEcoMode) {
+        let heuristicLatency = 120;
+        let isDead = false;
+        let statusCategory = 'fast';
+
+        const urlLower = (stream.url || '').toLowerCase();
+        if (urlLower.includes('hubcloud') || urlLower.includes('pixeldrain') || urlLower.includes('fastdl') || urlLower.includes('drive.google')) {
+            heuristicLatency = 95;
+            statusCategory = 'fast';
+        } else if (urlLower.includes('streamtape') || urlLower.includes('dood') || urlLower.includes('mixdrop')) {
+            heuristicLatency = 420;
+            statusCategory = 'fast';
+        } else {
+            heuristicLatency = 140;
+            statusCategory = 'fast';
+        }
+
+        const labels = formatStreamLabels(stream, heuristicLatency, false, isDead, showSeeders, config);
+        return {
+            ...stream,
+            name: labels.name,
+            title: labels.title,
+            latency: heuristicLatency,
+            isDead: isDead,
+            statusCategory: statusCategory,
+            originalProvider: providerName
+        };
+    }
+
     try {
         const urlObj = new URL(stream.url);
         const origin = urlObj.origin;

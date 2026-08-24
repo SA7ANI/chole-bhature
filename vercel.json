@@ -1,0 +1,36 @@
+{
+  "version": 2,
+  "public": false,
+  "functions": {
+    "index.js": {
+      "maxDuration": 10,
+      "memory": 1024
+    }
+  },
+  "headers": [
+    {
+      "source": "/(icon-.*|logo.png|favicon.*|sw.js)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/(.*)/manifest.json",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400" }
+      ]
+    },
+    {
+      "source": "/(.*)/stream/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=600, s-maxage=3600, stale-while-revalidate=86400" }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.js"
+    }
+  ]
+}

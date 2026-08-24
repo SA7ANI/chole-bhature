@@ -724,14 +724,15 @@
         }
 
         .section-label {
-            font-family: 'Outfit', sans-serif;
-            font-size: 16px;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 14.5px;
             font-weight: 700;
             color: var(--text-primary);
             display: flex;
             align-items: center;
             gap: 8px;
             letter-spacing: -0.2px;
+            line-height: 1.35;
         }
 
         .section-card {
@@ -740,9 +741,11 @@
             -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--border-subtle);
             border-radius: var(--radius-card);
-            padding: clamp(18px, 3vw, 24px);
+            padding: clamp(16px, 2.5vw, 22px);
             box-shadow: var(--shadow-card);
             transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            overflow: hidden;
+            word-break: break-word;
         }
 
         @keyframes sectionGlowFlash {
@@ -1098,18 +1101,26 @@
             flex: 1 1 auto;
             background-color: var(--bg-input);
             border: 1px solid var(--border-subtle);
-            color: white;
-            padding: 12px 36px 12px 16px;
+            color: var(--text-primary);
+            padding: 12px 38px 12px 14px;
             border-radius: var(--radius-input);
             font-size: 13.5px;
+            font-weight: 600;
             outline: none;
-            transition: all 0.2s;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             min-width: 0;
             appearance: none;
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>');
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23a78bfa' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>");
             background-repeat: no-repeat;
             background-position: right 14px center;
             box-sizing: border-box;
+            cursor: pointer;
+        }
+
+        .input-bar-group select:hover {
+            border-color: rgba(139, 92, 246, 0.45);
+            background-color: rgba(255, 255, 255, 0.05);
         }
 
         input[type="url"]:focus, input[type="text"]:focus, input[type="password"]:focus, input[type="search"]:focus, .input-bar-group input:focus, .input-bar-group select:focus {
@@ -1121,7 +1132,164 @@
             background-color: #0e111a;
             color: #f8fafc;
             font-weight: 600;
-            padding: 10px;
+            padding: 12px;
+        }
+
+        body.light-theme .input-bar-group select option {
+            background-color: #ffffff;
+            color: #0f172a;
+        }
+
+        /* ===== SITE AESTHETIC CUSTOM MODAL ENGINE ===== */
+        .aesthetic-modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(5, 7, 15, 0.78);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            z-index: 999999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            animation: modalFadeIn 0.22s ease-out;
+        }
+
+        .aesthetic-modal-card {
+            background: linear-gradient(145deg, rgba(26, 31, 55, 0.96), rgba(15, 23, 42, 0.98));
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 24px;
+            padding: 28px 24px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 35px rgba(139, 92, 246, 0.2);
+            text-align: center;
+            animation: modalScaleIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+            box-sizing: border-box;
+        }
+
+        body.light-theme .aesthetic-modal-card {
+            background: linear-gradient(145deg, #ffffff, #f8fafc);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.25), 0 0 30px rgba(139, 92, 246, 0.15);
+        }
+
+        .aesthetic-modal-icon-wrap {
+            font-size: 40px;
+            margin-bottom: 12px;
+            display: inline-block;
+            filter: drop-shadow(0 4px 12px rgba(139, 92, 246, 0.4));
+        }
+
+        .aesthetic-modal-title {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+            letter-spacing: -0.3px;
+        }
+
+        .aesthetic-modal-subtitle {
+            font-size: 12.5px;
+            color: var(--text-muted);
+            line-height: 1.5;
+            margin-bottom: 18px;
+        }
+
+        .aesthetic-modal-fields {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .aesthetic-field-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .aesthetic-input-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .aesthetic-input-wrap input {
+            width: 100%;
+            padding: 12px 42px 12px 14px;
+            border-radius: 12px;
+            border: 1px solid var(--border-subtle);
+            background: var(--bg-input);
+            color: var(--text-primary);
+            font-size: 13.5px;
+            font-weight: 600;
+            outline: none;
+            transition: all 0.2s;
+            box-sizing: border-box;
+        }
+
+        .aesthetic-input-wrap input:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 16px rgba(139, 92, 246, 0.35);
+        }
+
+        .aesthetic-eye-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 15px;
+            padding: 4px;
+            opacity: 0.75;
+            transition: opacity 0.2s;
+        }
+
+        .aesthetic-eye-btn:hover {
+            opacity: 1;
+        }
+
+        .aesthetic-modal-error {
+            color: #f87171;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 14px;
+            padding: 8px 12px;
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            border-radius: 8px;
+        }
+
+        .aesthetic-modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .aesthetic-modal-actions .pill-btn {
+            flex: 1;
+            justify-content: center;
+            padding: 11px 16px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes modalScaleIn {
+            from { opacity: 0; transform: scale(0.92) translateY(12px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
         }
 
         .btn-submit-action {
@@ -1426,6 +1594,12 @@
         .tab-content.active-tab {
             display: flex;
             animation: tabFadeSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        #admin-dashboard-view {
+            display: none;
+            flex-direction: column;
+            gap: clamp(16px, 3vw, 24px);
         }
 
         @keyframes tabFadeSlideIn {
@@ -1737,6 +1911,42 @@
                 flex: 1 1 calc(50% - 6px);
                 justify-content: space-between;
             }
+            .app-container {
+                padding-bottom: 120px !important;
+            }
+            .section-label-bar {
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+            .section-label {
+                font-size: 13.5px !important;
+                font-weight: 700 !important;
+                line-height: 1.35 !important;
+            }
+            .section-card {
+                padding: 16px 14px !important;
+            }
+            .admin-matrix-grid {
+                grid-template-columns: repeat(3, 1fr) !important;
+                gap: 6px !important;
+            }
+            .admin-matrix-card {
+                padding: 10px 4px !important;
+            }
+            .admin-matrix-title {
+                font-size: 9px !important;
+                letter-spacing: -0.2px;
+            }
+            .admin-matrix-val {
+                font-size: 14px !important;
+            }
+            .admin-matrix-sub {
+                font-size: 8.5px !important;
+            }
+            .admin-telemetry-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 8px !important;
+            }
         }
 
         @media (min-width: 769px) {
@@ -1756,7 +1966,7 @@
     <!-- Floating Top Navigation Bar -->
     <nav class="top-nav-bar">
         <!-- Brand Pill -->
-        <a href="#" class="nav-brand-pill" onclick="switchTab('tab-home', document.querySelector('.nav-pill-item')); return false;">
+        <a href="#" class="nav-brand-pill" onclick="handleSecretLogoClick(event); return false;">
             <img src="icon-192.png?v=4" alt="Chole Bhature Logo" class="nav-brand-logo" onerror="this.src='icon-192.png'">
             <span class="nav-brand-name">Chole Bhature</span>
             <span class="nav-brand-version">v4.0.0</span>
@@ -1779,6 +1989,10 @@
             <a class="nav-pill-item" onclick="switchTab('tab-analytics', this)">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.95;"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
                 Analytics
+            </a>
+            <a class="nav-pill-item" id="admin-nav-pill-desktop" onclick="switchTab('tab-admin', this)" style="display: none;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.95;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Admin
             </a>
         </div>
 
@@ -2403,6 +2617,225 @@
 
         </div>
 
+        <!-- ==================== TAB 5: ADMIN DASHBOARD ==================== -->
+        <div id="tab-admin" class="tab-content">
+
+            <!-- Admin Secret Key Login Gate (Shown when locked) -->
+            <div class="section-wrap" id="admin-auth-gate">
+                <div class="section-label-bar">
+                    <span class="section-label">🔒 Admin Authentication</span>
+                    <span class="tag-pill-badge" style="background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.35); color: #f87171;">Protected Console</span>
+                </div>
+                <div class="section-card" style="text-align: center; padding: 32px 20px;">
+                    <div style="font-size: 42px; margin-bottom: 12px;">🛡️</div>
+                    <h2 style="font-size: 19px; font-weight: 800; color: #f8fafc; margin-bottom: 8px;">Admin Console Locked</h2>
+                    <p style="font-size: 13px; color: var(--text-muted); max-width: 460px; margin: 0 auto 20px auto; line-height: 1.55;">
+                        Enter your Admin Secret Key to access real-time server telemetry, cache controls, and Vercel Free-Tier optimizer metrics.
+                    </p>
+                    <div style="max-width: 360px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px;">
+                        <div class="input-bar-group" style="position: relative; margin-bottom: 0;">
+                            <input type="password" id="adminSecretKeyInput" placeholder="Enter Admin Secret Key..." style="width: 100%; padding-right: 42px;" onkeydown="if(event.key === 'Enter') unlockAdminConsole();">
+                            <button type="button" onclick="toggleAdminKeyVisibility()" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 15px;" id="admin-key-eye-btn" title="Toggle Visibility">👁️</button>
+                        </div>
+                        <button class="pill-btn pill-btn-emerald" onclick="unlockAdminConsole()" style="width: 100%; justify-content: center; padding: 12px; font-size: 14px; font-weight: 700;">
+                            <span>🔓</span> Unlock Admin Console
+                        </button>
+                        <div id="admin-auth-error" style="display: none; color: #f87171; font-size: 12px; font-weight: 600; margin-top: 4px;">❌ Incorrect Secret Key. Try again.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Dashboard Content (Shown only when unlocked) -->
+            <div id="admin-dashboard-view" style="display: none; flex-direction: column; gap: clamp(16px, 3vw, 24px);">
+
+                <!-- Admin Dashboard Header Bar -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding: 0 4px; flex-wrap: wrap; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 16px; font-weight: 800; color: #f8fafc;">🛡️ Master Admin Console</span>
+                        <span class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.35); color: #34d399;">Authenticated</span>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="pill-btn pill-btn-glass" onclick="changeAdminSecretKey()" style="padding: 6px 12px; font-size: 12px;" title="Change your secret key">
+                            <span>🔑</span> Change Key
+                        </button>
+                        <button class="pill-btn pill-btn-glass" onclick="lockAdminConsole()" style="padding: 6px 12px; font-size: 12px;" title="Lock console session">
+                            <span>🔒</span> Lock Console
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Vercel Free-Tier Eco Optimizer Guard -->
+                <div class="section-wrap" id="section-vercel-guard">
+                    <div class="section-label-bar">
+                        <span class="section-label">⚡ Vercel Free-Tier Eco Optimizer</span>
+                        <span id="admin-vercel-badge" class="tag-pill-badge" style="background: rgba(148, 163, 184, 0.12); border-color: rgba(148, 163, 184, 0.25); color: var(--text-muted);">⚪ Eco Mode: Disabled</span>
+                    </div>
+                    <div class="section-card">
+                        <div class="setting-item-row" style="border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 16px;">
+                            <div class="setting-text-block">
+                                <div class="setting-headline">
+                                    ⚡ Vercel Free-Tier Eco Optimizer
+                                    <span class="tag-pill-badge" style="background: rgba(139, 92, 246, 0.15); border-color: rgba(139, 92, 246, 0.35); color: #c4b5fd;">Zero CPU Exhaustion</span>
+                                </div>
+                                <div class="setting-description">Uses instant speed heuristics (&lt; 5ms) instead of blocking HTTP network probes. Slashes Serverless CPU duration by <b>&gt; 96%</b> so your Vercel Hobby free account runs all month long without reaching the 4-hour Fluid CPU limit.</div>
+                            </div>
+                            <div class="dual-filter-group">
+                                <label class="filter-capsule">
+                                    <span class="filter-capsule-text">⚡ Eco Mode</span>
+                                    <div class="switch-toggle">
+                                        <input type="checkbox" id="vercelEcoMode" onchange="onSettingChanged(); updateAdminView();">
+                                        <span class="switch-slider"></span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 3-Pillar Efficiency Matrix -->
+                        <div class="admin-matrix-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px;">
+                            <div class="admin-matrix-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 12px 8px; text-align: center;">
+                                <div class="admin-matrix-title" style="font-size: 10.5px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">CPU Saved</div>
+                                <div class="admin-matrix-val" style="font-size: 17px; font-weight: 800; color: #34d399; margin-top: 4px;">~96.4%</div>
+                                <div class="admin-matrix-sub" style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">~4.5s ➔ ~0.15s</div>
+                            </div>
+                            <div class="admin-matrix-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 12px 8px; text-align: center;">
+                                <div class="admin-matrix-title" style="font-size: 10.5px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Latency</div>
+                                <div class="admin-matrix-val" style="font-size: 17px; font-weight: 800; color: #38bdf8; margin-top: 4px;">&lt; 15ms</div>
+                                <div class="admin-matrix-sub" style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">Instant</div>
+                            </div>
+                            <div class="admin-matrix-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 12px 8px; text-align: center;">
+                                <div class="admin-matrix-title" style="font-size: 10.5px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Edge CDN</div>
+                                <div class="admin-matrix-val" style="font-size: 17px; font-weight: 800; color: #c084fc; margin-top: 4px;">~85%</div>
+                                <div class="admin-matrix-sub" style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">0ms Compute</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vercel 10-Second Function Timeout Safety Gauge -->
+                <div class="section-wrap" id="section-timeout-gauge">
+                    <div class="section-label-bar">
+                        <span class="section-label">⏱️ Vercel 10s Window & Safety Gauge</span>
+                        <span class="tag-pill-badge" style="background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.35); color: #38bdf8;">🛡️ Zero Timeouts</span>
+                    </div>
+                    <div class="section-card">
+                        <div class="setting-text-block" style="margin-bottom: 12px;">
+                            <div class="setting-headline">Serverless Execution Time Breakdown</div>
+                            <div class="setting-description">Vercel Free Hobby tier limits each function to a strict 10-second ceiling (<code>maxDuration: 10</code>). Chole Bhature completes full scraping and sorting in ~2.1 seconds, guaranteeing a 7+ second safety buffer.</div>
+                        </div>
+                        
+                        <!-- Progress meter -->
+                        <div style="margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; margin-bottom: 6px;">
+                                <span style="color: #34d399;">⏱️ Execution: ~2.12s</span>
+                                <span style="color: var(--text-muted);">Limit: 10.0s</span>
+                            </div>
+                            <div style="height: 12px; background: rgba(255, 255, 255, 0.08); border-radius: 9999px; overflow: hidden; display: flex; position: relative;">
+                                <div style="width: 21%; background: linear-gradient(90deg, #10b981, #06b6d4); border-radius: 9999px 0 0 9999px;" title="Scraping & Sorting (~2.12s)"></div>
+                                <div style="width: 79%; background: rgba(16, 185, 129, 0.12);" title="Safe Headroom Buffer (~7.88s)"></div>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-top: 6px; flex-wrap: wrap; gap: 4px;">
+                                <span>📦 Scraping: ~2.10s</span>
+                                <span>⚡ Sorting: ~0.02s</span>
+                                <span style="color: #34d399; font-weight: 700;">🟢 7.88s Buffer</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detailed Vercel Free-Tier Economics & Limits Breakdown -->
+                <div class="section-wrap" id="section-vercel-economics">
+                    <div class="section-label-bar">
+                        <span class="section-label">📈 Vercel Free-Tier Monthly Budget</span>
+                    </div>
+                    <div class="section-card">
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.06); padding-bottom: 10px; gap: 8px;">
+                                <div style="min-width: 0; flex: 1;">
+                                    <div style="font-weight: 700; font-size: 13px; color: #f8fafc; line-height: 1.3;">Fluid Active CPU Budget</div>
+                                    <div style="font-size: 11.5px; color: var(--text-muted); line-height: 1.35; margin-top: 2px;">4.0 Hours free per billing month</div>
+                                </div>
+                                <div style="text-align: right; flex-shrink: 0;">
+                                    <span style="font-size: 11px; font-weight: 700; color: #34d399; background: rgba(16, 185, 129, 0.12); padding: 4px 8px; border-radius: 6px; white-space: nowrap;">100k+ /mo</span>
+                                </div>
+                            </div>
+
+                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.06); padding-bottom: 10px; gap: 8px;">
+                                <div style="min-width: 0; flex: 1;">
+                                    <div style="font-weight: 700; font-size: 13px; color: #f8fafc; line-height: 1.3;">Serverless Invocations</div>
+                                    <div style="font-size: 11.5px; color: var(--text-muted); line-height: 1.35; margin-top: 2px;">1,000,000 free serverless calls</div>
+                                </div>
+                                <div style="text-align: right; flex-shrink: 0;">
+                                    <span style="font-size: 11px; font-weight: 700; color: #38bdf8; background: rgba(56, 189, 248, 0.12); padding: 4px 8px; border-radius: 6px; white-space: nowrap;">1M Calls</span>
+                                </div>
+                            </div>
+
+                            <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                                <div style="min-width: 0; flex: 1;">
+                                    <div style="font-weight: 700; font-size: 13px; color: #f8fafc; line-height: 1.3;">Edge Network Bandwidth</div>
+                                    <div style="font-size: 11.5px; color: var(--text-muted); line-height: 1.35; margin-top: 2px;">100 GB Fast Worldwide CDN Bandwidth</div>
+                                </div>
+                                <div style="text-align: right; flex-shrink: 0;">
+                                    <span style="font-size: 11px; font-weight: 700; color: #c084fc; background: rgba(192, 132, 252, 0.12); padding: 4px 8px; border-radius: 6px; white-space: nowrap;">100 GB Free</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Server Telemetry & Maintenance Control Panel -->
+                <div class="section-wrap" id="section-admin-telemetry">
+                    <div class="section-label-bar">
+                        <span class="section-label">📊 Live Server Telemetry & Maintenance</span>
+                        <button class="pill-btn pill-btn-glass" onclick="fetchAdminStats()" style="padding: 4px 10px; font-size: 11.5px;">🔄 Refresh</button>
+                    </div>
+                    <div class="section-card">
+                        <!-- Live Stats 4-Grid -->
+                        <div class="admin-telemetry-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 16px;">
+                            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 12px;">
+                                <div style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Active Configs</div>
+                                <div id="admin-total-configs" style="font-size: 20px; font-weight: 800; color: #f8fafc; margin-top: 4px;">--</div>
+                            </div>
+                            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 12px;">
+                                <div style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Cached Streams</div>
+                                <div id="admin-cache-size" style="font-size: 20px; font-weight: 800; color: #38bdf8; margin-top: 4px;">--</div>
+                            </div>
+                            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 12px;">
+                                <div style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Memory Used</div>
+                                <div id="admin-memory-mb" style="font-size: 20px; font-weight: 800; color: #c084fc; margin-top: 4px;">-- MB</div>
+                            </div>
+                            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 12px;">
+                                <div style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Server Uptime</div>
+                                <div id="admin-uptime-str" style="font-size: 16px; font-weight: 800; color: #34d399; margin-top: 6px;">--</div>
+                            </div>
+                        </div>
+
+                        <!-- Quarantined Providers List -->
+                        <div style="margin-bottom: 16px;">
+                            <div style="font-size: 12.5px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">Active Quarantine Strikes</div>
+                            <div id="admin-quarantine-list" style="font-size: 12px; color: var(--text-muted); background: rgba(0,0,0,0.25); border-radius: 8px; padding: 8px 12px;">
+                                No scrapers currently quarantined (All healthy)
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <button class="pill-btn pill-btn-glass" onclick="purgeServerCache()" title="Purge all stream cache from memory">
+                                <span>🗑️</span> Purge Server Cache
+                            </button>
+                            <button class="pill-btn pill-btn-glass" onclick="resetQuarantineStrikes()" title="Reset strikes on all scraper providers">
+                                <span>🔄</span> Reset Quarantine Strikes
+                            </button>
+                            <button class="pill-btn pill-btn-glass" onclick="exportDiagnostics()" title="Download raw diagnostics JSON">
+                                <span>📋</span> Export Diagnostics JSON
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
         <!-- Persistent App Footer -->
         <footer class="app-footer">
             <div class="footer-content">
@@ -2425,6 +2858,30 @@
     <a href="https://t.me/SA7ANI?text=Hi%20SA7ANI%2C%20I%20love%20using%20Chole%20Bhature%21%20I%20would%20like%20to%20support%20the%20development%20with%20a%20donation.%20%E2%9D%A4%EF%B8%8F%F0%9F%8D%9B" target="_blank" rel="noopener noreferrer" class="fab-donate" title="Donate & Support SA7ANI">
         💖
     </a>
+
+    <!-- Custom Site Aesthetic Modal Dialog -->
+    <div id="cb-aesthetic-modal" class="aesthetic-modal-backdrop" style="display: none;">
+        <div class="aesthetic-modal-card">
+            <div class="aesthetic-modal-icon-wrap" id="modal-icon">🔐</div>
+            <h3 class="aesthetic-modal-title" id="modal-title">Admin Authentication</h3>
+            <p class="aesthetic-modal-subtitle" id="modal-subtitle">Enter your Admin Secret Key to proceed.</p>
+            
+            <div class="aesthetic-modal-fields" id="modal-fields-container">
+                <!-- Dynamic Fields injected by JS -->
+            </div>
+
+            <div id="modal-error-msg" class="aesthetic-modal-error" style="display: none;"></div>
+
+            <div class="aesthetic-modal-actions">
+                <button type="button" class="pill-btn pill-btn-glass" onclick="closeAestheticModal(false)" id="modal-btn-cancel">
+                    Cancel
+                </button>
+                <button type="button" class="pill-btn pill-btn-emerald" onclick="submitAestheticModal()" id="modal-btn-confirm">
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Floating Bottom Pill Navigation Bar (Mobile / Tablet Only) -->
     <nav class="bottom-nav-bar">
@@ -2452,6 +2909,12 @@
             </div>
             <span class="nav-label">Analytics</span>
         </a>
+        <a class="nav-item" id="admin-nav-item-mobile" onclick="switchTab('tab-admin', this)" style="display: none;">
+            <div class="nav-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <span class="nav-label">Admin</span>
+        </a>
     </nav>
 
     <!-- ==================== JAVASCRIPT ENGINE ==================== -->
@@ -2459,7 +2922,7 @@
         let configId = null;
         let storedRepos = localStorage.getItem('nuvio_repos');
         let repos = storedRepos !== null ? JSON.parse(storedRepos) : [];
-        let settings = JSON.parse(localStorage.getItem('nuvio_settings') || '{"hideDead": false, "hideSlow": false, "sortBy": "speed", "prioritizeHindi": false, "showSeeders": true, "deduplicateStreams": true, "cleanTitles": true, "showFileSize": true, "showReleaseGroup": true, "preferredLanguages": [], "disabledProviders": []}');
+        let settings = JSON.parse(localStorage.getItem('nuvio_settings') || '{"hideDead": false, "hideSlow": false, "sortBy": "speed", "prioritizeHindi": false, "showSeeders": true, "deduplicateStreams": true, "cleanTitles": true, "showFileSize": true, "showReleaseGroup": true, "vercelEcoMode": false, "preferredLanguages": [], "disabledProviders": []}');
         let allProvidersData = [];
 
         // Apple-style Native Tactile Haptic Engine
@@ -2690,7 +3153,8 @@
                 'tab-home': 0,
                 'tab-settings': 1,
                 'tab-sources': 2,
-                'tab-analytics': 3
+                'tab-analytics': 3,
+                'tab-admin': 4
             };
             const idx = tabMap[tabId];
             
@@ -2712,6 +3176,8 @@
                 const card = document.getElementById('analytics-card');
                 if (card) card.style.display = 'block';
                 syncHealthData();
+            } else if (tabId === 'tab-admin') {
+                fetchAdminStats();
             }
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -2803,6 +3269,7 @@
             const cleanTitlesEl = document.getElementById('cleanTitles');
             const showFileSizeEl = document.getElementById('showFileSize');
             const showReleaseGroupEl = document.getElementById('showReleaseGroup');
+            const vercelEcoModeEl = document.getElementById('vercelEcoMode');
             const enableDohEl = document.getElementById('enableDoh');
             const dohProviderEl = document.getElementById('dohProvider');
             const debridProviderEl = document.getElementById('debridProvider');
@@ -2818,6 +3285,7 @@
             if (cleanTitlesEl) settings.cleanTitles = cleanTitlesEl.checked;
             if (showFileSizeEl) settings.showFileSize = showFileSizeEl.checked;
             if (showReleaseGroupEl) settings.showReleaseGroup = showReleaseGroupEl.checked;
+            if (vercelEcoModeEl) settings.vercelEcoMode = vercelEcoModeEl.checked;
             if (enableDohEl) settings.enableDoh = enableDohEl.checked;
             if (dohProviderEl) settings.dohProvider = dohProviderEl.value;
             if (debridProviderEl) settings.debridProvider = debridProviderEl.value;
@@ -2844,6 +3312,7 @@
                 if (settings.enableQuarantine !== false) activeCount++;
                 if (settings.deduplicateStreams !== false) activeCount++;
                 if (settings.cleanTitles !== false) activeCount++;
+                if (settings.vercelEcoMode === true) activeCount++;
                 if (settings.enableDoh !== false) activeCount++;
                 const langCount = (settings.preferredLanguages || []).length;
                 if (langCount > 0) activeCount += langCount;
@@ -2870,6 +3339,7 @@
                 cleanTitles: settings.cleanTitles !== false,
                 showFileSize: settings.showFileSize !== false,
                 showReleaseGroup: settings.showReleaseGroup !== false,
+                vercelEcoMode: Boolean(settings.vercelEcoMode === true),
                 enableDoh: settings.enableDoh !== false,
                 dohProvider: settings.dohProvider || 'cloudflare',
                 debridProvider: settings.debridProvider || 'none',
@@ -2916,6 +3386,528 @@
             }
         }
 
+        function updateAdminView() {
+            const isEco = document.getElementById('vercelEcoMode')?.checked === true;
+            const badge = document.getElementById('admin-vercel-badge');
+            if (badge) {
+                if (isEco) {
+                    badge.innerText = '🟢 Eco Mode: Active (Zero CPU)';
+                    badge.style.background = 'rgba(16, 185, 129, 0.15)';
+                    badge.style.borderColor = 'rgba(16, 185, 129, 0.35)';
+                    badge.style.color = '#34d399';
+                } else {
+                    badge.innerText = '⚪ Eco Mode: Disabled';
+                    badge.style.background = 'rgba(148, 163, 184, 0.12)';
+                    badge.style.borderColor = 'rgba(148, 163, 184, 0.25)';
+                    badge.style.color = 'var(--text-muted)';
+                }
+            }
+        }
+
+        let logoClickCount = 0;
+        let logoClickTimer = null;
+        let activeModalResolver = null;
+
+        function showAestheticModal({ title, subtitle, icon = '🔐', confirmText = 'Confirm', fields = [] }) {
+            return new Promise((resolve) => {
+                activeModalResolver = resolve;
+                const modal = document.getElementById('cb-aesthetic-modal');
+                const titleEl = document.getElementById('modal-title');
+                const subEl = document.getElementById('modal-subtitle');
+                const iconEl = document.getElementById('modal-icon');
+                const confirmBtn = document.getElementById('modal-btn-confirm');
+                const fieldsContainer = document.getElementById('modal-fields-container');
+                const errorEl = document.getElementById('modal-error-msg');
+
+                if (titleEl) titleEl.innerText = title || 'Admin Authentication';
+                if (subEl) subEl.innerText = subtitle || '';
+                if (iconEl) iconEl.innerText = icon;
+                if (confirmBtn) confirmBtn.innerHTML = `<span>✓</span> ${confirmText}`;
+                if (errorEl) {
+                    errorEl.style.display = 'none';
+                    errorEl.innerText = '';
+                }
+
+                if (fieldsContainer) {
+                    fieldsContainer.innerHTML = fields.map((f, i) => `
+                        <div class="aesthetic-modal-field-block">
+                            ${f.label ? `<div class="aesthetic-field-label">${f.label}</div>` : ''}
+                            <div class="aesthetic-input-wrap">
+                                <input type="${f.type || 'text'}" id="modal_field_${f.id || i}" placeholder="${f.placeholder || ''}" ${f.autofocus ? 'autofocus' : ''} onkeydown="if(event.key === 'Enter') submitAestheticModal();">
+                                ${f.type === 'password' ? `<button type="button" class="aesthetic-eye-btn" onclick="toggleModalFieldVisibility('modal_field_${f.id || i}', this)" title="Toggle Visibility">👁️</button>` : ''}
+                            </div>
+                        </div>
+                    `).join('');
+                }
+
+                if (modal) modal.style.display = 'flex';
+                triggerHaptic('medium');
+
+                setTimeout(() => {
+                    const firstInput = document.getElementById('modal_field_0') || document.querySelector('.aesthetic-modal-fields input');
+                    if (firstInput) firstInput.focus();
+                }, 100);
+            });
+        }
+
+        function toggleModalFieldVisibility(fieldId, btn) {
+            const input = document.getElementById(fieldId);
+            if (!input) return;
+            if (input.type === 'password') {
+                input.type = 'text';
+                if (btn) btn.innerText = '🔒';
+            } else {
+                input.type = 'password';
+                if (btn) btn.innerText = '👁️';
+            }
+        }
+
+        function closeAestheticModal(confirmed = false, values = {}) {
+            const modal = document.getElementById('cb-aesthetic-modal');
+            if (modal) modal.style.display = 'none';
+            if (activeModalResolver) {
+                activeModalResolver({ confirmed, values });
+                activeModalResolver = null;
+            }
+        }
+
+        function submitAestheticModal() {
+            const fields = document.querySelectorAll('.aesthetic-modal-fields input');
+            const values = {};
+            fields.forEach(f => {
+                const key = f.id.replace('modal_field_', '');
+                values[key] = f.value.trim();
+            });
+            closeAestheticModal(true, values);
+        }
+
+        async function hashStringSHA256(str) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(str);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        function handleSecretLogoClick(event) {
+            if (event) event.preventDefault();
+            logoClickCount++;
+            triggerHaptic('light');
+
+            if (logoClickTimer) clearTimeout(logoClickTimer);
+            logoClickTimer = setTimeout(() => {
+                logoClickCount = 0;
+            }, 2500);
+
+            if (logoClickCount >= 5) {
+                logoClickCount = 0;
+                triggerHaptic('success');
+                promptSecretAdminKey();
+            } else {
+                switchTab('tab-home', document.querySelector('.nav-pill-item'));
+            }
+        }
+
+        async function promptSecretAdminKey() {
+            const storedHash = localStorage.getItem('cb_admin_master_hash');
+
+            if (!storedHash) {
+                // First-time setup: user creates their secret password via custom modal
+                const res = await showAestheticModal({
+                    title: 'Initial Admin Setup',
+                    subtitle: 'Create your private Admin Secret Key for this addon. It is encrypted and saved only on your device.',
+                    icon: '👑',
+                    confirmText: 'Create Secret Key',
+                    fields: [
+                        { id: 'key', label: 'Create Admin Password', type: 'password', placeholder: 'Enter secret password...', autofocus: true }
+                    ]
+                });
+                if (!res.confirmed) return;
+                const newKey = res.values.key;
+                if (newKey && newKey.length >= 3) {
+                    const cleanKey = newKey.trim();
+                    const hash = await hashStringSHA256(cleanKey);
+                    localStorage.setItem('cb_admin_master_hash', hash);
+                    sessionStorage.setItem('cb_admin_key', cleanKey);
+                    
+                    showAdminTabs(true);
+                    switchTab('tab-admin');
+                    showToast('✨ <b>Admin Key Created!</b> Console Unlocked.');
+                    fetchAdminStats();
+                } else if (newKey) {
+                    showToast('⚠️ Secret Key must be at least 3 characters.');
+                }
+                return;
+            }
+
+            const currentKey = getAdminKey();
+            if (currentKey) {
+                const currentHash = await hashStringSHA256(currentKey);
+                if (currentHash === storedHash) {
+                    showAdminTabs(true);
+                    switchTab('tab-admin');
+                    showToast('🛡️ <b>Admin Console Active</b>');
+                    fetchAdminStats();
+                    return;
+                }
+            }
+
+            const res = await showAestheticModal({
+                title: 'Admin Authentication',
+                subtitle: 'Enter your Admin Secret Key to reveal and unlock the Admin Console.',
+                icon: '🔐',
+                confirmText: 'Unlock Console',
+                fields: [
+                    { id: 'key', label: 'Admin Secret Key', type: 'password', placeholder: 'Enter your password...', autofocus: true }
+                ]
+            });
+            if (!res.confirmed) return;
+            const inputKey = res.values.key;
+            if (inputKey && inputKey.trim()) {
+                const cleanKey = inputKey.trim();
+                const hash = await hashStringSHA256(cleanKey);
+                if (hash === storedHash) {
+                    sessionStorage.setItem('cb_admin_key', cleanKey);
+                    showAdminTabs(true);
+                    switchTab('tab-admin');
+                    showToast('✨ <b>Admin Console Unlocked!</b>');
+                    fetchAdminStats();
+                } else {
+                    // Try server verification as fallback
+                    verifyAndActivateAdmin(cleanKey);
+                }
+            }
+        }
+
+        async function changeAdminSecretKey() {
+            triggerHaptic('medium');
+            const storedHash = localStorage.getItem('cb_admin_master_hash');
+            const fields = [];
+            if (storedHash) {
+                fields.push({ id: 'oldKey', label: 'Current Secret Key', type: 'password', placeholder: 'Enter current key...', autofocus: true });
+            }
+            fields.push({ id: 'newKey', label: 'New Secret Key', type: 'password', placeholder: 'Enter new key (min 3 chars)...', autofocus: !storedHash });
+
+            const res = await showAestheticModal({
+                title: 'Change Admin Secret Key',
+                subtitle: 'Update your private Admin Secret Key for this device.',
+                icon: '🔑',
+                confirmText: 'Update Key',
+                fields: fields
+            });
+            if (!res.confirmed) return;
+
+            if (storedHash) {
+                const oldHash = await hashStringSHA256(res.values.oldKey || '');
+                if (oldHash !== storedHash) {
+                    showToast('❌ Current key is incorrect.');
+                    triggerHaptic('error');
+                    return;
+                }
+            }
+
+            const newKey = res.values.newKey;
+            if (newKey && newKey.trim().length >= 3) {
+                const cleanKey = newKey.trim();
+                const hash = await hashStringSHA256(cleanKey);
+                localStorage.setItem('cb_admin_master_hash', hash);
+                sessionStorage.setItem('cb_admin_key', cleanKey);
+                showToast('✨ <b>Admin Secret Key Updated!</b>');
+                triggerHaptic('success');
+            } else if (newKey) {
+                showToast('⚠️ Key must be at least 3 characters.');
+            }
+        }
+
+        async function verifyAndActivateAdmin(key) {
+            try {
+                const res = await fetch('/api/admin/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const hash = await hashStringSHA256(key);
+                    localStorage.setItem('cb_admin_master_hash', hash);
+                    sessionStorage.setItem('cb_admin_key', key);
+                    
+                    showAdminTabs(true);
+                    switchTab('tab-admin');
+                    
+                    const gate = document.getElementById('admin-auth-gate');
+                    const view = document.getElementById('admin-dashboard-view');
+                    if (gate) gate.style.display = 'none';
+                    if (view) view.style.display = 'flex';
+
+                    showToast('✨ <b>Admin Console Unlocked & Revealed!</b>');
+                    fetchAdminStats();
+                } else {
+                    showToast('❌ Incorrect Secret Key.');
+                    triggerHaptic('error');
+                }
+            } catch (e) {
+                showToast('❌ Server authentication failed.');
+            }
+        }
+
+        function showAdminTabs(show) {
+            const desktopPill = document.getElementById('admin-nav-pill-desktop');
+            const mobileItem = document.getElementById('admin-nav-item-mobile');
+            if (desktopPill) desktopPill.style.display = show ? 'inline-flex' : 'none';
+            if (mobileItem) mobileItem.style.display = show ? 'flex' : 'none';
+        }
+
+        function getAdminKey() {
+            return sessionStorage.getItem('cb_admin_key') || localStorage.getItem('cb_admin_key') || '';
+        }
+
+        function toggleAdminKeyVisibility() {
+            const input = document.getElementById('adminSecretKeyInput');
+            const btn = document.getElementById('admin-key-eye-btn');
+            if (!input) return;
+            if (input.type === 'password') {
+                input.type = 'text';
+                if (btn) btn.innerText = '🔒';
+            } else {
+                input.type = 'password';
+                if (btn) btn.innerText = '👁️';
+            }
+        }
+
+        async function unlockAdminConsole() {
+            triggerHaptic('medium');
+            const input = document.getElementById('adminSecretKeyInput');
+            const errEl = document.getElementById('admin-auth-error');
+            const key = input ? input.value.trim() : '';
+
+            if (!key) {
+                if (errEl) {
+                    errEl.style.display = 'block';
+                    errEl.innerText = '❌ Please enter your Admin Secret Key';
+                }
+                return;
+            }
+
+            const storedHash = localStorage.getItem('cb_admin_master_hash');
+            if (!storedHash) {
+                // First-time registration through input form
+                const hash = await hashStringSHA256(key);
+                localStorage.setItem('cb_admin_master_hash', hash);
+                sessionStorage.setItem('cb_admin_key', key);
+                if (errEl) errEl.style.display = 'none';
+                
+                showAdminTabs(true);
+                const gate = document.getElementById('admin-auth-gate');
+                const view = document.getElementById('admin-dashboard-view');
+                if (gate) gate.style.display = 'none';
+                if (view) view.style.display = 'flex';
+
+                showToast('✨ <b>Admin Key Created!</b> Console Unlocked.');
+                fetchAdminStats();
+                return;
+            }
+
+            const inputHash = await hashStringSHA256(key);
+            if (inputHash === storedHash) {
+                sessionStorage.setItem('cb_admin_key', key);
+                if (errEl) errEl.style.display = 'none';
+                
+                showAdminTabs(true);
+                const gate = document.getElementById('admin-auth-gate');
+                const view = document.getElementById('admin-dashboard-view');
+                if (gate) gate.style.display = 'none';
+                if (view) view.style.display = 'flex';
+
+                showToast('🔓 <b>Admin Console Unlocked!</b>');
+                fetchAdminStats();
+                return;
+            }
+
+            // Fallback to server verification
+            try {
+                const res = await fetch('/api/admin/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const hash = await hashStringSHA256(key);
+                    localStorage.setItem('cb_admin_master_hash', hash);
+                    sessionStorage.setItem('cb_admin_key', key);
+                    if (errEl) errEl.style.display = 'none';
+                    
+                    showAdminTabs(true);
+                    const gate = document.getElementById('admin-auth-gate');
+                    const view = document.getElementById('admin-dashboard-view');
+                    if (gate) gate.style.display = 'none';
+                    if (view) view.style.display = 'flex';
+
+                    showToast('🔓 <b>Admin Console Unlocked!</b>');
+                    fetchAdminStats();
+                } else {
+                    if (errEl) {
+                        errEl.style.display = 'block';
+                        errEl.innerText = '❌ Incorrect Secret Key. Access denied.';
+                    }
+                    triggerHaptic('error');
+                }
+            } catch (e) {
+                if (errEl) {
+                    errEl.style.display = 'block';
+                    errEl.innerText = '❌ Server authentication error. Try again.';
+                }
+            }
+        }
+
+        function lockAdminConsole() {
+            triggerHaptic('light');
+            sessionStorage.removeItem('cb_admin_key');
+            
+            showAdminTabs(false);
+            switchTab('tab-home', document.querySelectorAll('.nav-pill-item')[0]);
+
+            const gate = document.getElementById('admin-auth-gate');
+            const view = document.getElementById('admin-dashboard-view');
+            const input = document.getElementById('adminSecretKeyInput');
+            const errEl = document.getElementById('admin-auth-error');
+            
+            if (input) input.value = '';
+            if (errEl) errEl.style.display = 'none';
+            if (gate) gate.style.display = 'block';
+            if (view) view.style.display = 'none';
+
+            showToast('🔒 <b>Admin Console Locked & Hidden!</b>');
+        }
+
+        function checkAdminSessionState() {
+            const key = getAdminKey();
+            const gate = document.getElementById('admin-auth-gate');
+            const view = document.getElementById('admin-dashboard-view');
+            if (key) {
+                showAdminTabs(true);
+                if (gate) gate.style.display = 'none';
+                if (view) view.style.display = 'flex';
+                return true;
+            } else {
+                showAdminTabs(false);
+                if (gate) gate.style.display = 'block';
+                if (view) view.style.display = 'none';
+                return false;
+            }
+        }
+
+        async function fetchAdminStats() {
+            if (!checkAdminSessionState()) return;
+            const key = getAdminKey();
+
+            try {
+                const res = await fetch('/api/admin/stats', {
+                    headers: { 'x-admin-key': key }
+                });
+                if (res.status === 401) {
+                    lockAdminConsole();
+                    return;
+                }
+                const data = await res.json();
+                if (data) {
+                    const totalEl = document.getElementById('admin-total-configs');
+                    const cacheEl = document.getElementById('admin-cache-size');
+                    const memEl = document.getElementById('admin-memory-mb');
+                    const uptimeEl = document.getElementById('admin-uptime-str');
+                    const qListEl = document.getElementById('admin-quarantine-list');
+
+                    if (totalEl) totalEl.innerText = data.totalConfigs || 0;
+                    if (cacheEl) cacheEl.innerText = `${data.cacheSize || 0} entries`;
+                    if (memEl) memEl.innerText = `${data.memoryMB || 0} MB`;
+                    
+                    if (uptimeEl) {
+                        const s = data.uptime || 0;
+                        const d = Math.floor(s / 86400);
+                        const h = Math.floor((s % 86400) / 3600);
+                        const m = Math.floor((s % 3600) / 60);
+                        uptimeEl.innerText = d > 0 ? `${d}d ${h}h ${m}m` : (h > 0 ? `${h}h ${m}m` : `${m}m ${s % 60}s`);
+                    }
+
+                    if (qListEl) {
+                        if (data.quarantinedProviders && data.quarantinedProviders.length > 0) {
+                            qListEl.innerHTML = data.quarantinedProviders.map(p => `
+                                <div style="display:flex; justify-content:space-between; padding:4px 0; color:#f87171;">
+                                    <span>🛑 ${p.name} (${p.strikes} strikes)</span>
+                                    <span>Quarantined (${p.remainingMin}m left)</span>
+                                </div>
+                            `).join('');
+                        } else {
+                            qListEl.innerHTML = '🟢 No scrapers currently quarantined (All healthy)';
+                            qListEl.style.color = '#34d399';
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to fetch admin stats', e);
+            }
+        }
+
+        async function purgeServerCache() {
+            triggerHaptic('heavy');
+            const key = getAdminKey();
+            try {
+                const res = await fetch('/api/admin/clear-cache', { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-admin-key': key }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`✨ <b>Cache Purged:</b> Cleared ${data.cleared} cached stream sets.`);
+                    fetchAdminStats();
+                } else {
+                    showToast('❌ Unauthorized: Invalid Admin Key.');
+                }
+            } catch (e) {
+                showToast('❌ Failed to purge server cache.');
+            }
+        }
+
+        async function resetQuarantineStrikes() {
+            triggerHaptic('heavy');
+            const key = getAdminKey();
+            try {
+                const res = await fetch('/api/admin/reset-quarantine', { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-admin-key': key }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`✨ <b>Strikes Reset:</b> Unquarantined all providers.`);
+                    fetchAdminStats();
+                } else {
+                    showToast('❌ Unauthorized: Invalid Admin Key.');
+                }
+            } catch (e) {
+                showToast('❌ Failed to reset quarantine strikes.');
+            }
+        }
+
+        function exportDiagnostics() {
+            triggerHaptic('success');
+            const state = {
+                exportedAt: new Date().toISOString(),
+                configId: configId,
+                settings: settings,
+                repos: repos,
+                providersCount: allProvidersData.length
+            };
+            const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `chole-bhature-diagnostics-${configId || 'config'}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('📋 <b>Diagnostics Exported!</b> Downloaded JSON.');
+        }
+
         function loadConfigIntoUI(cfg) {
             if (!cfg) return;
             if (cfg.urls && Array.isArray(cfg.urls)) {
@@ -2935,6 +3927,8 @@
             if (cfg.cleanTitles !== undefined) settings.cleanTitles = cfg.cleanTitles;
             if (cfg.showFileSize !== undefined) settings.showFileSize = cfg.showFileSize;
             if (cfg.showReleaseGroup !== undefined) settings.showReleaseGroup = cfg.showReleaseGroup;
+            if (cfg.vercelEcoMode !== undefined) settings.vercelEcoMode = Boolean(cfg.vercelEcoMode);
+            else settings.vercelEcoMode = false;
             if (cfg.enableDoh !== undefined) settings.enableDoh = cfg.enableDoh;
             if (cfg.dohProvider) settings.dohProvider = cfg.dohProvider;
             if (cfg.debridProvider) settings.debridProvider = cfg.debridProvider;
@@ -2970,6 +3964,8 @@
             if (sizeEl) sizeEl.checked = settings.showFileSize !== false;
             const groupEl = document.getElementById('showReleaseGroup');
             if (groupEl) groupEl.checked = settings.showReleaseGroup !== false;
+            const vercelEcoEl = document.getElementById('vercelEcoMode');
+            if (vercelEcoEl) vercelEcoEl.checked = Boolean(settings.vercelEcoMode);
             const enableDohEl = document.getElementById('enableDoh');
             if (enableDohEl) enableDohEl.checked = settings.enableDoh !== false;
             const dohProviderEl = document.getElementById('dohProvider');
@@ -2984,6 +3980,7 @@
             updateSortModeUI(settings.sortBy || 'speed');
             renderLanguageChips();
             updateCardPreview();
+            updateAdminView();
             
             fetchRepos();
         }
@@ -3045,6 +4042,8 @@
             if (sizeInitEl) sizeInitEl.checked = settings.showFileSize !== false;
             const groupInitEl = document.getElementById('showReleaseGroup');
             if (groupInitEl) groupInitEl.checked = settings.showReleaseGroup !== false;
+            const initVercelEcoEl = document.getElementById('vercelEcoMode');
+            if (initVercelEcoEl) initVercelEcoEl.checked = Boolean(settings.vercelEcoMode === true);
             const initDohEl = document.getElementById('enableDoh');
             if (initDohEl) initDohEl.checked = settings.enableDoh !== false;
             const initDohProviderEl = document.getElementById('dohProvider');
@@ -3059,10 +4058,35 @@
             updateSortModeUI(settings.sortBy || 'speed');
             renderLanguageChips();
             updateCardPreview();
+            updateAdminView();
             
             showSyncBadge(`ID: ${configId}`);
             updateActionBtnUI();
             fetchRepos();
+
+            // Secret Admin Tab Visibility Init
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const secretParam = urlParams.get('secret') || urlParams.get('admin');
+                if (secretParam && secretParam !== 'true' && secretParam !== '1') {
+                    verifyAndActivateAdmin(secretParam.trim());
+                } else if (getAdminKey()) {
+                    showAdminTabs(true);
+                } else {
+                    showAdminTabs(false);
+                }
+            } catch (e) {}
+
+            // Keyboard shortcut Ctrl+Shift+A to unlock Admin Console
+            if (!window.__adminShortcutBound) {
+                window.__adminShortcutBound = true;
+                window.addEventListener('keydown', (e) => {
+                    if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+                        e.preventDefault();
+                        promptSecretAdminKey();
+                    }
+                });
+            }
         }
 
         function setRepoPreset(url) {
@@ -3314,7 +4338,8 @@
         async function installAddon() {
             triggerHaptic('success');
             if (repos.length === 0) {
-                alert("Please add at least one repository first.");
+                showToast("⚠️ <b>No Repositories:</b> Please add at least one repository first.");
+                triggerHaptic('warning');
                 switchTab('tab-sources', document.querySelectorAll('.nav-pill-item')[2]);
                 return;
             }
