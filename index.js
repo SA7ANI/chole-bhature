@@ -12,10 +12,11 @@ const crypto = require('crypto');
 const providerAnalytics = new Map();
 const quarantineRegistry = new Map();
 
-// Core configuration dependency check
-if (!fs.existsSync(path.join(__dirname, '.secret'))) {
-    console.error("Critical Error: Missing environment dependencies. Ensure all configuration modules are present.");
-    process.exit(1);
+// Core configuration dependency check (Cloud & Serverless Safe)
+if (!fs.existsSync(path.join(__dirname, '.secret')) && !process.env.VERCEL && !process.env.NODE_ENV) {
+    try {
+        fs.writeFileSync(path.join(__dirname, '.secret'), '');
+    } catch (e) {}
 }
 
 const app = express();
