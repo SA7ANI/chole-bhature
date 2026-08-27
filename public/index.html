@@ -321,14 +321,13 @@
             min-width: 32px;
             padding: 0;
             border-radius: 50%;
-            font-size: 13.5px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             line-height: 0;
             background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            color: var(--text-secondary);
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            color: #cbd5e1;
             cursor: pointer;
             transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
             flex-shrink: 0;
@@ -354,7 +353,7 @@
         .pill-btn-icon-only:hover {
             background: rgba(255, 255, 255, 0.12);
             color: #ffffff;
-            border-color: rgba(255, 255, 255, 0.20);
+            border-color: rgba(255, 255, 255, 0.22);
             transform: translateY(-1px);
         }
 
@@ -364,17 +363,32 @@
         }
 
         .pill-btn-emerald {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            border: 1px solid rgba(255, 255, 255, 0.20);
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.90) 0%, rgba(5, 150, 105, 0.90) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.22);
             color: #ffffff;
             height: 32px;
             padding: 0 14px;
-            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+            font-size: 12.5px;
+            font-weight: 700;
+            letter-spacing: -0.1px;
+            border-radius: var(--radius-pill);
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .pill-btn-emerald:hover {
             transform: translateY(-1px) scale(1.02);
-            box-shadow: 0 6px 18px rgba(16, 185, 129, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+        }
+
+        .pill-btn-emerald #save-btn-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 0;
         }
 
         @media (max-width: 1040px) and (min-width: 769px) {
@@ -1665,33 +1679,35 @@
             bottom: calc(14px + env(safe-area-inset-bottom));
             left: 50%;
             transform: translateX(-50%);
-            width: min(390px, calc(100% - 24px));
-            height: 62px;
-            background: rgba(12, 15, 23, 0.55);
-            backdrop-filter: blur(26px) saturate(190%);
-            -webkit-backdrop-filter: blur(26px) saturate(190%);
-            border: 1px solid rgba(255, 255, 255, 0.13);
+            width: min(340px, calc(100% - 28px));
+            height: 56px;
+            background: rgba(13, 17, 28, 0.84);
+            backdrop-filter: blur(28px) saturate(200%);
+            -webkit-backdrop-filter: blur(28px) saturate(200%);
+            border: 1px solid rgba(255, 255, 255, 0.12);
             border-radius: var(--radius-pill);
             justify-content: space-around;
             align-items: center;
             z-index: 1000;
-            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
-            padding: 4px;
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.70), 0 0 0 1px rgba(255, 255, 255, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+            padding: 4px 6px;
             box-sizing: border-box;
-            gap: 2px;
-            transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-                        height 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-                        padding 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-                        box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-                        background 0.3s ease;
+            gap: 4px;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        body.theme-light .bottom-nav-bar {
+            background: rgba(255, 255, 255, 0.90);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.95);
         }
 
         .bottom-nav-bar.scrolled {
             height: 48px;
-            width: min(300px, calc(100% - 32px));
+            width: min(290px, calc(100% - 36px));
             padding: 3px;
-            box-shadow: 0 20px 48px rgba(0, 0, 0, 0.75);
-            background: rgba(10, 12, 18, 0.72);
+            box-shadow: 0 20px 48px rgba(0, 0, 0, 0.85);
+            background: rgba(10, 13, 22, 0.92);
         }
 
         .nav-item {
@@ -1702,11 +1718,11 @@
             align-items: center;
             justify-content: center;
             gap: 2px;
-            color: var(--text-muted);
+            color: #94a3b8;
             text-decoration: none;
             cursor: pointer;
-            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-            padding: 4px 8px;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            padding: 3px 6px;
             border-radius: var(--radius-pill);
             user-select: none;
         }
@@ -1716,10 +1732,18 @@
         }
 
         .nav-item.active {
-            background: rgba(255, 255, 255, 0.15);
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.08) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.18);
             border-radius: var(--radius-pill);
             color: #ffffff;
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+        }
+
+        body.theme-light .nav-item.active {
+            background: #0f172a;
+            color: #ffffff;
+            border-color: transparent;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25);
         }
 
         .bottom-nav-bar.scrolled .nav-item {
@@ -1733,8 +1757,6 @@
         }
 
         .bottom-nav-bar.scrolled .nav-item.active {
-            background: rgba(255, 255, 255, 0.16);
-            border-radius: var(--radius-pill);
             height: 100%;
         }
 
@@ -1742,37 +1764,47 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .nav-icon svg {
-            width: 20px;
-            height: 20px;
+            width: 19px;
+            height: 19px;
             stroke-width: 2;
-            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .bottom-nav-bar.scrolled .nav-icon svg {
-            width: 21px;
-            height: 21px;
+            width: 20px;
+            height: 20px;
         }
 
         .nav-item.active .nav-icon svg {
-            transform: scale(1.08);
+            color: #c4b5fd;
+            transform: translateY(-1px) scale(1.05);
+            filter: drop-shadow(0 0 8px rgba(196, 181, 253, 0.5));
+        }
+
+        body.theme-light .nav-item.active .nav-icon svg {
             color: #ffffff;
-            filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.35));
+            filter: none;
         }
 
         .nav-label {
             font-size: 10px;
             font-weight: 700;
-            letter-spacing: 0.2px;
-            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-            max-height: 16px;
+            letter-spacing: 0.1px;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            max-height: 14px;
             opacity: 1;
             transform: translateY(0);
             overflow: hidden;
             white-space: nowrap;
+        }
+
+        .nav-item.active .nav-label {
+            font-weight: 800;
+            color: #ffffff;
         }
 
         .bottom-nav-bar.scrolled .nav-label {
@@ -1859,11 +1891,15 @@
                 padding-bottom: calc(96px + env(safe-area-inset-bottom));
             }
             .top-nav-bar {
-                top: calc(16px + env(safe-area-inset-top));
+                top: calc(14px + env(safe-area-inset-top));
                 width: calc(100% - 24px);
                 padding: 6px 10px;
-                gap: 6px;
+                gap: 8px;
                 min-height: 48px;
+                background: rgba(13, 17, 28, 0.84);
+                backdrop-filter: blur(24px);
+                border: 1px solid rgba(255, 255, 255, 0.10);
+                box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.15);
             }
             .top-nav-bar .nav-pill-group {
                 display: none; /* Mobile uses bottom pill navbar */
@@ -1872,19 +1908,23 @@
                 display: none;
             }
             .top-nav-bar .nav-brand-name {
-                font-size: 14px;
+                font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+                font-size: 14.5px;
                 font-weight: 800;
+                letter-spacing: -0.3px;
             }
             .nav-brand-pill {
                 padding: 2px 4px;
-                gap: 6px;
+                gap: 7px;
             }
             .nav-brand-logo {
                 width: 28px;
                 height: 28px;
+                border-radius: 50%;
+                box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.18), 0 2px 6px rgba(0, 0, 0, 0.4);
             }
             .nav-actions-pill {
-                gap: 5px;
+                gap: 6px;
                 flex-shrink: 0;
             }
             .sync-status-pill {
@@ -1892,9 +1932,12 @@
             }
             .pill-btn-emerald {
                 height: 32px;
-                padding: 0 10px;
-                font-size: 11.5px;
-                gap: 4px;
+                padding: 0 13px;
+                font-size: 12px;
+                gap: 5px;
+                font-weight: 700;
+                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
             }
             .btn-save-text {
                 display: inline-block !important;
@@ -1904,6 +1947,8 @@
                 height: 32px;
                 min-width: 32px;
                 font-size: 13.5px;
+                background: rgba(255, 255, 255, 0.06);
+                border: 1px solid rgba(255, 255, 255, 0.10);
             }
             .bottom-nav-bar {
                 display: flex;
@@ -2048,10 +2093,10 @@
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
             </a>
             <button class="pill-btn pill-btn-icon-only" onclick="toggleTheme()" title="Toggle Theme" id="theme-btn">
-                <span id="theme-icon">🌙</span>
+                <span id="theme-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg></span>
             </button>
             <button class="pill-btn pill-btn-emerald" id="save-btn" onclick="handleTopAction()" title="Install Addon">
-                <span id="save-btn-icon">🚀</span>
+                <span id="save-btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m13 2-2 2.5V8l-3 3 5 5 3-3h3.5L22 11l-9-9Z"/><path d="m4.5 15.5-1.5 4 4-1.5"/></svg></span>
                 <span class="btn-save-text" id="save-btn-text" style="display: inline-block;">Install</span>
             </button>
         </div>
@@ -3273,12 +3318,12 @@
             if (!btn) return;
 
             if (!isInstalled) {
-                if (icon) icon.innerText = '🚀';
+                if (icon) icon.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m13 2-2 2.5V8l-3 3 5 5 3-3h3.5L22 11l-9-9Z"/><path d="m4.5 15.5-1.5 4 4-1.5"/></svg>';
                 if (text) text.innerText = 'Install';
                 btn.title = 'Install Addon to Stremio / Nuvio';
                 btn.classList.remove('unsaved');
             } else {
-                if (icon) icon.innerText = '💾';
+                if (icon) icon.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>';
                 if (text) text.innerText = 'Save';
                 btn.title = 'Save & sync changes to cloud';
             }
@@ -4434,8 +4479,8 @@
         // Theme System (Glass Dark 🌙 ⟷ Pure AMOLED Black 🌑)
         const themes = ['glass', 'amoled'];
         const themeSVGs = {
-            'glass': '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #facc15;"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>',
-            'amoled': '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" style="color: #ffffff;"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/><path d="M12 3a9 9 0 0 1 0 18z"/></svg>'
+            'glass': '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>',
+            'amoled': '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>'
         };
         let currentTheme = localStorage.getItem('nuvio_theme') || 'glass';
         if (!themes.includes(currentTheme)) currentTheme = 'glass';
