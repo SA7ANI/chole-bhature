@@ -17,7 +17,7 @@
     <link rel="apple-touch-icon" sizes="182x182" href="icon-192.png?v=4">
     <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png?v=4">
     <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png?v=4">
-    <title>Chole Bhature • Nuvio & Stremio Meta-Sorter v4.0.0</title>
+    <title>Chole Bhature • Nuvio & Stremio Meta-Sorter v4.1.0</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -809,13 +809,27 @@
         }
 
         @keyframes sectionGlowFlash {
-            0% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.7); border-color: var(--accent-primary); }
-            50% { box-shadow: 0 0 28px 4px rgba(139, 92, 246, 0.5); border-color: var(--accent-primary); }
-            100% { box-shadow: var(--shadow-card); border-color: var(--border-subtle); }
+            0% {
+                background-color: rgba(139, 92, 246, 0.16);
+                box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.85), 0 0 28px rgba(139, 92, 246, 0.40);
+            }
+            50% {
+                background-color: rgba(139, 92, 246, 0.08);
+                box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.45), 0 0 36px rgba(139, 92, 246, 0.25);
+            }
+            100% {
+                background-color: transparent;
+                box-shadow: none;
+            }
         }
 
         .section-highlight-flash {
-            animation: sectionGlowFlash 1.6s ease-out !important;
+            animation: sectionGlowFlash 1.8s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            border-radius: 16px !important;
+            padding: 12px 14px !important;
+            margin: 4px -6px !important;
+            border-bottom-color: transparent !important;
+            transition: background-color 0.3s ease;
         }
 
         /* ===== SORT MODE SELECTOR GRID ===== */
@@ -1340,6 +1354,209 @@
             padding: 11px 16px;
             font-size: 13px;
             font-weight: 700;
+        }
+
+        /* ===== INTERACTIVE PAGE-BY-PAGE SPOTLIGHT TOUR ENGINE ===== */
+        .tour-overlay-container {
+            position: fixed;
+            inset: 0;
+            z-index: 999990;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .tour-spotlight-box {
+            position: fixed;
+            border-radius: 18px;
+            border: 2px solid #a78bfa;
+            box-shadow: 0 0 0 9999px rgba(5, 8, 18, 0.82), 0 0 30px rgba(167, 139, 250, 0.6);
+            transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: none;
+            z-index: 999992;
+            animation: tourPulse 2s infinite alternate;
+        }
+
+        @keyframes tourPulse {
+            0% { border-color: rgba(167, 139, 250, 0.7); box-shadow: 0 0 0 9999px rgba(5, 8, 18, 0.82), 0 0 20px rgba(167, 139, 250, 0.4); }
+            100% { border-color: #c4b5fd; box-shadow: 0 0 0 9999px rgba(5, 8, 18, 0.82), 0 0 35px rgba(196, 181, 253, 0.7); }
+        }
+
+        .tour-popover-card {
+            position: fixed;
+            background: linear-gradient(145deg, rgba(20, 26, 46, 0.98), rgba(12, 16, 30, 0.99));
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 20px;
+            padding: 18px 20px;
+            width: min(380px, calc(100vw - 32px));
+            box-shadow: 0 24px 60px -10px rgba(0, 0, 0, 0.95), 0 0 30px rgba(139, 92, 246, 0.3);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            z-index: 999995;
+            pointer-events: auto;
+            transition: all 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+            animation: modalScaleIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-sizing: border-box;
+        }
+
+        body.theme-light .tour-popover-card {
+            background: linear-gradient(145deg, #ffffff, #f8fafc);
+            border: 1px solid rgba(0, 0, 0, 0.12);
+            box-shadow: 0 24px 60px -10px rgba(0, 0, 0, 0.25), 0 0 25px rgba(139, 92, 246, 0.15);
+        }
+
+        .tour-popover-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .tour-step-tag {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 3px 9px;
+            border-radius: var(--radius-pill);
+            background: rgba(139, 92, 246, 0.2);
+            color: #c4b5fd;
+            border: 1px solid rgba(139, 92, 246, 0.35);
+        }
+
+        .tour-close-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 12px;
+            width: 26px;
+            height: 26px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+
+        .tour-close-btn:hover {
+            background: rgba(255, 255, 255, 0.16);
+            color: #ffffff;
+            transform: scale(1.08);
+        }
+
+        .tour-popover-title {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+            letter-spacing: -0.2px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tour-popover-desc {
+            font-size: 12.5px;
+            color: var(--text-muted);
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }
+
+        .tour-popover-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .tour-dots-row {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .tour-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            transition: all 0.25s;
+        }
+
+        .tour-dot.active {
+            width: 18px;
+            border-radius: 9999px;
+            background: linear-gradient(90deg, #8b5cf6, #a78bfa);
+            box-shadow: 0 0 8px rgba(139, 92, 246, 0.5);
+        }
+
+        .tour-btn-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        @media (max-width: 768px) {
+            .tour-popover-card {
+                width: calc(100vw - 24px) !important;
+                max-width: 420px !important;
+                padding: 14px 16px !important;
+                border-radius: 18px !important;
+                background: rgba(13, 17, 28, 0.95) !important;
+                backdrop-filter: blur(28px) saturate(190%) !important;
+                -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
+                border: 1px solid rgba(255, 255, 255, 0.16) !important;
+                box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.9) !important;
+            }
+            .tour-popover-title {
+                font-size: 14.5px !important;
+                margin-bottom: 4px !important;
+            }
+            .tour-popover-desc {
+                font-size: 11.5px !important;
+                line-height: 1.45 !important;
+                margin-bottom: 12px !important;
+            }
+            .tour-step-tag {
+                font-size: 9.5px !important;
+                padding: 2px 7px !important;
+            }
+            .tour-popover-footer {
+                padding-top: 10px !important;
+            }
+            .tour-btn-group .pill-btn {
+                padding: 5px 12px !important;
+                font-size: 11.5px !important;
+            }
+            .tour-spotlight-box {
+                border-radius: 14px !important;
+            }
+        }
+
+        .footer-tour-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: var(--text-secondary);
+            font-size: 11.5px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: var(--radius-pill);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .footer-tour-btn:hover {
+            background: rgba(139, 92, 246, 0.18);
+            border-color: rgba(139, 92, 246, 0.35);
+            color: #c4b5fd;
+            transform: translateY(-1px);
         }
 
         @keyframes modalFadeIn {
@@ -2060,7 +2277,7 @@
         <a href="#" class="nav-brand-pill" onclick="handleSecretLogoClick(event); return false;">
             <img src="icon-192.png?v=4" alt="Chole Bhature Logo" class="nav-brand-logo" onerror="this.src='icon-192.png'">
             <span class="nav-brand-name">Chole Bhature</span>
-            <span class="nav-brand-version">v4.0.0</span>
+            <span class="nav-brand-version">v4.1.0</span>
         </a>
 
         <!-- Desktop Navigation Tabs -->
@@ -2499,7 +2716,7 @@
                 </div>
                 <div class="section-card">
                     <!-- Master Ultra-Clean Formatted Cards Toggle -->
-                    <div class="setting-item-row" style="border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 16px;">
+                    <div class="setting-item-row" id="section-clean-cards-master" style="padding-bottom: 4px; border-bottom: none;">
                         <div class="setting-text-block">
                             <div class="setting-headline">
                                 ✨ Ultra-Clean Formatted Cards
@@ -2518,31 +2735,33 @@
                         </div>
                     </div>
 
-                    <!-- Sub-Preferences: File Size & Release Group -->
-                    <div class="setting-item-row" style="border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 16px;">
-                        <div class="setting-text-block">
-                            <div class="setting-headline">Card Badges & Metadata</div>
-                            <div class="setting-description">Customize which media tags and file parameters appear on your stream cards.</div>
-                        </div>
-                        <div class="dual-filter-group" style="flex-wrap: wrap; gap: 8px;">
-                            <label class="filter-capsule" title="Show file size (e.g. 48.2 GB)">
-                                <span class="filter-capsule-text">📦 File Size</span>
-                                <div class="switch-toggle">
-                                    <input type="checkbox" id="showFileSize" checked onchange="onSettingChanged(); updateCardPreview();">
-                                    <span class="switch-slider"></span>
-                                </div>
-                            </label>
-                            <label class="filter-capsule" title="Show release group tag (e.g. FraMeSToR, FLUX)">
-                                <span class="filter-capsule-text">🏷️ Release Group</span>
-                                <div class="switch-toggle">
-                                    <input type="checkbox" id="showReleaseGroup" checked onchange="onSettingChanged(); updateCardPreview();">
-                                    <span class="switch-slider"></span>
-                                </div>
-                            </label>
+                    <!-- Sub-Preferences: File Size & Release Group (Auto-Hidden when Clean Cards is Disabled) -->
+                    <div id="clean-cards-sub-options" style="display: block; transition: all 0.25s ease;">
+                        <div class="setting-item-row" style="border-top: 1px solid rgba(255, 255, 255, 0.08); border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-top: 16px; padding-bottom: 16px; margin-top: 12px;">
+                            <div class="setting-text-block">
+                                <div class="setting-headline">Card Badges & Metadata</div>
+                                <div class="setting-description">Customize which media tags and file parameters appear on your stream cards.</div>
+                            </div>
+                            <div class="dual-filter-group" style="flex-wrap: wrap; gap: 8px;">
+                                <label class="filter-capsule" title="Show file size (e.g. 48.2 GB)">
+                                    <span class="filter-capsule-text">📦 File Size</span>
+                                    <div class="switch-toggle">
+                                        <input type="checkbox" id="showFileSize" checked onchange="onSettingChanged(); updateCardPreview();">
+                                        <span class="switch-slider"></span>
+                                    </div>
+                                </label>
+                                <label class="filter-capsule" title="Show release group tag (e.g. FraMeSToR, FLUX)">
+                                    <span class="filter-capsule-text">🏷️ Release Group</span>
+                                    <div class="switch-toggle">
+                                        <input type="checkbox" id="showReleaseGroup" checked onchange="onSettingChanged(); updateCardPreview();">
+                                        <span class="switch-slider"></span>
+                                    </div>
+                                </label>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Interactive Real-Time Live Preview Widget -->
+                    <!-- Interactive Real-Time Live Preview Widget (Always Visible) -->
                     <div style="margin-top: 14px;">
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
                             <span style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Live Card Preview</span>
@@ -2930,7 +3149,11 @@
         <!-- Persistent App Footer -->
         <footer class="app-footer">
             <div class="footer-content">
-                <span>🌶️ <strong>Chole Bhature</strong> v4.0.0</span>
+                <span>🌶️ <strong>Chole Bhature</strong> v4.1.0</span>
+                <span class="footer-dot">•</span>
+                <button type="button" class="footer-tour-btn" onclick="startInteractiveTour(true)" title="Start Interactive Step-by-Step Tour">
+                    <span>💡</span> Interactive Guide
+                </button>
                 <span class="footer-dot">•</span>
                 <span>Crafted by <a href="https://github.com/SA7ANI" target="_blank" rel="noopener noreferrer">SA7ANI</a></span>
                 <span class="footer-dot">•</span>
@@ -2949,6 +3172,37 @@
     <a href="https://t.me/SA7ANI?text=Hi%20SA7ANI%2C%20I%20love%20using%20Chole%20Bhature%21%20I%20would%20like%20to%20support%20the%20development%20with%20a%20donation.%20%E2%9D%A4%EF%B8%8F%F0%9F%8D%9B" target="_blank" rel="noopener noreferrer" class="fab-donate" title="Donate & Support SA7ANI">
         💖
     </a>
+
+    <!-- Interactive Page-by-Page Spotlight Walkthrough Engine -->
+    <div id="tour-overlay-container" class="tour-overlay-container" style="display: none;">
+        <div id="tour-spotlight-box" class="tour-spotlight-box"></div>
+        <div id="tour-popover-card" class="tour-popover-card">
+            <div class="tour-popover-header">
+                <span class="tour-step-tag" id="tour-step-pill">Step 1 of 5</span>
+                <button class="tour-close-btn" onclick="closeInteractiveTour(false)" title="Exit Tour">✕</button>
+            </div>
+            <h4 class="tour-popover-title" id="tour-popover-title">
+                <span id="tour-popover-icon">🚀</span>
+                <span id="tour-popover-title-text">Welcome</span>
+            </h4>
+            <p class="tour-popover-desc" id="tour-popover-desc">
+                Description goes here.
+            </p>
+            <div class="tour-popover-footer">
+                <div class="tour-dots-row" id="tour-dots-row">
+                    <!-- Injected dynamically -->
+                </div>
+                <div class="tour-btn-group">
+                    <button type="button" class="pill-btn pill-btn-glass" id="tour-btn-prev" onclick="prevTourStep()" style="display: none; padding: 6px 12px; font-size: 12px;">
+                        ‹ Back
+                    </button>
+                    <button type="button" class="pill-btn pill-btn-emerald" id="tour-btn-next" onclick="nextTourStep()" style="padding: 6px 14px; font-size: 12px;">
+                        Next ➔
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Custom Site Aesthetic Modal Dialog -->
     <div id="cb-aesthetic-modal" class="aesthetic-modal-backdrop" style="display: none;">
@@ -3047,25 +3301,34 @@
 
         // Live Real-Time Stream Card Preview Renderer
         function updateCardPreview() {
+            const subOptions = document.getElementById('clean-cards-sub-options');
+            const isClean = document.getElementById('cleanTitles')?.checked !== false;
+
+            if (subOptions) {
+                subOptions.style.display = isClean ? 'block' : 'none';
+            }
+
             const container = document.getElementById('live-card-preview');
             if (!container) return;
-            
-            const isClean = document.getElementById('cleanTitles')?.checked !== false;
-            const showSize = document.getElementById('showFileSize')?.checked !== false;
-            const showGroup = document.getElementById('showReleaseGroup')?.checked !== false;
-            const showSeeds = document.getElementById('showSeeders')?.checked !== false;
 
             if (!isClean) {
                 container.innerHTML = `
-                    <div style="font-size: 12px; font-weight: 700; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
-                        <span>🟢 FAST (142ms) • Torrentio | 2160p • BluRay • REMUX</span>
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 6px;">
+                        <div style="font-size: 12px; font-weight: 700; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
+                            <span>🟢 FAST (142ms) • Torrentio | 2160p • BluRay • REMUX</span>
+                        </div>
+                        <span style="font-size: 10px; font-weight: 700; color: #94a3b8; background: rgba(255, 255, 255, 0.08); padding: 2px 6px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.12);">Raw Scene Name</span>
                     </div>
-                    <div style="font-size: 12px; color: var(--text-muted); font-family: monospace; line-height: 1.4; word-break: break-all;">
+                    <div style="font-size: 12px; color: var(--text-muted); font-family: monospace; line-height: 1.45; word-break: break-all; margin-top: 4px;">
                         Oppenheimer.2023.2160p.UHD.BluRay.x265.10bit.TrueHD.7.1.Atmos.DV.HDR10+.REMUX-FraMeSToR.mkv
                     </div>
                 `;
                 return;
             }
+            
+            const showSize = document.getElementById('showFileSize')?.checked !== false;
+            const showGroup = document.getElementById('showReleaseGroup')?.checked !== false;
+            const showSeeds = document.getElementById('showSeeders')?.checked !== false;
 
             const line1Tags = ['4K UHD', 'REMUX', 'HEVC', '10-bit'];
             const line2Badges = ['Dolby Vision Profile 8', 'HDR10+', 'Dolby Atmos TrueHD 7.1'];
@@ -4689,8 +4952,7 @@
             setTimeout(() => {
                 const target = document.getElementById(sectionId);
                 if (target) {
-                    const card = target.classList.contains('section-card') ? target : (target.querySelector('.section-card') || target);
-                    const navHeight = window.innerWidth <= 768 ? 80 : 96;
+                    const navHeight = window.innerWidth <= 768 ? 72 : 90;
                     const targetPosition = target.getBoundingClientRect().top + window.pageYOffset - navHeight;
                     
                     window.scrollTo({
@@ -4699,12 +4961,12 @@
                     });
 
                     document.querySelectorAll('.section-highlight-flash').forEach(el => el.classList.remove('section-highlight-flash'));
-                    card.classList.add('section-highlight-flash');
+                    target.classList.add('section-highlight-flash');
                     setTimeout(() => {
-                        card.classList.remove('section-highlight-flash');
-                    }, 2000);
+                        target.classList.remove('section-highlight-flash');
+                    }, 1800);
                 }
-            }, 100);
+            }, 120);
         }
 
         // ==================== HERO SLIDES CONTROLLER ====================
@@ -4894,12 +5156,239 @@
             startHeroSlideTimer();
         }
 
+        // ==================== INTERACTIVE PAGE-BY-PAGE SPOTLIGHT TOUR ====================
+        const tourSteps = [
+            {
+                tab: 'tab-home',
+                target: '#hero-banner-card',
+                icon: '🌶️',
+                title: 'Overview & Scraper Health',
+                desc: 'Welcome to Chole Bhature! This live dashboard monitors your stream aggregators, average stream latency, and live provider scrapers.'
+            },
+            {
+                tab: 'tab-settings',
+                target: '#section-priority',
+                icon: '⚡',
+                title: 'Sorting & Priority Mode',
+                desc: 'Choose between "Speed First" for instant ultra-low latency playback or "Quality First" to prioritize 4K UHD Remux streams.'
+            },
+            {
+                tab: 'tab-settings',
+                target: '#section-debrid',
+                icon: '💎',
+                title: 'Debrid Speed Accelerator',
+                desc: 'Optional: Enter your Real-Debrid or AllDebrid API key to unrestrict torrents into direct 10Gbps buffer-free streams.'
+            },
+            {
+                tab: 'tab-sources',
+                target: '#tab-sources .section-wrap',
+                icon: '📦',
+                title: 'Active Provider Repositories',
+                desc: 'Over 50+ providers (Vega, HubCloud, MoviesDrive, Anime) are active. You can enable, disable, or paste custom community repos here.'
+            },
+            {
+                tab: 'tab-home',
+                target: '#save-btn',
+                icon: '🚀',
+                title: '1-Click Install to Player',
+                desc: 'Click the "Install" button to save your settings profile and immediately load Chole Bhature into Nuvio or Stremio!'
+            }
+        ];
+
+        let currentTourIndex = 0;
+        let tourActive = false;
+
+        function startInteractiveTour(force = false) {
+            if (!force && localStorage.getItem('cb_interactive_tour_done') === 'true') return;
+            tourActive = true;
+            currentTourIndex = 0;
+            
+            const container = document.getElementById('tour-overlay-container');
+            if (container) container.style.display = 'block';
+
+            renderTourStep();
+            window.addEventListener('resize', updateTourPositions);
+            window.addEventListener('scroll', updateTourPositions, { passive: true });
+        }
+
+        function renderTourStep() {
+            if (!tourActive) return;
+            const step = tourSteps[currentTourIndex];
+            if (!step) return;
+
+            // 1. Switch to the target tab if needed
+            if (step.tab) {
+                const tabBtn = document.querySelector(`.nav-pill-group a[onclick*="${step.tab}"]`) ||
+                               document.querySelector(`.bottom-nav-bar a[onclick*="${step.tab}"]`);
+                switchTab(step.tab, tabBtn);
+            }
+
+            // 2. Wait for tab render & scroll, then update spotlight
+            setTimeout(() => {
+                const targetEl = document.querySelector(step.target);
+                if (targetEl) {
+                    const isMobile = window.innerWidth <= 768;
+                    if (isMobile) {
+                        const navOffset = 68;
+                        const elRect = targetEl.getBoundingClientRect();
+                        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                        const targetTop = elRect.top + scrollTop - navOffset;
+                        window.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
+                    } else {
+                        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }
+
+                setTimeout(() => {
+                    updateTourPositions();
+                }, 220);
+            }, 140);
+
+            // 3. Update Popover Content
+            const pill = document.getElementById('tour-step-pill');
+            const icon = document.getElementById('tour-popover-icon');
+            const title = document.getElementById('tour-popover-title-text');
+            const desc = document.getElementById('tour-popover-desc');
+            const prevBtn = document.getElementById('tour-btn-prev');
+            const nextBtn = document.getElementById('tour-btn-next');
+            const dotsRow = document.getElementById('tour-dots-row');
+
+            if (pill) pill.innerText = `Step ${currentTourIndex + 1} of ${tourSteps.length}`;
+            if (icon) icon.innerText = step.icon;
+            if (title) title.innerText = step.title;
+            if (desc) desc.innerText = step.desc;
+
+            if (prevBtn) prevBtn.style.display = (currentTourIndex > 0) ? 'inline-flex' : 'none';
+            if (nextBtn) {
+                if (currentTourIndex === tourSteps.length - 1) {
+                    nextBtn.innerHTML = '🚀 Install & Finish';
+                } else {
+                    nextBtn.innerHTML = 'Next ➔';
+                }
+            }
+
+            // Dots
+            if (dotsRow) {
+                dotsRow.innerHTML = tourSteps.map((_, i) => 
+                    `<span class="tour-dot ${i === currentTourIndex ? 'active' : ''}" onclick="goToTourStep(${i})"></span>`
+                ).join('');
+            }
+        }
+
+        function updateTourPositions() {
+            if (!tourActive) return;
+            const step = tourSteps[currentTourIndex];
+            if (!step) return;
+
+            const targetEl = document.querySelector(step.target);
+            const spotlight = document.getElementById('tour-spotlight-box');
+            const popover = document.getElementById('tour-popover-card');
+
+            if (!targetEl || !spotlight || !popover) return;
+
+            const rect = targetEl.getBoundingClientRect();
+            const pad = 6;
+            const isMobile = window.innerWidth <= 768;
+            const viewportHeight = window.innerHeight;
+            const viewportWidth = window.innerWidth;
+
+            // 1. Update Spotlight Box
+            let sTop = Math.max(0, rect.top - pad);
+            let sLeft = Math.max(0, rect.left - pad);
+            let sWidth = rect.width + (pad * 2);
+            let sHeight = rect.height + (pad * 2);
+
+            // On mobile, if element is excessively tall, clamp to visible top half
+            if (isMobile && sHeight > viewportHeight * 0.50) {
+                sHeight = Math.min(sHeight, viewportHeight * 0.44);
+            }
+
+            spotlight.style.top = `${sTop}px`;
+            spotlight.style.left = `${sLeft}px`;
+            spotlight.style.width = `${sWidth}px`;
+            spotlight.style.height = `${sHeight}px`;
+
+            // 2. Update Popover Position
+            const popoverRect = popover.getBoundingClientRect();
+
+            if (isMobile) {
+                // Mobile layout: sleek docked floating card above bottom navigation
+                popover.style.width = `calc(100vw - 24px)`;
+                popover.style.maxWidth = `420px`;
+                popover.style.left = `50%`;
+                popover.style.transform = `translateX(-50%)`;
+                popover.style.top = `auto`;
+                popover.style.bottom = `calc(76px + env(safe-area-inset-bottom, 0px))`;
+            } else {
+                // Desktop layout: smart floating relative positioning
+                popover.style.transform = `none`;
+                popover.style.width = `min(380px, calc(100vw - 32px))`;
+                popover.style.maxWidth = `380px`;
+                popover.style.bottom = `auto`;
+
+                let top;
+                if (rect.bottom + popoverRect.height + 20 <= viewportHeight) {
+                    top = rect.bottom + 16;
+                } else if (rect.top - popoverRect.height - 20 >= 0) {
+                    top = rect.top - popoverRect.height - 16;
+                } else {
+                    top = Math.max(16, (viewportHeight - popoverRect.height) / 2);
+                }
+
+                let left = rect.left + (rect.width / 2) - (popoverRect.width / 2);
+                left = Math.max(16, Math.min(left, viewportWidth - popoverRect.width - 16));
+
+                popover.style.top = `${top}px`;
+                popover.style.left = `${left}px`;
+            }
+        }
+
+        function nextTourStep() {
+            triggerHaptic('light');
+            if (currentTourIndex < tourSteps.length - 1) {
+                currentTourIndex++;
+                renderTourStep();
+            } else {
+                closeInteractiveTour(true);
+                handleTopAction();
+            }
+        }
+
+        function prevTourStep() {
+            triggerHaptic('light');
+            if (currentTourIndex > 0) {
+                currentTourIndex--;
+                renderTourStep();
+            }
+        }
+
+        function goToTourStep(idx) {
+            triggerHaptic('light');
+            if (idx >= 0 && idx < tourSteps.length) {
+                currentTourIndex = idx;
+                renderTourStep();
+            }
+        }
+
+        function closeInteractiveTour(finished = false) {
+            triggerHaptic('medium');
+            tourActive = false;
+            const container = document.getElementById('tour-overlay-container');
+            if (container) container.style.display = 'none';
+            localStorage.setItem('cb_interactive_tour_done', 'true');
+            window.removeEventListener('resize', updateTourPositions);
+            window.removeEventListener('scroll', updateTourPositions);
+        }
+
         // Initialize App
         initConfig();
         window.addEventListener('DOMContentLoaded', () => {
             syncHealthData();
             handleNavScroll();
             setupHeroSlideInteractions();
+            setTimeout(() => {
+                startInteractiveTour(false);
+            }, 700);
         });
 
         // Service Worker

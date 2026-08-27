@@ -407,7 +407,7 @@ function createAddon(config) {
 
     const builder = new addonBuilder({
         id: addonId,
-        version: '4.0.0',
+        version: '4.1.0',
         name: addonName,
         description: 'High-Performance Stream Meta-Sorter & Priority Engine for Nuvio & Stremio. Scrapes, verifies, filters dead links, and organizes streams by speed, quality, and language.',
         logo: addonLogo,
@@ -743,7 +743,7 @@ if (!process.env.VERCEL) {
     app.listen(PORT, () => {
         console.log(`
 ========================================================================
-  🌶️  CHOLE BHATURE • Meta-Sorter & Priority Engine v4.0.0
+  🌶️  CHOLE BHATURE • Meta-Sorter & Priority Engine v4.1.0
   ⚡  Created by SA7ANI | https://github.com/SA7ANI/chole-bhature
   🛡️  Licensed under GNU AGPL-3.0 • Attribution Required
 ========================================================================
