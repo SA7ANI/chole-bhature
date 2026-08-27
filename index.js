@@ -489,9 +489,9 @@ function createAddon(config) {
             }
 
             let allStreams = [];
-            // Strict Vercel Free-Tier timeout protection (< 2.8s parallel scraper execution when Eco Mode enabled)
+            // Generous parallel scraper execution timeout (8.5s) to ensure all providers return full streams
             const isEcoMode = Boolean(config.vercelEcoMode === true);
-            const PROVIDER_TIMEOUT_MS = isEcoMode ? 2800 : 8000;
+            const PROVIDER_TIMEOUT_MS = 8500;
 
             await Promise.all(allProviders.map(async (provider) => {
                 try {
@@ -526,12 +526,12 @@ function createAddon(config) {
                         allStreams = allStreams.concat(streams);
                     }
                 } catch (err) {
-                    if (config.enableQuarantine !== false) {
+                    if (config.enableQuarantine !== false && err.message !== 'Scrape Timeout') {
                         const qRecord = quarantineRegistry.get(provider.name) || { strikes: 0, quarantineUntil: 0 };
                         qRecord.strikes++;
-                        if (qRecord.strikes >= 3) {
-                            qRecord.quarantineUntil = Date.now() + (30 * 60 * 1000); // 30 minutes
-                            console.error(`[Quarantine] ${provider.name} failed 3 times. Quarantined for 30m.`);
+                        if (qRecord.strikes >= 5) {
+                            qRecord.quarantineUntil = Date.now() + (10 * 60 * 1000); // 10 minutes
+                            console.error(`[Quarantine] ${provider.name} failed 5 times. Quarantined for 10m.`);
                         }
                         quarantineRegistry.set(provider.name, qRecord);
                     }

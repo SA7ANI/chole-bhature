@@ -1,7 +1,7 @@
 const axios = require('axios');
 const { dohHttpAgent, dohHttpsAgent } = require('./dohResolver');
 
-const TIMEOUT_MS = 4500;
+const TIMEOUT_MS = (typeof process !== 'undefined' && process.env.VERCEL) ? 1200 : 2500;
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
 function cleanProviderName(rawName) {
