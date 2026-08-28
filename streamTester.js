@@ -8,6 +8,11 @@ const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
 const domainLatencyCache = new Map();
 const domainLatencyPending = new Map();
 
+function clearDomainLatencyCache() {
+    domainLatencyCache.clear();
+    domainLatencyPending.clear();
+}
+
 function cleanProviderName(rawName) {
     if (!rawName) return 'Stream';
     let clean = rawName.replace(/[🟢🟡🔴🧲]/g, '').trim();
@@ -1216,6 +1221,7 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
 
 module.exports = { 
     sortAndTagStreams,
+    clearDomainLatencyCache,
     parseStreamMetadata,
     extractCleanTitleAndDetails,
     formatStreamLabels,

@@ -3095,9 +3095,9 @@
 
                 <!-- Server Telemetry & Maintenance Control Panel -->
                 <div class="section-wrap" id="section-admin-telemetry">
-                    <div class="section-label-bar">
-                        <span class="section-label">📊 Live Server Telemetry & Maintenance</span>
-                        <button class="pill-btn pill-btn-glass" onclick="fetchAdminStats()" style="padding: 4px 10px; font-size: 11.5px;">🔄 Refresh</button>
+                    <div class="section-label-bar" style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                        <span class="section-label" style="display: inline-flex; align-items: center; gap: 6px;">📊 Live Server Telemetry & Maintenance</span>
+                        <button class="pill-btn pill-btn-glass" onclick="fetchAdminStats()" style="padding: 4px 12px; font-size: 11.5px; height: 28px; line-height: 1; flex-shrink: 0;">🔄 Refresh</button>
                     </div>
                     <div class="section-card">
                         <!-- Live Stats 4-Grid -->
@@ -4298,8 +4298,11 @@
                     const uptimeEl = document.getElementById('admin-uptime-str');
                     const qListEl = document.getElementById('admin-quarantine-list');
 
-                    if (totalEl) totalEl.innerText = data.totalConfigs || 0;
-                    if (cacheEl) cacheEl.innerText = `${data.cacheSize || 0} entries`;
+                    if (totalEl) totalEl.innerText = data.totalConfigs || 1;
+                    if (cacheEl) {
+                        const count = data.cacheSize || 0;
+                        cacheEl.innerText = `${count} ${count === 1 ? 'entry' : 'entries'}`;
+                    }
                     if (memEl) memEl.innerText = `${data.memoryMB || 0} MB`;
                     
                     if (uptimeEl) {

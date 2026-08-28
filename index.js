@@ -2,7 +2,7 @@ const express = require('express');
 const { addonBuilder, serveHTTP } = require('stremio-addon-sdk');
 const path = require('path');
 const providerLoader = require('./providerLoader');
-const { sortAndTagStreams } = require('./streamTester');
+const { sortAndTagStreams, clearDomainLatencyCache } = require('./streamTester');
 const { setDohEnabled, setDohProvider, getDohConfig } = require('./dohResolver');
 const axios = require('axios');
 const fs = require('fs');
@@ -65,6 +65,8 @@ function saveUserConfig(configId, configData) {
 loadUserConfigs();
 
 // Multi-Device Stateless & Persistent Configuration Resolver
+const activeConfigsTracker = new Set();
+
 function resolveConfig(param) {
     if (!param) return null;
     
@@ -72,7 +74,10 @@ function resolveConfig(param) {
     try {
         if (param.startsWith('{') || param.startsWith('%7B')) {
             const parsed = JSON.parse(decodeURIComponent(param));
-            if (parsed && typeof parsed === 'object') return parsed;
+            if (parsed && typeof parsed === 'object') {
+                activeConfigsTracker.add(param);
+                return parsed;
+            }
         }
     } catch (e) {}
 
@@ -81,7 +86,10 @@ function resolveConfig(param) {
         const fromB64Url = Buffer.from(param, 'base64url').toString('utf8');
         if (fromB64Url.startsWith('{')) {
             const parsed = JSON.parse(fromB64Url);
-            if (parsed && typeof parsed === 'object') return parsed;
+            if (parsed && typeof parsed === 'object') {
+                activeConfigsTracker.add(param);
+                return parsed;
+            }
         }
     } catch (e) {}
 
@@ -89,13 +97,19 @@ function resolveConfig(param) {
         const fromB64 = Buffer.from(param, 'base64').toString('utf8');
         if (fromB64.startsWith('{')) {
             const parsed = JSON.parse(fromB64);
-            if (parsed && typeof parsed === 'object') return parsed;
+            if (parsed && typeof parsed === 'object') {
+                activeConfigsTracker.add(param);
+                return parsed;
+            }
         }
     } catch (e) {}
 
     // 3. Try in-memory / persistent userConfigs map
     const stored = userConfigs.get(param);
-    if (stored) return stored;
+    if (stored) {
+        activeConfigsTracker.add(param);
+        return stored;
+    }
 
     return null;
 }
@@ -293,7 +307,7 @@ const handleGetDiagnosticsStats = (req, res) => {
     res.json({
         status: 'online',
         uptime: uptimeSec,
-        totalConfigs: userConfigs.size,
+        totalConfigs: Math.max(userConfigs.size, activeConfigsTracker.size, 1),
         cacheSize: streamCache.size,
         quarantinedProviders: quarantinedProviders,
         analyticsCount: providerAnalytics.size,
@@ -525,10 +539,12 @@ function createAddon(config) {
             const baseUrl = config.configId
                 ? `${config.addonProtocol || 'http'}://${config.addonHost}/c/${config.configId}`
                 : `${config.addonProtocol || 'http'}://${config.addonHost}/${encodeURIComponent(JSON.stringify(config))}`;
+            const targetUrl = `${baseUrl}/clear-cache/${type}/${encodeURIComponent(id)}`;
             return {
                 name: '🔄 FORCE REFRESH',
                 title: '⚡ Click to clear cache & fetch fresh streams live!',
-                externalUrl: `${baseUrl}/clear-cache/${type}/${id}`
+                url: targetUrl,
+                externalUrl: targetUrl
             };
         };
 
@@ -877,52 +893,67 @@ function renderCacheClearedHtml(type, id, clearedCount = 1) {
 </html>`;
 }
 
-app.get('/:configJSON/clear-cache/:type/:id', (req, res) => {
-    const { configJSON, type, id } = req.params;
-    try {
-        let clearedCount = 0;
+function purgeStreamCachesForTarget(type, id, configId = null) {
+    let count = 0;
+    const cleanId = decodeURIComponent(id || '');
+    const imdbId = cleanId.split(':')[0];
+
+    for (const key of streamCache.keys()) {
+        if (key.includes(cleanId) || (imdbId && key.includes(imdbId)) || key.includes(id)) {
+            streamCache.delete(key);
+            count++;
+        }
+    }
+    for (const key of inFlightStreamFetches.keys()) {
+        if (key.includes(cleanId) || (imdbId && key.includes(imdbId)) || key.includes(id)) {
+            inFlightStreamFetches.delete(key);
+            count++;
+        }
+    }
+    if (configId) {
         for (const key of streamCache.keys()) {
-            if (key.startsWith(`${type}:${id}:`) || key.includes(`:${id}:`)) {
+            if (key.includes(configId) && (key.includes(cleanId) || key.includes(id))) {
                 streamCache.delete(key);
-                clearedCount++;
+                count++;
             }
         }
-        for (const key of inFlightStreamFetches.keys()) {
-            if (key.startsWith(`${type}:${id}:`) || key.includes(`:${id}:`)) {
-                inFlightStreamFetches.delete(key);
-                clearedCount++;
-            }
+    }
+
+    // Also clear memoized domain speed probes so Normal Mode freshly re-probes
+    try {
+        clearDomainLatencyCache();
+    } catch (e) {}
+
+    return count;
+}
+
+const handleClearCacheRequest = (req, res, configId = null) => {
+    const { type, id } = req.params;
+    try {
+        const clearedCount = purgeStreamCachesForTarget(type, id, configId);
+        console.log(`[Cache] Force refresh cleared ${clearedCount} entries for ${type} ${id} (configId: ${configId || 'none'})`);
+        
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+        
+        // If client is a video player or requests non-HTML, return JSON / plain OK
+        const acceptsHtml = req.accepts('html');
+        if (!acceptsHtml && req.headers.range) {
+            return res.status(204).end();
         }
-        console.log(`[Cache] Force refresh cleared ${clearedCount} entries for ${type} ${id}`);
+        
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
         res.send(renderCacheClearedHtml(type, id, Math.max(1, clearedCount)));
     } catch (e) {
         res.status(500).send('Failed to clear cache: ' + e.message);
     }
+};
+
+app.get('/:configJSON/clear-cache/:type/:id', (req, res) => {
+    handleClearCacheRequest(req, res, null);
 });
 
 app.get('/c/:configId/clear-cache/:type/:id', (req, res) => {
-    const { configId, type, id } = req.params;
-    try {
-        let clearedCount = 0;
-        for (const key of streamCache.keys()) {
-            if (key.startsWith(`${type}:${id}:`) || key.includes(`:${id}:`) || (configId && key.includes(configId) && key.includes(id))) {
-                streamCache.delete(key);
-                clearedCount++;
-            }
-        }
-        for (const key of inFlightStreamFetches.keys()) {
-            if (key.startsWith(`${type}:${id}:`) || key.includes(`:${id}:`) || (configId && key.includes(configId) && key.includes(id))) {
-                inFlightStreamFetches.delete(key);
-                clearedCount++;
-            }
-        }
-        console.log(`[Cache] Force refresh cleared ${clearedCount} entries for ${type} ${id} (configId: ${configId})`);
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        res.send(renderCacheClearedHtml(type, id, Math.max(1, clearedCount)));
-    } catch (e) {
-        res.status(500).send('Failed to clear cache: ' + e.message);
-    }
+    handleClearCacheRequest(req, res, req.params.configId);
 });
 
 // Dynamic configuration endpoints for Stremio Router (With Vercel Edge CDN Headers)
@@ -933,7 +964,7 @@ app.use('/c/:configId', (req, res, next) => {
             if (req.path === '/manifest.json') {
                 res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400');
             } else if (req.path.startsWith('/stream/')) {
-                res.setHeader('Cache-Control', 'public, max-age=600, s-maxage=3600, stale-while-revalidate=86400');
+                res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
             }
 
             const { configId } = req.params;
@@ -965,7 +996,7 @@ app.use('/:configJSON', (req, res, next) => {
             if (req.path === '/manifest.json') {
                 res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400');
             } else if (req.path.startsWith('/stream/')) {
-                res.setHeader('Cache-Control', 'public, max-age=600, s-maxage=3600, stale-while-revalidate=86400');
+                res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
             }
 
             let config = resolveConfig(req.params.configJSON);
