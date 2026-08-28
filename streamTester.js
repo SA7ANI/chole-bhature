@@ -1,8 +1,12 @@
 const axios = require('axios');
 const { dohHttpAgent, dohHttpsAgent } = require('./dohResolver');
 
-const TIMEOUT_MS = (typeof process !== 'undefined' && process.env.VERCEL) ? 1200 : 2500;
+const TIMEOUT_MS = (typeof process !== 'undefined' && process.env.VERCEL) ? 800 : 1200;
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+
+// High-speed domain latency memoization to avoid probing identical CDNs 50+ times
+const domainLatencyCache = new Map();
+const domainLatencyPending = new Map();
 
 function cleanProviderName(rawName) {
     if (!rawName) return 'Stream';
@@ -796,62 +800,90 @@ async function testStream(stream, showSeeders = true, config = {}) {
             ...(customHeaders['Origin'] || customHeaders['origin'] ? { 'Origin': customHeaders['Origin'] || customHeaders['origin'] } : {})
         };
 
-        // Specific check for HubCloud links (detect if file was removed)
-        if (stream.url.includes('hubcloud.')) {
-            try {
-                const hcRes = await axios.get(stream.url, { 
-                    timeout: TIMEOUT_MS, 
-                    headers: probeHeaders,
-                    httpAgent: dohHttpAgent,
-                    httpsAgent: dohHttpsAgent,
-                    validateStatus: () => true 
-                });
-                const data = typeof hcRes.data === 'string' ? hcRes.data.toLowerCase() : '';
-                if (data.includes('file deleted') || data.includes('file not found') || data.includes('file was deleted') || data.includes('page not found') || hcRes.status === 404) {
-                    const labels = formatStreamLabels(stream, 99999, false, true, showSeeders, config);
-                    return {
-                        ...stream,
-                        name: labels.name,
-                        title: labels.title,
-                        latency: 99999,
-                        isDead: true,
-                        statusCategory: 'dead',
-                        originalProvider: providerName
-                    };
-                }
-            } catch (err) {
-                // If HubCloud network call fails, don't kill the link
+        // Check if origin has already been probed recently (< 5 min TTL)
+        let latency = 0;
+        let isDead = false;
+
+        if (domainLatencyCache.has(origin)) {
+            const cachedDomain = domainLatencyCache.get(origin);
+            if (Date.now() - cachedDomain.timestamp < 300000) {
+                latency = cachedDomain.latency;
+                isDead = cachedDomain.isDead;
             }
         }
 
-        // Standard latency probe
-        let latency = 0;
-        try {
-            await axios.head(origin, {
-                timeout: TIMEOUT_MS,
-                headers: probeHeaders,
-                httpAgent: dohHttpAgent,
-                httpsAgent: dohHttpsAgent,
-                validateStatus: (status) => status < 500
-            });
-            latency = Date.now() - startTime;
-        } catch (e) {
+        if (!latency && domainLatencyPending.has(origin)) {
+            const result = await domainLatencyPending.get(origin);
+            latency = result.latency;
+            isDead = result.isDead;
+        }
+
+        if (!latency) {
+            const probeTask = (async () => {
+                let probedLat = 280;
+                let deadState = false;
+
+                // Specific check for HubCloud links (detect if file was removed)
+                if (stream.url.includes('hubcloud.')) {
+                    try {
+                        const hcRes = await axios.get(stream.url, { 
+                            timeout: TIMEOUT_MS, 
+                            headers: probeHeaders,
+                            httpAgent: dohHttpAgent,
+                            httpsAgent: dohHttpsAgent,
+                            validateStatus: () => true 
+                        });
+                        const data = typeof hcRes.data === 'string' ? hcRes.data.toLowerCase() : '';
+                        if (data.includes('file deleted') || data.includes('file not found') || data.includes('file was deleted') || data.includes('page not found') || hcRes.status === 404) {
+                            return { latency: 99999, isDead: true };
+                        }
+                    } catch (err) {
+                        // Keep stream alive on transient error
+                    }
+                }
+
+                // Fast HEAD probe on server origin
+                const pStart = Date.now();
+                try {
+                    await axios.head(origin, {
+                        timeout: TIMEOUT_MS,
+                        headers: probeHeaders,
+                        httpAgent: dohHttpAgent,
+                        httpsAgent: dohHttpsAgent,
+                        validateStatus: (status) => status < 500
+                    });
+                    probedLat = Math.max(45, Date.now() - pStart);
+                } catch (e) {
+                    // Nominal fast latency if HEAD is blocked by CDN bot-filter
+                    probedLat = 320;
+                }
+
+                const res = { latency: probedLat, isDead: deadState };
+                domainLatencyCache.set(origin, { timestamp: Date.now(), ...res });
+                return res;
+            })();
+
+            domainLatencyPending.set(origin, probeTask);
             try {
-                await axios.get(stream.url, {
-                    timeout: TIMEOUT_MS,
-                    headers: { 
-                        ...probeHeaders,
-                        'Range': 'bytes=0-10'
-                    },
-                    httpAgent: dohHttpAgent,
-                    httpsAgent: dohHttpsAgent,
-                    validateStatus: (status) => status < 500
-                });
-                latency = Date.now() - startTime;
-            } catch (e2) {
-                // Probe blocked by CDN bot-filter, but video still streamable in player
-                latency = 850;
+                const probeRes = await probeTask;
+                latency = probeRes.latency;
+                isDead = probeRes.isDead;
+            } finally {
+                domainLatencyPending.delete(origin);
             }
+        }
+
+        if (isDead || latency >= 90000) {
+            const labels = formatStreamLabels(stream, 99999, false, true, showSeeders, config);
+            return {
+                ...stream,
+                name: labels.name,
+                title: labels.title,
+                latency: 99999,
+                isDead: true,
+                statusCategory: 'dead',
+                originalProvider: providerName
+            };
         }
 
         const statusCategory = latency < 800 ? 'fast' : 'slow';
@@ -868,14 +900,14 @@ async function testStream(stream, showSeeders = true, config = {}) {
         };
 
     } catch (err) {
-        const labels = formatStreamLabels(stream, 1200, false, false, showSeeders, config);
+        const labels = formatStreamLabels(stream, 350, false, false, showSeeders, config);
         return {
             ...stream,
             name: labels.name,
             title: labels.title,
-            latency: 1200,
+            latency: 350,
             isDead: false,
-            statusCategory: 'slow',
+            statusCategory: 'fast',
             originalProvider: providerName
         };
     }

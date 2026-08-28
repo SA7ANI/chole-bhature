@@ -100,189 +100,252 @@ function createCheerioWrapper() {
     return wrapper;
 }
 
+async function fetchWithRetry(url, options = {}, retries = 2) {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+            return await axios.get(url, options);
+        } catch (err) {
+            const isRateLimit = err.response && err.response.status === 429;
+            const isConnErr = err.code === 'ECONNRESET' || err.code === 'ETIMEDOUT' || err.code === 'ECONNABORTED';
+            if (attempt < retries && (isRateLimit || isConnErr)) {
+                const backoff = isRateLimit ? 400 * (attempt + 1) : 200 * (attempt + 1);
+                await new Promise(r => setTimeout(r, backoff));
+                continue;
+            }
+            throw err;
+        }
+    }
+}
+
+async function runWithConcurrency(tasks, limit = 6) {
+    const results = [];
+    const executing = [];
+    for (const task of tasks) {
+        const p = Promise.resolve().then(() => task());
+        results.push(p);
+        if (limit <= tasks.length) {
+            const e = p.then(() => executing.splice(executing.indexOf(e), 1));
+            executing.push(e);
+            if (executing.length >= limit) {
+                await Promise.race(executing);
+            }
+        }
+    }
+    return Promise.all(results);
+}
+
 class ProviderLoader {
     constructor() {
         this.providerCache = new Map();
+        this.inFlightManifests = new Map();
+        this.scriptCache = new Map();
     }
 
     async loadProviders(manifestUrl) {
         if (this.providerCache.has(manifestUrl)) {
             const cached = this.providerCache.get(manifestUrl);
-            if (Date.now() - cached.timestamp < 3600000) {
+            if (Date.now() - cached.timestamp < 3600000 && Array.isArray(cached.providers) && cached.providers.length > 0) {
                 return cached.providers;
             }
         }
 
-        console.log(`[ProviderLoader] Fetching manifest from ${manifestUrl}`);
-        try {
-            const manifestRes = await axios.get(manifestUrl);
-            const manifest = manifestRes.data;
-            const baseUrl = manifestUrl.substring(0, manifestUrl.lastIndexOf('/'));
+        if (this.inFlightManifests.has(manifestUrl)) {
+            return await this.inFlightManifests.get(manifestUrl);
+        }
 
-            const providers = [];
-            const cw = createCheerioWrapper();
-            const querystring = require('querystring');
-            const crypto = require('crypto');
-            const urlMod = require('url');
+        const fetchPromise = (async () => {
+            console.log(`[ProviderLoader] Fetching manifest from ${manifestUrl}`);
+            try {
+                const manifestRes = await fetchWithRetry(manifestUrl, {
+                    timeout: 8000,
+                    httpAgent,
+                    httpsAgent
+                });
+                const manifest = manifestRes.data;
+                const baseUrl = manifestUrl.substring(0, manifestUrl.lastIndexOf('/'));
 
-            for (const scraper of manifest.scrapers || []) {
-                if (!scraper.enabled) continue;
-                
-                const scriptUrl = `${baseUrl}/${scraper.filename}`;
-                console.log(`[ProviderLoader] Loading script for ${scraper.name}: ${scriptUrl}`);
-                
-                try {
-                    const scriptRes = await axios.get(scriptUrl);
-                    const scriptCode = scriptRes.data;
-                    
-                    // Intercept fetch for TMDB and inject connection pooling
-                    const customFetch = async (url, options = {}) => {
-                        const urlStr = typeof url === 'string' ? url : (url && url.url ? url.url : String(url));
-                        if (urlStr.includes('themoviedb.org') || urlStr.includes('tmdb.org')) {
-                            const cached = await fetchTmdbWithFallback(urlStr);
-                            if (cached) {
-                                return new fetch.Response(JSON.stringify(cached), {
-                                    status: 200,
-                                    headers: { 'content-type': 'application/json' }
+                const cw = createCheerioWrapper();
+                const querystring = require('querystring');
+                const crypto = require('crypto');
+                const urlMod = require('url');
+                const pathMod = require('path');
+                const utilMod = require('util');
+                const eventsMod = require('events');
+                const streamMod = require('stream');
+                const zlibMod = require('zlib');
+                const httpsMod = require('https');
+                const httpMod = require('http');
+
+                const scraperTasks = (manifest.scrapers || [])
+                    .filter(scraper => scraper && scraper.enabled)
+                    .map((scraper) => async () => {
+                        const scriptUrl = `${baseUrl}/${scraper.filename}`;
+                        try {
+                            let scriptCode = null;
+                            if (this.scriptCache.has(scriptUrl)) {
+                                scriptCode = this.scriptCache.get(scriptUrl);
+                            } else {
+                                const scriptRes = await fetchWithRetry(scriptUrl, {
+                                    timeout: 8000,
+                                    httpAgent,
+                                    httpsAgent
                                 });
+                                scriptCode = scriptRes.data;
+                                this.scriptCache.set(scriptUrl, scriptCode);
                             }
-                        }
-                        const mergedOptions = {
-                            agent: (_parsedUrl) => (_parsedUrl.protocol === 'http:' ? httpAgent : httpsAgent),
-                            ...options
-                        };
-                        return fetch(url, mergedOptions);
-                    };
 
-                    // Intercept axios for TMDB and inject connection pooling
-                    const axiosInstance = axios.create({
-                        httpAgent,
-                        httpsAgent,
-                        timeout: 20000
+                            // Intercept fetch for TMDB and inject connection pooling
+                            const customFetch = async (url, options = {}) => {
+                                const urlStr = typeof url === 'string' ? url : (url && url.url ? url.url : String(url));
+                                if (urlStr.includes('themoviedb.org') || urlStr.includes('tmdb.org')) {
+                                    const cached = await fetchTmdbWithFallback(urlStr);
+                                    if (cached) {
+                                        return new fetch.Response(JSON.stringify(cached), {
+                                            status: 200,
+                                            headers: { 'content-type': 'application/json' }
+                                        });
+                                    }
+                                }
+                                const mergedOptions = {
+                                    agent: (_parsedUrl) => (_parsedUrl.protocol === 'http:' ? httpAgent : httpsAgent),
+                                    ...options
+                                };
+                                return fetch(url, mergedOptions);
+                            };
+
+                            // Intercept axios for TMDB and inject connection pooling
+                            const axiosInstance = axios.create({
+                                httpAgent,
+                                httpsAgent,
+                                timeout: 20000
+                            });
+
+                            const customAxios = async (config) => {
+                                const urlStr = typeof config === 'string' ? config : (config && config.url ? config.url : '');
+                                if (urlStr.includes('themoviedb.org') || urlStr.includes('tmdb.org')) {
+                                    const cached = await fetchTmdbWithFallback(urlStr);
+                                    if (cached) {
+                                        return { data: cached, status: 200, statusText: 'OK', headers: {}, config };
+                                    }
+                                }
+                                return axiosInstance(config);
+                            };
+                            customAxios.get = async (url, config = {}) => {
+                                if (typeof url === 'string' && (url.includes('themoviedb.org') || url.includes('tmdb.org'))) {
+                                    const cached = await fetchTmdbWithFallback(url);
+                                    if (cached) {
+                                        return { data: cached, status: 200, statusText: 'OK', headers: {}, config };
+                                    }
+                                }
+                                return axiosInstance.get(url, config);
+                            };
+                            customAxios.post = (url, data, config) => axiosInstance.post(url, data, config);
+                            customAxios.head = (url, config) => axiosInstance.head(url, config);
+                            customAxios.put = (url, data, config) => axiosInstance.put(url, data, config);
+                            customAxios.delete = (url, config) => axiosInstance.delete(url, config);
+                            customAxios.patch = (url, data, config) => axiosInstance.patch(url, data, config);
+                            customAxios.options = (url, config) => axiosInstance.options(url, config);
+                            customAxios.request = (config) => customAxios(config);
+                            customAxios.create = () => customAxios;
+                            customAxios.default = customAxios;
+                            customAxios.isAxiosError = axios.isAxiosError;
+                            customAxios.AxiosError = axios.AxiosError;
+                            customAxios.defaults = axiosInstance.defaults;
+                            customAxios.interceptors = axiosInstance.interceptors;
+
+                            const sandbox = {
+                                console: console,
+                                fetch: customFetch,
+                                axios: customAxios,
+                                setTimeout: setTimeout,
+                                clearTimeout: clearTimeout,
+                                setInterval: setInterval,
+                                clearInterval: clearInterval,
+                                URL: URL,
+                                URLSearchParams: URLSearchParams,
+                                Buffer: Buffer,
+                                atob: (str) => Buffer.from(str, 'base64').toString('binary'),
+                                btoa: (str) => Buffer.from(str, 'binary').toString('base64'),
+                                TextEncoder: typeof TextEncoder !== 'undefined' ? TextEncoder : class { encode(s) { return Buffer.from(s); } },
+                                TextDecoder: typeof TextDecoder !== 'undefined' ? TextDecoder : class { decode(b) { return Buffer.from(b).toString(); } },
+                                AbortController: typeof AbortController !== 'undefined' ? AbortController : class AbortController {
+                                    constructor() { this.signal = { aborted: false }; }
+                                    abort() { this.signal.aborted = true; }
+                                },
+                                FormData: typeof FormData !== 'undefined' ? FormData : class FormData {},
+                                Event: typeof Event !== 'undefined' ? Event : class Event {},
+                                CustomEvent: typeof CustomEvent !== 'undefined' ? CustomEvent : class CustomEvent {},
+                                performance: typeof performance !== 'undefined' ? performance : { now: () => Date.now() },
+                                process: process,
+                                CryptoJS: CryptoJS,
+                                cheerio: cw,
+                                crypto: crypto,
+                                Headers: fetch.Headers || class {},
+                                Request: fetch.Request || class {},
+                                Response: fetch.Response || class {},
+                                require: (moduleName) => {
+                                    if (moduleName === 'axios') return customAxios;
+                                    if (moduleName === 'crypto-js') return CryptoJS;
+                                    if (moduleName === 'cheerio-without-node-native' || moduleName === 'cheerio') return cw;
+                                    if (moduleName === 'querystring' || moduleName === 'qs') return querystring;
+                                    if (moduleName === 'crypto') return crypto;
+                                    if (moduleName === 'url') return urlMod;
+                                    if (moduleName === 'buffer') return { Buffer };
+                                    if (moduleName === 'path') return pathMod;
+                                    if (moduleName === 'util') return utilMod;
+                                    if (moduleName === 'events') return eventsMod;
+                                    if (moduleName === 'stream') return streamMod;
+                                    if (moduleName === 'zlib') return zlibMod;
+                                    if (moduleName === 'https') return httpsMod;
+                                    if (moduleName === 'http') return httpMod;
+                                    return null;
+                                },
+                                module: { exports: {} },
+                                exports: {},
+                            };
+
+                            sandbox.window = sandbox;
+                            sandbox.global = sandbox;
+                            sandbox.globalThis = sandbox;
+                            sandbox.self = sandbox;
+
+                            vm.createContext(sandbox);
+                            vm.runInContext(scriptCode, sandbox);
+                            
+                            const providerModule = sandbox.module.exports;
+                            if (typeof providerModule.getStreams === 'function') {
+                                return {
+                                    id: scraper.id,
+                                    name: scraper.name,
+                                    getStreams: providerModule.getStreams
+                                };
+                            }
+                        } catch (err) {
+                            console.error(`[ProviderLoader] Failed to load provider ${scraper.name}:`, err.message);
+                        }
+                        return null;
                     });
 
-                    const customAxios = async (config) => {
-                        const urlStr = typeof config === 'string' ? config : (config && config.url ? config.url : '');
-                        if (urlStr.includes('themoviedb.org') || urlStr.includes('tmdb.org')) {
-                            const cached = await fetchTmdbWithFallback(urlStr);
-                            if (cached) {
-                                return { data: cached, status: 200, statusText: 'OK', headers: {}, config };
-                            }
-                        }
-                        return axiosInstance(config);
-                    };
-                    customAxios.get = async (url, config = {}) => {
-                        if (typeof url === 'string' && (url.includes('themoviedb.org') || url.includes('tmdb.org'))) {
-                            const cached = await fetchTmdbWithFallback(url);
-                            if (cached) {
-                                return { data: cached, status: 200, statusText: 'OK', headers: {}, config };
-                            }
-                        }
-                        return axiosInstance.get(url, config);
-                    };
-                    customAxios.post = (url, data, config) => axiosInstance.post(url, data, config);
-                    customAxios.head = (url, config) => axiosInstance.head(url, config);
-                    customAxios.put = (url, data, config) => axiosInstance.put(url, data, config);
-                    customAxios.delete = (url, config) => axiosInstance.delete(url, config);
-                    customAxios.patch = (url, data, config) => axiosInstance.patch(url, data, config);
-                    customAxios.options = (url, config) => axiosInstance.options(url, config);
-                    customAxios.request = (config) => customAxios(config);
-                    customAxios.create = () => customAxios;
-                    customAxios.default = customAxios;
-                    customAxios.isAxiosError = axios.isAxiosError;
-                    customAxios.AxiosError = axios.AxiosError;
-                    customAxios.defaults = axiosInstance.defaults;
-                    customAxios.interceptors = axiosInstance.interceptors;
+                const loadedProviders = (await runWithConcurrency(scraperTasks, 6)).filter(Boolean);
+                console.log(`[ProviderLoader] Loaded ${loadedProviders.length} active providers from ${manifestUrl}`);
 
-                    const pathMod = require('path');
-                    const utilMod = require('util');
-                    const eventsMod = require('events');
-                    const streamMod = require('stream');
-                    const zlibMod = require('zlib');
-                    const httpsMod = require('https');
-                    const httpMod = require('http');
+                this.providerCache.set(manifestUrl, {
+                    timestamp: Date.now(),
+                    providers: loadedProviders
+                });
 
-                    const sandbox = {
-                        console: console,
-                        fetch: customFetch,
-                        axios: customAxios,
-                        setTimeout: setTimeout,
-                        clearTimeout: clearTimeout,
-                        setInterval: setInterval,
-                        clearInterval: clearInterval,
-                        URL: URL,
-                        URLSearchParams: URLSearchParams,
-                        Buffer: Buffer,
-                        atob: (str) => Buffer.from(str, 'base64').toString('binary'),
-                        btoa: (str) => Buffer.from(str, 'binary').toString('base64'),
-                        TextEncoder: typeof TextEncoder !== 'undefined' ? TextEncoder : class { encode(s) { return Buffer.from(s); } },
-                        TextDecoder: typeof TextDecoder !== 'undefined' ? TextDecoder : class { decode(b) { return Buffer.from(b).toString(); } },
-                        AbortController: typeof AbortController !== 'undefined' ? AbortController : class AbortController {
-                            constructor() { this.signal = { aborted: false }; }
-                            abort() { this.signal.aborted = true; }
-                        },
-                        FormData: typeof FormData !== 'undefined' ? FormData : class FormData {},
-                        Event: typeof Event !== 'undefined' ? Event : class Event {},
-                        CustomEvent: typeof CustomEvent !== 'undefined' ? CustomEvent : class CustomEvent {},
-                        performance: typeof performance !== 'undefined' ? performance : { now: () => Date.now() },
-                        process: process,
-                        Headers: fetch.Headers || class {},
-                        Request: fetch.Request || class {},
-                        Response: fetch.Response || class {},
-                        require: (moduleName) => {
-                            if (moduleName === 'axios') return customAxios;
-                            if (moduleName === 'crypto-js') return CryptoJS;
-                            if (moduleName === 'cheerio-without-node-native' || moduleName === 'cheerio') return cw;
-                            if (moduleName === 'querystring' || moduleName === 'qs') return querystring;
-                            if (moduleName === 'crypto') return crypto;
-                            if (moduleName === 'url') return urlMod;
-                            if (moduleName === 'buffer') return { Buffer };
-                            if (moduleName === 'path') return pathMod;
-                            if (moduleName === 'util') return utilMod;
-                            if (moduleName === 'events') return eventsMod;
-                            if (moduleName === 'stream') return streamMod;
-                            if (moduleName === 'zlib') return zlibMod;
-                            if (moduleName === 'https') return httpsMod;
-                            if (moduleName === 'http') return httpMod;
-                            return null;
-                        },
-                        module: { exports: {} },
-                        exports: {},
-                    };
-
-                    sandbox.window = sandbox;
-                    sandbox.global = sandbox;
-                    sandbox.globalThis = sandbox;
-                    sandbox.self = sandbox;
-
-                    vm.createContext(sandbox);
-                    vm.runInContext(scriptCode, sandbox);
-                    
-                    const providerModule = sandbox.module.exports;
-                    if (typeof providerModule.getStreams === 'function') {
-                        providers.push({
-                            id: scraper.id,
-                            name: scraper.name,
-                            getStreams: providerModule.getStreams
-                        });
-                        console.log(`[ProviderLoader] Successfully loaded ${scraper.name}`);
-                    } else {
-                        console.log(`[ProviderLoader] ${scraper.name} has no getStreams function exported.`);
-                    }
-                } catch (err) {
-                    console.error(`[ProviderLoader] Failed to load provider ${scraper.name}:`, err.message);
-                }
+                return loadedProviders;
+            } catch (err) {
+                console.error('[ProviderLoader] Error fetching manifest:', err.message);
+                return [];
             }
+        })();
 
-            this.providerCache.set(manifestUrl, {
-                timestamp: Date.now(),
-                providers: providers
-            });
-
-            return providers;
-        } catch (err) {
-            console.error('[ProviderLoader] Error fetching manifest:', err.message);
-            return [];
+        this.inFlightManifests.set(manifestUrl, fetchPromise);
+        try {
+            return await fetchPromise;
+        } finally {
+            this.inFlightManifests.delete(manifestUrl);
         }
     }
 }

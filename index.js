@@ -64,6 +64,26 @@ function saveUserConfig(configId, configData) {
 }
 loadUserConfigs();
 
+// Background pre-warming: pre-load all provider repositories on startup to eliminate cold-start delay
+async function prewarmProviders() {
+    try {
+        const reposToWarm = new Set([
+            'https://raw.githubusercontent.com/D3adlyRocket/All-in-One-Nuvio/refs/heads/main/manifest.json',
+            'https://codeberg.org/eclipsia/nuvio-plugin/raw/branch/main/manifest.json'
+        ]);
+        for (const [, cfg] of userConfigs.entries()) {
+            if (cfg.repoUrl) reposToWarm.add(cfg.repoUrl);
+            if (Array.isArray(cfg.urls)) cfg.urls.forEach(u => reposToWarm.add(u));
+            if (Array.isArray(cfg.repos)) cfg.repos.forEach(u => reposToWarm.add(u));
+        }
+        console.log(`[PreWarm] Initializing background warm-up for ${reposToWarm.size} provider repositories...`);
+        for (const url of reposToWarm) {
+            providerLoader.loadProviders(url).catch(e => console.warn(`[PreWarm] ${url} error:`, e.message));
+        }
+    } catch (e) {}
+}
+prewarmProviders();
+
 // PWA Core Endpoints with explicit headers & CORS for WebAPK minting
 app.get('/sw.js', (req, res) => {
     res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
@@ -149,6 +169,7 @@ app.get('/:configJSON/configure', (req, res) => {
 });
 
 const streamCache = new Map();
+const inFlightStreamFetches = new Map();
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 // Analytics tracker (already declared at top)
@@ -489,9 +510,9 @@ function createAddon(config) {
             }
 
             let allStreams = [];
-            // Generous parallel scraper execution timeout (8.5s) to ensure all providers return full streams
+            // High-speed parallel scraper execution timeout to ensure streams return within client limits
             const isEcoMode = Boolean(config.vercelEcoMode === true);
-            const PROVIDER_TIMEOUT_MS = 8500;
+            const PROVIDER_TIMEOUT_MS = isEcoMode || (typeof process !== 'undefined' && process.env.VERCEL) ? 4000 : 5500;
 
             await Promise.all(allProviders.map(async (provider) => {
                 try {
@@ -539,7 +560,7 @@ function createAddon(config) {
                 }
             }));
 
-            console.log(`[Stremio] Collected ${allStreams.length} total streams. Testing speeds...`);
+            console.log(`[Stremio] Collected ${allStreams.length} total streams for ${type} ${id}. Testing speeds...`);
             const sortedAndTaggedStreams = await sortAndTagStreams(allStreams, {
                 hideDead: config.hideDead,
                 hideSlow: config.hideSlow,
@@ -569,7 +590,7 @@ function createAddon(config) {
         if (cached && Date.now() - cached.timestamp < STALE_TTL_MS) {
             console.log(`[Stremio] Serving cached results for ${type} ${id}`);
             
-            // Stale-While-Revalidate
+            // Stale-While-Revalidate in background
             if (Date.now() - cached.timestamp > FRESH_TTL_MS) {
                 console.log(`[Stremio] Cache is stale, revalidating in background for ${type} ${id}`);
                 fetchAndCacheStreams().catch(e => console.error('[Background Fetch Error]', e));
@@ -579,9 +600,23 @@ function createAddon(config) {
             return { streams: frStream ? [frStream, ...cached.streams] : cached.streams };
         }
 
-        const sortedAndTaggedStreams = await fetchAndCacheStreams();
-        const frStream = getForceRefreshStream();
-        return { streams: frStream ? [frStream, ...sortedAndTaggedStreams] : sortedAndTaggedStreams };
+        // Deduplicate in-flight requests for the exact same stream
+        if (inFlightStreamFetches.has(cacheKey)) {
+            console.log(`[Stremio] Awaiting in-flight fetch for ${type} ${id}`);
+            const inFlightResult = await inFlightStreamFetches.get(cacheKey);
+            const frStream = getForceRefreshStream();
+            return { streams: frStream ? [frStream, ...inFlightResult] : inFlightResult };
+        }
+
+        const fetchPromise = fetchAndCacheStreams();
+        inFlightStreamFetches.set(cacheKey, fetchPromise);
+        try {
+            const sortedAndTaggedStreams = await fetchPromise;
+            const frStream = getForceRefreshStream();
+            return { streams: frStream ? [frStream, ...sortedAndTaggedStreams] : sortedAndTaggedStreams };
+        } finally {
+            inFlightStreamFetches.delete(cacheKey);
+        }
     });
 
     // No catalogs defined
