@@ -59,10 +59,46 @@ function saveUserConfig(configId, configData) {
         }
         fs.writeFileSync(CONFIGS_FILE, JSON.stringify(obj, null, 2));
     } catch (e) {
-        console.error('[Config] Failed to persist user_configs.json:', e.message);
+        // Safe failover for read-only serverless filesystems (e.g. Vercel)
     }
 }
 loadUserConfigs();
+
+// Multi-Device Stateless & Persistent Configuration Resolver
+function resolveConfig(param) {
+    if (!param) return null;
+    
+    // 1. Try URL-decoded JSON
+    try {
+        if (param.startsWith('{') || param.startsWith('%7B')) {
+            const parsed = JSON.parse(decodeURIComponent(param));
+            if (parsed && typeof parsed === 'object') return parsed;
+        }
+    } catch (e) {}
+
+    // 2. Try Base64URL / Base64 decoded JSON
+    try {
+        const fromB64Url = Buffer.from(param, 'base64url').toString('utf8');
+        if (fromB64Url.startsWith('{')) {
+            const parsed = JSON.parse(fromB64Url);
+            if (parsed && typeof parsed === 'object') return parsed;
+        }
+    } catch (e) {}
+
+    try {
+        const fromB64 = Buffer.from(param, 'base64').toString('utf8');
+        if (fromB64.startsWith('{')) {
+            const parsed = JSON.parse(fromB64);
+            if (parsed && typeof parsed === 'object') return parsed;
+        }
+    } catch (e) {}
+
+    // 3. Try in-memory / persistent userConfigs map
+    const stored = userConfigs.get(param);
+    if (stored) return stored;
+
+    return null;
+}
 
 // Background pre-warming: pre-load all provider repositories on startup to eliminate cold-start delay
 async function prewarmProviders() {
@@ -159,7 +195,7 @@ app.post('/api/config/save', (req, res) => {
 
 // API to get configuration
 app.get('/api/config/:configId', (req, res) => {
-    const config = userConfigs.get(req.params.configId) || null;
+    const config = resolveConfig(req.params.configId) || null;
     res.json({ config });
 });
 
@@ -486,10 +522,13 @@ function createAddon(config) {
         // Helper to generate the force refresh stream
         const getForceRefreshStream = () => {
             if (!config.addonHost) return null;
+            const baseUrl = config.configId
+                ? `${config.addonProtocol || 'http'}://${config.addonHost}/c/${config.configId}`
+                : `${config.addonProtocol || 'http'}://${config.addonHost}/${encodeURIComponent(JSON.stringify(config))}`;
             return {
                 name: '🔄 FORCE REFRESH',
-                title: 'Click here to clear the cache, then click Stremio Refresh!',
-                externalUrl: `${config.addonProtocol}://${config.addonHost}/${encodeURIComponent(JSON.stringify(config))}/clear-cache/${type}/${id}`
+                title: '⚡ Click to clear cache & fetch fresh streams live!',
+                externalUrl: `${baseUrl}/clear-cache/${type}/${id}`
             };
         };
 
@@ -686,89 +725,203 @@ function createAddon(config) {
 
 const { getRouter } = require('stremio-addon-sdk');
 
+function renderCacheClearedHtml(type, id, clearedCount = 1) {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✨ Cache Cleared • Chole Bhature</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: #09090b;
+            color: #f8fafc;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 24px;
+            text-align: center;
+            background-image: 
+                radial-gradient(at 15% 15%, rgba(139, 92, 246, 0.15) 0px, transparent 50%),
+                radial-gradient(at 85% 85%, rgba(16, 185, 129, 0.12) 0px, transparent 50%);
+        }
+        .card {
+            background: rgba(24, 24, 27, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 36px 28px;
+            max-width: 440px;
+            width: 100%;
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(139, 92, 246, 0.2);
+            animation: cardPop 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes cardPop {
+            0% { opacity: 0; transform: scale(0.92) translateY(10px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .badge-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 64px;
+            height: 64px;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.35);
+            border-radius: 20px;
+            font-size: 30px;
+            margin-bottom: 18px;
+            box-shadow: 0 0 25px rgba(16, 185, 129, 0.25);
+        }
+        h1 {
+            font-size: 22px;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+        .media-pill {
+            display: inline-block;
+            background: rgba(139, 92, 246, 0.12);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            color: #c4b5fd;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        p {
+            color: #94a3b8;
+            font-size: 13.5px;
+            line-height: 1.6;
+            margin-bottom: 14px;
+        }
+        .instruction-box {
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px dashed rgba(255, 255, 255, 0.15);
+            border-radius: 14px;
+            padding: 14px;
+            margin: 16px 0 24px;
+            text-align: left;
+            font-size: 12.5px;
+            color: #cbd5e1;
+        }
+        .instruction-box ol {
+            padding-left: 20px;
+            margin-top: 6px;
+        }
+        .instruction-box li {
+            margin-bottom: 4px;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #8b5cf6, #6366f1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="badge-icon">✨</div>
+        <h1>Cache Purged!</h1>
+        <div class="media-pill">${type} • ${id}</div>
+        <p>Cached stream results have been wiped from active memory (${clearedCount} item(s) purged).</p>
+        
+        <div class="instruction-box">
+            <b>⚡ Next Steps:</b>
+            <ol>
+                <li>Switch back to <b>Stremio</b> or <b>Nuvio</b></li>
+                <li>Click the <b>Refresh / Reload</b> button</li>
+                <li>Fresh live streams will be scraped immediately!</li>
+            </ol>
+        </div>
+
+        <div class="btn-group">
+            <a href="javascript:window.close()" class="btn btn-primary">← Close Window</a>
+        </div>
+    </div>
+</body>
+</html>`;
+}
+
 app.get('/:configJSON/clear-cache/:type/:id', (req, res) => {
     const { configJSON, type, id } = req.params;
     try {
-        const config = JSON.parse(decodeURIComponent(configJSON));
-        config.addonHost = req.headers.host;
-        const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
-        config.addonProtocol = protocol.split(',')[0].trim();
-        
-        const cacheKey = `${type}:${id}:${JSON.stringify(config)}`;
-        streamCache.delete(cacheKey);
-        console.log(`[Cache] Cleared via browser link for ${type} ${id}`);
-        
-        const html = `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Cache Cleared</title>
-            <style>
-                body { background-color: #09090b; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-                h1 { color: #4ade80; }
-                p { color: #a1a1aa; }
-                a { color: #60a5fa; text-decoration: none; border: 1px solid #3b82f6; padding: 8px 16px; border-radius: 6px; margin-top: 20px; }
-            </style>
-        </head>
-        <body>
-            <h1>✨ Cache Cleared!</h1>
-            <p>Cached stream results for <b>${type} ${id}</b> have been purged from memory.</p>
-            <p>New live streams will be fetched on your next play.</p>
-            <a href="javascript:window.close()">Close Window</a>
-        </body>
-        </html>
-        `;
-        res.setHeader('Content-Type', 'text/html');
-        res.send(html);
+        let clearedCount = 0;
+        for (const key of streamCache.keys()) {
+            if (key.startsWith(`${type}:${id}:`) || key.includes(`:${id}:`)) {
+                streamCache.delete(key);
+                clearedCount++;
+            }
+        }
+        for (const key of inFlightStreamFetches.keys()) {
+            if (key.startsWith(`${type}:${id}:`) || key.includes(`:${id}:`)) {
+                inFlightStreamFetches.delete(key);
+                clearedCount++;
+            }
+        }
+        console.log(`[Cache] Force refresh cleared ${clearedCount} entries for ${type} ${id}`);
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.send(renderCacheClearedHtml(type, id, Math.max(1, clearedCount)));
     } catch (e) {
-        res.status(500).send('Failed to clear cache');
+        res.status(500).send('Failed to clear cache: ' + e.message);
     }
 });
 
 app.get('/c/:configId/clear-cache/:type/:id', (req, res) => {
     const { configId, type, id } = req.params;
     try {
-        const config = userConfigs.get(configId) || {};
-        config.addonHost = req.headers.host;
-        const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
-        config.addonProtocol = protocol.split(',')[0].trim();
-        config.configId = configId;
-        
-        const cacheKey = `${type}:${id}:${JSON.stringify(config)}`;
-        streamCache.delete(cacheKey);
-        for (const k of streamCache.keys()) {
-            if (k.includes(configId)) streamCache.delete(k);
+        let clearedCount = 0;
+        for (const key of streamCache.keys()) {
+            if (key.startsWith(`${type}:${id}:`) || key.includes(`:${id}:`) || (configId && key.includes(configId) && key.includes(id))) {
+                streamCache.delete(key);
+                clearedCount++;
+            }
         }
-        console.log(`[Cache] Cleared via browser link for ${type} ${id} (configId: ${configId})`);
-        
-        const html = `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Cache Cleared</title>
-            <style>
-                body { background-color: #09090b; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-                h1 { color: #4ade80; }
-                p { color: #a1a1aa; }
-                a { color: #60a5fa; text-decoration: none; border: 1px solid #3b82f6; padding: 8px 16px; border-radius: 6px; margin-top: 20px; }
-            </style>
-        </head>
-        <body>
-            <h1>✨ Cache Cleared!</h1>
-            <p>Cached stream results for <b>${type} ${id}</b> have been purged from memory.</p>
-            <p>New live streams will be fetched on your next play.</p>
-            <a href="javascript:window.close()">Close Window</a>
-        </body>
-        </html>
-        `;
-        res.setHeader('Content-Type', 'text/html');
-        res.send(html);
+        for (const key of inFlightStreamFetches.keys()) {
+            if (key.startsWith(`${type}:${id}:`) || key.includes(`:${id}:`) || (configId && key.includes(configId) && key.includes(id))) {
+                inFlightStreamFetches.delete(key);
+                clearedCount++;
+            }
+        }
+        console.log(`[Cache] Force refresh cleared ${clearedCount} entries for ${type} ${id} (configId: ${configId})`);
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.send(renderCacheClearedHtml(type, id, Math.max(1, clearedCount)));
     } catch (e) {
-        res.status(500).send('Failed to clear cache');
+        res.status(500).send('Failed to clear cache: ' + e.message);
     }
 });
 
@@ -784,7 +937,7 @@ app.use('/c/:configId', (req, res, next) => {
             }
 
             const { configId } = req.params;
-            let config = userConfigs.get(configId);
+            let config = resolveConfig(configId);
             if (!config) {
                 config = { repoUrl: 'https://raw.githubusercontent.com/D3adlyRocket/All-in-One-Nuvio/refs/heads/main/manifest.json' };
             }
@@ -815,7 +968,11 @@ app.use('/:configJSON', (req, res, next) => {
                 res.setHeader('Cache-Control', 'public, max-age=600, s-maxage=3600, stale-while-revalidate=86400');
             }
 
-            const config = JSON.parse(decodeURIComponent(req.params.configJSON));
+            let config = resolveConfig(req.params.configJSON);
+            if (!config) {
+                config = { repoUrl: 'https://raw.githubusercontent.com/D3adlyRocket/All-in-One-Nuvio/refs/heads/main/manifest.json' };
+            }
+            config = JSON.parse(JSON.stringify(config));
             config.addonHost = req.headers.host;
             const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
             config.addonProtocol = protocol.split(',')[0].trim();

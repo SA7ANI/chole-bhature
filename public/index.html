@@ -3438,18 +3438,57 @@
             }, 2400);
         }
 
+        function encodeConfigToken(obj) {
+            try {
+                const json = JSON.stringify(obj);
+                return btoa(unescape(encodeURIComponent(json)))
+                    .replace(/\+/g, '-')
+                    .replace(/\//g, '_')
+                    .replace(/=+$/, '');
+            } catch (e) {
+                return configId || getOrCreateConfigId();
+            }
+        }
+
+        function decodeConfigToken(token) {
+            if (!token || typeof token !== 'string') return null;
+            try {
+                // 1. URL encoded JSON
+                if (token.startsWith('{') || token.startsWith('%7B')) {
+                    const parsed = JSON.parse(decodeURIComponent(token));
+                    if (parsed && typeof parsed === 'object') return parsed;
+                }
+            } catch (e) {}
+
+            try {
+                // 2. URL-Safe Base64 / Standard Base64
+                let b64 = token.replace(/-/g, '+').replace(/_/g, '/');
+                while (b64.length % 4) b64 += '=';
+                const str = decodeURIComponent(escape(atob(b64)));
+                if (str.startsWith('{')) {
+                    const parsed = JSON.parse(str);
+                    if (parsed && typeof parsed === 'object') return parsed;
+                }
+            } catch (e) {}
+
+            return null;
+        }
+
         function showSyncBadge(text) {
             const badge = document.getElementById('sync-badge');
             const syncText = document.getElementById('sync-text');
             const settingsSyncId = document.getElementById('settings-sync-id');
             const cleanId = text.replace(/^ID:\s*/i, '');
+            const displayId = cleanId.length > 14 ? `${cleanId.substring(0, 10)}...` : cleanId;
             
             if (badge && syncText) {
-                syncText.innerText = cleanId;
+                syncText.innerText = displayId;
                 badge.style.display = 'inline-flex';
+                badge.title = `Sync Token: ${cleanId} (Click to copy)`;
             }
             if (settingsSyncId) {
-                settingsSyncId.innerText = cleanId;
+                settingsSyncId.innerText = cleanId.length > 24 ? `${cleanId.substring(0, 20)}...` : cleanId;
+                settingsSyncId.title = cleanId;
             }
         }
 
@@ -3466,7 +3505,7 @@
                 document.execCommand('copy');
                 document.body.removeChild(tempInput);
             }
-            showToast(`📋 <b>Copied:</b> Sync ID <code>${configId}</code> copied!`);
+            showToast(`📋 <b>Copied:</b> Sync ID / Token copied to clipboard!`);
         }
 
         function getOrCreateConfigId() {
@@ -4432,14 +4471,27 @@
         async function initConfig() {
             const pathParts = window.location.pathname.split('/').filter(Boolean);
             
-            // 1. If URL path is /c/:configId
+            // 1. If URL path is /c/:configId (or /c/:configToken)
             if (pathParts[0] === 'c' && pathParts[1]) {
-                configId = pathParts[1];
+                const tokenOrId = pathParts[1];
+                configId = tokenOrId;
                 localStorage.setItem('cb_config_id', configId);
                 isInstalled = true;
                 localStorage.setItem('cb_is_installed', 'true');
+                
+                // First try instant client-side token decode (0ms latency, works across all devices & Vercel cold states)
+                const clientDecoded = decodeConfigToken(tokenOrId);
+                if (clientDecoded) {
+                    loadConfigIntoUI(clientDecoded);
+                    showSyncBadge(`ID: ${configId}`);
+                    saveConfigurationToServer(false);
+                    updateActionBtnUI();
+                    return;
+                }
+                
+                // Fallback to server API fetch
                 try {
-                    const res = await fetch(`/api/config/${configId}`);
+                    const res = await fetch(`/api/config/${tokenOrId}`);
                     const data = await res.json();
                     if (data && data.config) {
                         loadConfigIntoUI(data.config);
@@ -4452,19 +4504,19 @@
             
             // 2. If URL path is /:base64JSON/configure or /:base64JSON
             if (pathParts[0] && pathParts[0] !== 'configure' && pathParts[0] !== 'api' && pathParts[0] !== 'c') {
-                try {
-                    const decoded = JSON.parse(decodeURIComponent(pathParts[0]));
-                    if (decoded) {
-                        configId = getOrCreateConfigId();
-                        isInstalled = true;
-                        localStorage.setItem('cb_is_installed', 'true');
-                        loadConfigIntoUI(decoded);
-                        showSyncBadge(`ID: ${configId}`);
-                        saveConfigurationToServer(false);
-                        updateActionBtnUI();
-                        return;
-                    }
-                } catch (e) {}
+                const rawParam = pathParts[0];
+                const clientDecoded = decodeConfigToken(rawParam);
+                if (clientDecoded) {
+                    configId = rawParam;
+                    isInstalled = true;
+                    localStorage.setItem('cb_is_installed', 'true');
+                    localStorage.setItem('cb_config_id', configId);
+                    loadConfigIntoUI(clientDecoded);
+                    showSyncBadge(`ID: ${configId}`);
+                    saveConfigurationToServer(false);
+                    updateActionBtnUI();
+                    return;
+                }
             }
             
             // 3. Fallback to localStorage or new ID
@@ -4772,7 +4824,13 @@
                 protocol = 'https://';
                 host = 'nuvio.vercel.app';
             }
-            const manifestPath = `/c/${configId}/manifest.json`;
+            const configObj = buildConfigObject();
+            const token = encodeConfigToken(configObj);
+            configId = token;
+            localStorage.setItem('cb_config_id', token);
+            showSyncBadge(`ID: ${token}`);
+            
+            const manifestPath = `/c/${token}/manifest.json`;
             return {
                 stremioUrl: `stremio://${host}${manifestPath}`,
                 httpUrl: `${protocol}${host}${manifestPath}`
