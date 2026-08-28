@@ -542,8 +542,7 @@ function createAddon(config) {
             const targetUrl = `${baseUrl}/clear-cache/${type}/${encodeURIComponent(id)}`;
             return {
                 name: '🔄 FORCE REFRESH',
-                title: '⚡ Click to clear cache & fetch fresh streams live!',
-                url: targetUrl,
+                title: '⚡ Click to clear cache & fetch fresh streams on reload!',
                 externalUrl: targetUrl
             };
         };
