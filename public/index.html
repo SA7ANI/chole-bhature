@@ -3474,21 +3474,34 @@
             return null;
         }
 
+        function getDisplayShortId(tokenOrId) {
+            if (!tokenOrId) return 'cb-live';
+            const clean = tokenOrId.replace(/^ID:\s*/i, '');
+            if (clean.length <= 10 && !clean.startsWith('eyJ')) return clean;
+            let hash = 0;
+            for (let i = 0; i < clean.length; i++) {
+                hash = ((hash << 5) - hash) + clean.charCodeAt(i);
+                hash |= 0;
+            }
+            const hex = Math.abs(hash).toString(16).padStart(6, '0').substring(0, 6);
+            return `cb-${hex}`;
+        }
+
         function showSyncBadge(text) {
             const badge = document.getElementById('sync-badge');
             const syncText = document.getElementById('sync-text');
             const settingsSyncId = document.getElementById('settings-sync-id');
-            const cleanId = text.replace(/^ID:\s*/i, '');
-            const displayId = cleanId.length > 14 ? `${cleanId.substring(0, 10)}...` : cleanId;
+            const cleanId = (text || '').replace(/^ID:\s*/i, '');
+            const displayId = getDisplayShortId(cleanId);
             
             if (badge && syncText) {
                 syncText.innerText = displayId;
                 badge.style.display = 'inline-flex';
-                badge.title = `Sync Token: ${cleanId} (Click to copy)`;
+                badge.title = `Active Sync ID: ${displayId} (Click to copy)`;
             }
             if (settingsSyncId) {
-                settingsSyncId.innerText = cleanId.length > 24 ? `${cleanId.substring(0, 20)}...` : cleanId;
-                settingsSyncId.title = cleanId;
+                settingsSyncId.innerText = `${displayId} • Synced`;
+                settingsSyncId.title = `Full Token: ${cleanId}`;
             }
         }
 
