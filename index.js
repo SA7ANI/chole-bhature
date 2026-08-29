@@ -234,6 +234,78 @@ const telemetryMetrics = {
     servedBandwidthBytes: 0
 };
 
+// Global Server-Side Configuration (Admin Managed & Enforced)
+const globalServerSettings = {
+    globalEcoMode: true, // Default to true to protect serverless free tier for all users
+    allowClientEcoOverride: true,
+    vercelApiToken: process.env.VERCEL_API_TOKEN || null
+};
+
+// Vercel Official API Usage Cache (5-min memoization to avoid API spam)
+let vercelApiUsageCache = {
+    timestamp: 0,
+    data: null
+};
+
+async function fetchOfficialVercelUsage(apiToken, forceFresh = false) {
+    if (!apiToken) return null;
+    if (!forceFresh && (Date.now() - vercelApiUsageCache.timestamp < 120000) && vercelApiUsageCache.data) {
+        return vercelApiUsageCache.data;
+    }
+    try {
+        const headers = { Authorization: `Bearer ${apiToken}` };
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+        const endNow = now.toISOString();
+
+        const [userRes, usageRes] = await Promise.allSettled([
+            axios.get('https://api.vercel.com/v2/user', { headers, timeout: 5000 }),
+            axios.get(`https://api.vercel.com/v2/usage?type=requests&from=${startOfMonth}&to=${endNow}`, { headers, timeout: 6000 })
+        ]);
+
+        const username = userRes.status === 'fulfilled' ? (userRes.value.data?.user?.username || userRes.value.data?.user?.name) : null;
+        
+        let totalRequests = 0;
+        let totalInvocations = 0;
+        let totalBandwidthBytes = 0;
+        let totalGbHours = 0;
+
+        if (usageRes.status === 'fulfilled' && usageRes.value.data?.data) {
+            for (const item of usageRes.value.data.data) {
+                totalRequests += (item.request_hit_count || 0) + (item.request_miss_count || 0);
+                totalInvocations += (item.function_invocation_successful_count || 0) + (item.function_invocation_error_count || 0) + (item.function_invocation_timeout_count || 0);
+                totalBandwidthBytes += (item.bandwidth_outgoing_bytes || 0) + (item.bandwidth_incoming_bytes || 0);
+                totalGbHours += (item.function_execution_successful_gb_hours || 0) + (item.function_execution_error_gb_hours || 0) + (item.function_execution_timeout_gb_hours || 0);
+            }
+        }
+
+        const bandwidthUsedGB = Math.round((totalBandwidthBytes / (1024 * 1024 * 1024)) * 1000) / 1000;
+        const fluidCpuHours = Math.round(totalGbHours * 10000) / 10000;
+
+        const result = {
+            connected: true,
+            username: username || 'Vercel User',
+            totalInvocations,
+            totalRequests,
+            bandwidthUsedGB,
+            fluidCpuHours,
+            lastSynced: Date.now()
+        };
+        vercelApiUsageCache = {
+            timestamp: Date.now(),
+            data: result
+        };
+        return result;
+    } catch (e) {
+        console.warn('[Vercel API] Failed to fetch usage:', e.message);
+        return {
+            connected: false,
+            error: e.response?.data?.error?.message || e.message || 'Unauthorized / Invalid Token',
+            lastSynced: Date.now()
+        };
+    }
+}
+
 // Analytics tracker (already declared at top)
 
 app.get('/api/analytics', (req, res) => {
@@ -277,7 +349,7 @@ app.post('/api/telemetry/verify', handleVerifyDiagnostics);
 app.post('/api/admin/verify', handleVerifyDiagnostics);
 
 // Real-Time Serverless Metrics & Health Telemetry
-const handleGetDiagnosticsStats = (req, res) => {
+const handleGetDiagnosticsStats = async (req, res) => {
     if (!checkDiagnosticsAuth(req)) {
         return res.status(401).json({ success: false, error: 'Unauthorized' });
     }
@@ -304,6 +376,14 @@ const handleGetDiagnosticsStats = (req, res) => {
     const fluidCpuHours = Math.round(((totalReqs * (lastSort / 1000) + (telemetryMetrics.cacheMisses * 0.05)) / 3600) * 10000) / 10000;
     const bandwidthGB = Math.round((telemetryMetrics.servedBandwidthBytes / (1024 * 1024 * 1024)) * 1000) / 1000;
 
+    // Fetch official live Vercel API stats if token is available
+    const vercelToken = globalServerSettings.vercelApiToken || process.env.VERCEL_API_TOKEN || null;
+    const forceFresh = req.query.fresh === '1' || req.query.refresh === 'true';
+    let officialVercel = null;
+    if (vercelToken) {
+        officialVercel = await fetchOfficialVercelUsage(vercelToken, forceFresh);
+    }
+
     res.json({
         status: 'online',
         uptime: uptimeSec,
@@ -312,6 +392,12 @@ const handleGetDiagnosticsStats = (req, res) => {
         quarantinedProviders: quarantinedProviders,
         analyticsCount: providerAnalytics.size,
         vercelEcoSafe: true,
+        globalEcoMode: globalServerSettings.globalEcoMode,
+        globalSettings: {
+            ...globalServerSettings,
+            hasVercelToken: Boolean(globalServerSettings.vercelApiToken || process.env.VERCEL_API_TOKEN)
+        },
+        officialVercel: officialVercel,
         memoryMB: Math.round((memUsage.heapUsed / 1024 / 1024) * 100) / 100,
         // Live Vercel & Edge Telemetry Metrics
         isVercel: Boolean(process.env.VERCEL),
@@ -333,6 +419,36 @@ const handleGetDiagnosticsStats = (req, res) => {
 };
 app.get('/api/telemetry/stats', handleGetDiagnosticsStats);
 app.get('/api/admin/stats', handleGetDiagnosticsStats);
+
+// Global Server Settings Management (Admin Only)
+const handleUpdateAdminSettings = (req, res) => {
+    if (!checkDiagnosticsAuth(req)) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    const { globalEcoMode, allowClientEcoOverride, vercelApiToken } = req.body || {};
+    if (typeof globalEcoMode === 'boolean') {
+        globalServerSettings.globalEcoMode = globalEcoMode;
+    }
+    if (typeof allowClientEcoOverride === 'boolean') {
+        globalServerSettings.allowClientEcoOverride = allowClientEcoOverride;
+    }
+    if (typeof vercelApiToken === 'string') {
+        globalServerSettings.vercelApiToken = vercelApiToken.trim() || null;
+        vercelApiUsageCache = { timestamp: 0, data: null };
+    }
+    console.log(`[Admin] Global server settings updated: EcoMode=${globalServerSettings.globalEcoMode}`);
+    res.json({ 
+        success: true, 
+        settings: {
+            ...globalServerSettings,
+            hasVercelToken: Boolean(globalServerSettings.vercelApiToken || process.env.VERCEL_API_TOKEN)
+        }
+    });
+};
+app.post('/api/telemetry/settings', handleUpdateAdminSettings);
+app.post('/api/admin/settings', handleUpdateAdminSettings);
+app.get('/api/telemetry/settings', (req, res) => res.json({ settings: globalServerSettings }));
+app.get('/api/admin/settings', (req, res) => res.json({ settings: globalServerSettings }));
 
 // Edge Stream Cache Optimization & Flush
 const handleClearDiagnosticsCache = (req, res) => {
@@ -603,7 +719,9 @@ function createAddon(config) {
 
             let allStreams = [];
             // High-speed parallel scraper execution timeout to ensure streams return within client limits
-            const isEcoMode = Boolean(config.vercelEcoMode === true);
+            const isEcoMode = globalServerSettings.globalEcoMode === true 
+                ? (globalServerSettings.allowClientEcoOverride ? (config.vercelEcoMode !== false) : true)
+                : Boolean(config.vercelEcoMode === true);
             const PROVIDER_TIMEOUT_MS = isEcoMode || (typeof process !== 'undefined' && process.env.VERCEL) ? 4000 : 5500;
 
             const scrapeStartTime = Date.now();
