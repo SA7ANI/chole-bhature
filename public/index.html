@@ -4004,6 +4004,7 @@
 
         async function disconnectVercelToken() {
             triggerHaptic('heavy');
+            localStorage.removeItem('cb_vercel_api_token');
             const adminKey = getAdminKey();
             try {
                 const res = await fetch('/api/admin/settings', {
@@ -4042,6 +4043,7 @@
                 showToast("⚠️ <b>Token Empty:</b> Please paste your Vercel Personal Access Token.");
                 return;
             }
+            localStorage.setItem('cb_vercel_api_token', tokenVal);
             const adminKey = getAdminKey();
             try {
                 const res = await fetch('/api/admin/settings', {
@@ -4058,7 +4060,7 @@
                     showToast("✅ <b>Vercel API Connected:</b> Live official usage sync active!");
                     triggerHaptic('success');
                     if (input) input.value = '';
-                    fetchAdminStats();
+                    fetchAdminStats(true);
                 } else {
                     showToast("❌ <b>Error:</b> Could not save Vercel token.");
                 }
@@ -4499,9 +4501,11 @@
 
             try {
                 const url = forceFresh ? '/api/admin/stats?fresh=1' : '/api/admin/stats';
-                const res = await fetch(url, {
-                    headers: { 'x-admin-key': key }
-                });
+                const vercelTok = localStorage.getItem('cb_vercel_api_token') || '';
+                const headers = { 'x-admin-key': key };
+                if (vercelTok) headers['x-vercel-token'] = vercelTok;
+
+                const res = await fetch(url, { headers });
                 if (res.status === 401) {
                     lockAdminConsole();
                     return;

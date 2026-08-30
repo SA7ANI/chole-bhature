@@ -461,7 +461,7 @@ const handleGetDiagnosticsStats = async (req, res) => {
     const bandwidthGB = Math.round((telemetryMetrics.servedBandwidthBytes / (1024 * 1024 * 1024)) * 1000) / 1000;
 
     // Fetch official live Vercel API stats if token is available
-    const vercelToken = globalServerSettings.vercelApiToken || process.env.VERCEL_API_TOKEN || null;
+    const vercelToken = req.headers['x-vercel-token'] || globalServerSettings.vercelApiToken || process.env.VERCEL_API_TOKEN || null;
     const forceFresh = req.query.fresh === '1' || req.query.refresh === 'true';
     let officialVercel = null;
     if (vercelToken) {
