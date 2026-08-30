@@ -235,11 +235,38 @@ const telemetryMetrics = {
 };
 
 // Global Server-Side Configuration (Admin Managed & Enforced)
-const globalServerSettings = {
+const ADMIN_SETTINGS_FILE = path.join(__dirname, 'admin_settings.json');
+let globalServerSettings = {
+    adminPasswordHash: null,
     globalEcoMode: true, // Default to true to protect serverless free tier for all users
     allowClientEcoOverride: true,
     vercelApiToken: process.env.VERCEL_API_TOKEN || null
 };
+
+function loadAdminSettings() {
+    try {
+        if (fs.existsSync(ADMIN_SETTINGS_FILE)) {
+            const raw = fs.readFileSync(ADMIN_SETTINGS_FILE, 'utf8');
+            const data = JSON.parse(raw);
+            globalServerSettings = { ...globalServerSettings, ...data };
+            if (process.env.VERCEL_API_TOKEN) {
+                globalServerSettings.vercelApiToken = process.env.VERCEL_API_TOKEN;
+            }
+            console.log('[Admin] Loaded server admin settings from admin_settings.json');
+        }
+    } catch (e) {
+        console.error('[Admin] Failed to load admin_settings.json:', e.message);
+    }
+}
+
+function saveAdminSettings() {
+    try {
+        fs.writeFileSync(ADMIN_SETTINGS_FILE, JSON.stringify(globalServerSettings, null, 2));
+    } catch (e) {
+        // Safe failover for read-only serverless filesystems
+    }
+}
+loadAdminSettings();
 
 // Vercel Official API Usage Cache (5-min memoization to avoid API spam)
 let vercelApiUsageCache = {
@@ -322,28 +349,85 @@ app.get('/api/analytics', (req, res) => {
 const DIAGNOSTICS_TOKEN = process.env.ADMIN_SECRET_KEY || process.env.DIAGNOSTICS_TOKEN || null;
 
 function checkDiagnosticsAuth(req) {
-    const key = req.headers['x-admin-key'] || req.headers['x-diagnostic-token'] || req.query.key || req.query.token || (req.body && (req.body.key || req.body.token));
+    const rawKey = req.headers['x-admin-key'] || req.headers['x-diagnostic-token'] || req.query.key || req.query.token || (req.body && (req.body.key || req.body.token));
+    if (!rawKey) return false;
+    const key = String(rawKey).trim();
+
+    // 1. Match environment variable secret if set
     if (DIAGNOSTICS_TOKEN) {
-        return Boolean(key && key === DIAGNOSTICS_TOKEN);
+        if (key === DIAGNOSTICS_TOKEN) return true;
+        const keyHash = crypto.createHash('sha256').update(key).digest('hex');
+        const tokenHash = crypto.createHash('sha256').update(DIAGNOSTICS_TOKEN).digest('hex');
+        if (key === tokenHash || keyHash === tokenHash) return true;
     }
-    // Zero-Env Client Session: Encrypted hash signature verified by client
-    return Boolean(key && key.length >= 3);
+
+    // 2. Match server-stored password hash
+    if (globalServerSettings.adminPasswordHash) {
+        if (key === globalServerSettings.adminPasswordHash) return true;
+        const keyHash = crypto.createHash('sha256').update(key).digest('hex');
+        if (keyHash === globalServerSettings.adminPasswordHash) return true;
+        return false;
+    }
+
+    // 3. Fallback for first-time unconfigured setup
+    return Boolean(key.length >= 3);
 }
+
+// Admin Server Auth State
+app.get('/api/admin/auth-state', (req, res) => {
+    const hasPassword = Boolean(DIAGNOSTICS_TOKEN || globalServerSettings.adminPasswordHash);
+    res.json({
+        hasAdminPassword: hasPassword,
+        isEnvConfigured: Boolean(DIAGNOSTICS_TOKEN)
+    });
+});
+
+// Setup admin password on server (Multi-device universal sync)
+app.post('/api/admin/setup-password', (req, res) => {
+    const hasExisting = Boolean(DIAGNOSTICS_TOKEN || globalServerSettings.adminPasswordHash);
+    if (hasExisting && !checkDiagnosticsAuth(req)) {
+        return res.status(401).json({ success: false, error: 'Unauthorized. Admin password already set on server.' });
+    }
+    const { key, password, hash } = req.body || {};
+    const candidate = password || key;
+    const finalHash = hash || (candidate ? crypto.createHash('sha256').update(String(candidate).trim()).digest('hex') : null);
+    if (!finalHash) {
+        return res.status(400).json({ success: false, error: 'Password is required' });
+    }
+    globalServerSettings.adminPasswordHash = finalHash;
+    saveAdminSettings();
+    console.log('[Admin] Admin password hash registered & persisted on server.');
+    res.json({ success: true, message: 'Admin password saved on server' });
+});
+
+// Change admin password
+app.post('/api/admin/change-password', (req, res) => {
+    if (!checkDiagnosticsAuth(req)) {
+        return res.status(401).json({ success: false, error: 'Unauthorized. Current key is incorrect.' });
+    }
+    const { newPassword, newKey, newHash } = req.body || {};
+    const candidate = newPassword || newKey;
+    const finalHash = newHash || (candidate ? crypto.createHash('sha256').update(String(candidate).trim()).digest('hex') : null);
+    if (!finalHash) {
+        return res.status(400).json({ success: false, error: 'New password is required' });
+    }
+    globalServerSettings.adminPasswordHash = finalHash;
+    saveAdminSettings();
+    console.log('[Admin] Admin password hash updated & persisted on server.');
+    res.json({ success: true, message: 'Password changed successfully' });
+});
 
 // Telemetry Signature Verification (Supports dual endpoint naming)
 const handleVerifyDiagnostics = (req, res) => {
     const { key, token } = req.body || {};
     const candidate = key || token;
-    if (DIAGNOSTICS_TOKEN) {
-        if (candidate && candidate === DIAGNOSTICS_TOKEN) {
-            return res.json({ success: true, mode: 'server_env' });
-        }
-        return res.status(401).json({ success: false, error: 'Invalid Token' });
+    if (!candidate) {
+        return res.status(400).json({ success: false, error: 'Password or key required' });
     }
-    if (candidate && candidate.length >= 3) {
-        return res.json({ success: true, mode: 'client_managed' });
+    if (checkDiagnosticsAuth(req)) {
+        return res.json({ success: true, mode: DIAGNOSTICS_TOKEN ? 'server_env' : 'server_saved' });
     }
-    return res.status(400).json({ success: false, error: 'Token must be at least 3 characters' });
+    return res.status(401).json({ success: false, error: 'Incorrect Admin Secret Key' });
 };
 app.post('/api/telemetry/verify', handleVerifyDiagnostics);
 app.post('/api/admin/verify', handleVerifyDiagnostics);
@@ -436,7 +520,8 @@ const handleUpdateAdminSettings = (req, res) => {
         globalServerSettings.vercelApiToken = vercelApiToken.trim() || null;
         vercelApiUsageCache = { timestamp: 0, data: null };
     }
-    console.log(`[Admin] Global server settings updated: EcoMode=${globalServerSettings.globalEcoMode}`);
+    saveAdminSettings();
+    console.log(`[Admin] Global server settings updated & persisted: EcoMode=${globalServerSettings.globalEcoMode}`);
     res.json({ 
         success: true, 
         settings: {

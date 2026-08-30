@@ -4173,113 +4173,146 @@
         }
 
         async function promptSecretAdminKey() {
-            const storedHash = localStorage.getItem('cb_admin_master_hash');
+            let hasAdminOnServer = false;
+            try {
+                const authRes = await fetch('/api/admin/auth-state');
+                const authData = await authRes.json();
+                hasAdminOnServer = Boolean(authData.hasAdminPassword);
+            } catch (e) {}
 
-            if (!storedHash) {
-                // First-time setup: user creates their secret password via custom modal
+            const storedHash = localStorage.getItem('cb_admin_master_hash');
+            const currentKey = getAdminKey();
+
+            // If currently authenticated and server has password, unlock directly
+            if (currentKey && hasAdminOnServer) {
+                try {
+                    const vRes = await fetch('/api/admin/verify', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ key: currentKey })
+                    });
+                    const vData = await vRes.json();
+                    if (vData.success) {
+                        showAdminTabs(true);
+                        switchTab('tab-admin');
+                        showToast('🛡️ <b>Admin Console Active</b>');
+                        fetchAdminStats();
+                        return;
+                    }
+                } catch (e) {}
+            }
+
+            if (!hasAdminOnServer && !storedHash) {
+                // Initial setup on server: Prompt user to create Admin Password
                 const res = await showAestheticModal({
                     title: 'Initial Admin Setup',
-                    subtitle: 'Create your private Admin Secret Key for this addon. It is encrypted and saved only on your device.',
+                    subtitle: 'Create your private Admin Password for this addon. It will be secured and synchronized across all your devices.',
                     icon: '👑',
-                    confirmText: 'Create Secret Key',
+                    confirmText: 'Create Master Password',
                     fields: [
-                        { id: 'key', label: 'Create Admin Password', type: 'password', placeholder: 'Enter secret password...', autofocus: true }
+                        { id: 'key', label: 'Create Admin Password', type: 'password', placeholder: 'Enter secret password (min 3 chars)...', autofocus: true }
                     ]
                 });
                 if (!res.confirmed) return;
                 const newKey = res.values.key;
-                if (newKey && newKey.length >= 3) {
+                if (newKey && newKey.trim().length >= 3) {
                     const cleanKey = newKey.trim();
                     const hash = await hashStringSHA256(cleanKey);
-                    localStorage.setItem('cb_admin_master_hash', hash);
-                    sessionStorage.setItem('cb_admin_key', cleanKey);
-                    
-                    showAdminTabs(true);
-                    switchTab('tab-admin');
-                    showToast('✨ <b>Admin Key Created!</b> Console Unlocked.');
-                    fetchAdminStats();
+                    try {
+                        const setupRes = await fetch('/api/admin/setup-password', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ key: cleanKey, hash: hash })
+                        });
+                        const sData = await setupRes.json();
+                        if (sData.success) {
+                            localStorage.setItem('cb_admin_master_hash', hash);
+                            sessionStorage.setItem('cb_admin_key', cleanKey);
+                            showAdminTabs(true);
+                            switchTab('tab-admin');
+                            showToast('✨ <b>Admin Password Created & Saved on Server!</b>');
+                            fetchAdminStats();
+                        } else {
+                            showToast('❌ Failed to save password: ' + (sData.error || 'Server error'));
+                        }
+                    } catch (e) {
+                        localStorage.setItem('cb_admin_master_hash', hash);
+                        sessionStorage.setItem('cb_admin_key', cleanKey);
+                        showAdminTabs(true);
+                        switchTab('tab-admin');
+                        showToast('✨ <b>Admin Key Created!</b> Console Unlocked.');
+                        fetchAdminStats();
+                    }
                 } else if (newKey) {
-                    showToast('⚠️ Secret Key must be at least 3 characters.');
+                    showToast('⚠️ Password must be at least 3 characters.');
                 }
                 return;
             }
 
-            const currentKey = getAdminKey();
-            if (currentKey) {
-                const currentHash = await hashStringSHA256(currentKey);
-                if (currentHash === storedHash) {
-                    showAdminTabs(true);
-                    switchTab('tab-admin');
-                    showToast('🛡️ <b>Admin Console Active</b>');
-                    fetchAdminStats();
-                    return;
-                }
-            }
-
+            // Server already has an admin password (or local device has stored hash) -> Ask for password!
             const res = await showAestheticModal({
                 title: 'Admin Authentication',
-                subtitle: 'Enter your Admin Secret Key to reveal and unlock the Admin Console.',
+                subtitle: 'Enter your Admin Secret Password to reveal and unlock the Admin Console on this device.',
                 icon: '🔐',
                 confirmText: 'Unlock Console',
                 fields: [
-                    { id: 'key', label: 'Admin Secret Key', type: 'password', placeholder: 'Enter your password...', autofocus: true }
+                    { id: 'key', label: 'Admin Password', type: 'password', placeholder: 'Enter your admin password...', autofocus: true }
                 ]
             });
             if (!res.confirmed) return;
             const inputKey = res.values.key;
             if (inputKey && inputKey.trim()) {
                 const cleanKey = inputKey.trim();
-                const hash = await hashStringSHA256(cleanKey);
-                if (hash === storedHash) {
-                    sessionStorage.setItem('cb_admin_key', cleanKey);
-                    showAdminTabs(true);
-                    switchTab('tab-admin');
-                    showToast('✨ <b>Admin Console Unlocked!</b>');
-                    fetchAdminStats();
-                } else {
-                    // Try server verification as fallback
-                    verifyAndActivateAdmin(cleanKey);
-                }
+                verifyAndActivateAdmin(cleanKey);
             }
         }
 
         async function changeAdminSecretKey() {
             triggerHaptic('medium');
-            const storedHash = localStorage.getItem('cb_admin_master_hash');
-            const fields = [];
-            if (storedHash) {
-                fields.push({ id: 'oldKey', label: 'Current Secret Key', type: 'password', placeholder: 'Enter current key...', autofocus: true });
-            }
-            fields.push({ id: 'newKey', label: 'New Secret Key', type: 'password', placeholder: 'Enter new key (min 3 chars)...', autofocus: !storedHash });
+            const fields = [
+                { id: 'oldKey', label: 'Current Admin Password', type: 'password', placeholder: 'Enter current password...', autofocus: true },
+                { id: 'newKey', label: 'New Admin Password', type: 'password', placeholder: 'Enter new password (min 3 chars)...', autofocus: false }
+            ];
 
             const res = await showAestheticModal({
-                title: 'Change Admin Secret Key',
-                subtitle: 'Update your private Admin Secret Key for this device.',
+                title: 'Change Admin Password',
+                subtitle: 'Update your Admin Secret Password across all connected devices.',
                 icon: '🔑',
-                confirmText: 'Update Key',
+                confirmText: 'Update Password',
                 fields: fields
             });
             if (!res.confirmed) return;
 
-            if (storedHash) {
-                const oldHash = await hashStringSHA256(res.values.oldKey || '');
-                if (oldHash !== storedHash) {
-                    showToast('❌ Current key is incorrect.');
-                    triggerHaptic('error');
-                    return;
-                }
+            const oldKey = (res.values.oldKey || '').trim();
+            const newKey = (res.values.newKey || '').trim();
+            if (!newKey || newKey.length < 3) {
+                showToast('⚠️ New password must be at least 3 characters.');
+                return;
             }
 
-            const newKey = res.values.newKey;
-            if (newKey && newKey.trim().length >= 3) {
-                const cleanKey = newKey.trim();
-                const hash = await hashStringSHA256(cleanKey);
-                localStorage.setItem('cb_admin_master_hash', hash);
-                sessionStorage.setItem('cb_admin_key', cleanKey);
-                showToast('✨ <b>Admin Secret Key Updated!</b>');
-                triggerHaptic('success');
-            } else if (newKey) {
-                showToast('⚠️ Key must be at least 3 characters.');
+            try {
+                const changeRes = await fetch('/api/admin/change-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-admin-key': oldKey || getAdminKey()
+                    },
+                    body: JSON.stringify({ newKey })
+                });
+                const data = await changeRes.json();
+                if (data.success) {
+                    const newHash = await hashStringSHA256(newKey);
+                    localStorage.setItem('cb_admin_master_hash', newHash);
+                    sessionStorage.setItem('cb_admin_key', newKey);
+                    showToast('✨ <b>Admin Password Updated on Server!</b>');
+                    triggerHaptic('success');
+                    fetchAdminStats();
+                } else {
+                    showToast('❌ ' + (data.error || 'Current password is incorrect.'));
+                    triggerHaptic('error');
+                }
+            } catch (e) {
+                showToast('❌ Server update failed.');
             }
         }
 
@@ -4307,7 +4340,7 @@
                     showToast('✨ <b>Admin Console Unlocked & Revealed!</b>');
                     fetchAdminStats();
                 } else {
-                    showToast('❌ Incorrect Secret Key.');
+                    showToast('❌ Incorrect Admin Password.');
                     triggerHaptic('error');
                 }
             } catch (e) {
@@ -4348,47 +4381,45 @@
             if (!key) {
                 if (errEl) {
                     errEl.style.display = 'block';
-                    errEl.innerText = '❌ Please enter your Admin Secret Key';
+                    errEl.innerText = '❌ Please enter your Admin Password';
                 }
                 return;
             }
 
-            const storedHash = localStorage.getItem('cb_admin_master_hash');
-            if (!storedHash) {
-                // First-time registration through input form
-                const hash = await hashStringSHA256(key);
-                localStorage.setItem('cb_admin_master_hash', hash);
-                sessionStorage.setItem('cb_admin_key', key);
-                if (errEl) errEl.style.display = 'none';
-                
-                showAdminTabs(true);
-                const gate = document.getElementById('admin-auth-gate');
-                const view = document.getElementById('admin-dashboard-view');
-                if (gate) gate.style.display = 'none';
-                if (view) view.style.display = 'flex';
+            let hasAdminOnServer = false;
+            try {
+                const authRes = await fetch('/api/admin/auth-state');
+                const authData = await authRes.json();
+                hasAdminOnServer = Boolean(authData.hasAdminPassword);
+            } catch (e) {}
 
-                showToast('✨ <b>Admin Key Created!</b> Console Unlocked.');
-                fetchAdminStats();
-                return;
+            if (!hasAdminOnServer) {
+                // First-time setup on server
+                try {
+                    const hash = await hashStringSHA256(key);
+                    const setupRes = await fetch('/api/admin/setup-password', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ key, hash })
+                    });
+                    const sData = await setupRes.json();
+                    if (sData.success) {
+                        localStorage.setItem('cb_admin_master_hash', hash);
+                        sessionStorage.setItem('cb_admin_key', key);
+                        if (errEl) errEl.style.display = 'none';
+                        showAdminTabs(true);
+                        const gate = document.getElementById('admin-auth-gate');
+                        const view = document.getElementById('admin-dashboard-view');
+                        if (gate) gate.style.display = 'none';
+                        if (view) view.style.display = 'flex';
+                        showToast('✨ <b>Admin Password Created & Saved on Server!</b>');
+                        fetchAdminStats();
+                        return;
+                    }
+                } catch (e) {}
             }
 
-            const inputHash = await hashStringSHA256(key);
-            if (inputHash === storedHash) {
-                sessionStorage.setItem('cb_admin_key', key);
-                if (errEl) errEl.style.display = 'none';
-                
-                showAdminTabs(true);
-                const gate = document.getElementById('admin-auth-gate');
-                const view = document.getElementById('admin-dashboard-view');
-                if (gate) gate.style.display = 'none';
-                if (view) view.style.display = 'flex';
-
-                showToast('🔓 <b>Admin Console Unlocked!</b>');
-                fetchAdminStats();
-                return;
-            }
-
-            // Fallback to server verification
+            // Verify against server
             try {
                 const res = await fetch('/api/admin/verify', {
                     method: 'POST',
@@ -4413,7 +4444,7 @@
                 } else {
                     if (errEl) {
                         errEl.style.display = 'block';
-                        errEl.innerText = '❌ Incorrect Secret Key. Access denied.';
+                        errEl.innerText = '❌ Incorrect Admin Password. Access denied.';
                     }
                     triggerHaptic('error');
                 }
