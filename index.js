@@ -1150,6 +1150,10 @@ const handleClearCacheRequest = (req, res, configId = null) => {
     }
 };
 
+app.get('/clear-cache/:type/:id', (req, res) => {
+    handleClearCacheRequest(req, res, null);
+});
+
 app.get('/:configJSON/clear-cache/:type/:id', (req, res) => {
     handleClearCacheRequest(req, res, null);
 });
