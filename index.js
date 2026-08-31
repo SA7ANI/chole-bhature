@@ -3,7 +3,7 @@ const { addonBuilder, serveHTTP } = require('stremio-addon-sdk');
 const path = require('path');
 const providerLoader = require('./providerLoader');
 const { sortAndTagStreams, clearDomainLatencyCache } = require('./streamTester');
-const { setDohEnabled, setDohProvider, getDohConfig } = require('./dohResolver');
+const { setDohEnabled, setDohProvider, getDohConfig, dohHttpsAgent } = require('./dohResolver');
 const axios = require('axios');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -118,7 +118,8 @@ function resolveConfig(param) {
 async function prewarmProviders() {
     try {
         const reposToWarm = new Set([
-            'https://raw.githubusercontent.com/D3adlyRocket/All-in-One-Nuvio/refs/heads/main/manifest.json',
+            'https://cdn.jsdelivr.net/gh/D3adlyRocket/All-in-One-Nuvio@main/manifest.json',
+            'https://cdn.jsdelivr.net/gh/yoruix/nuvio-providers@main/manifest.json',
             'https://codeberg.org/eclipsia/nuvio-plugin/raw/branch/main/manifest.json'
         ]);
         for (const [, cfg] of userConfigs.entries()) {
@@ -827,17 +828,20 @@ function createAddon(config) {
             let manifestUrls = [];
             if (config.repoUrl) {
                 manifestUrls = [config.repoUrl];
-            } else if (config.urls && Array.isArray(config.urls)) {
+            } else if (config.urls && Array.isArray(config.urls) && config.urls.length > 0) {
                 manifestUrls = config.urls;
-            } else if (config.repos && Array.isArray(config.repos)) {
+            } else if (config.repos && Array.isArray(config.repos) && config.repos.length > 0) {
                 manifestUrls = config.repos;
             } else if (config.url) {
                 manifestUrls = [config.url];
             }
             
             if (manifestUrls.length === 0) {
-                console.log('[Stremio] No repository URLs configured');
-                return [];
+                manifestUrls = [
+                    'https://cdn.jsdelivr.net/gh/D3adlyRocket/All-in-One-Nuvio@main/manifest.json',
+                    'https://cdn.jsdelivr.net/gh/yoruix/nuvio-providers@main/manifest.json',
+                    'https://codeberg.org/eclipsia/nuvio-plugin/raw/branch/main/manifest.json'
+                ];
             }
 
             let allProviders = [];
@@ -862,7 +866,7 @@ function createAddon(config) {
             const isEcoMode = globalServerSettings.globalEcoMode === true 
                 ? (globalServerSettings.allowClientEcoOverride ? (config.vercelEcoMode !== false) : true)
                 : Boolean(config.vercelEcoMode === true);
-            const PROVIDER_TIMEOUT_MS = isEcoMode || (typeof process !== 'undefined' && process.env.VERCEL) ? 4000 : 5500;
+            const PROVIDER_TIMEOUT_MS = isEcoMode || (typeof process !== 'undefined' && process.env.VERCEL) ? 8000 : 15000;
 
             const scrapeStartTime = Date.now();
             await Promise.all(allProviders.map(async (provider) => {

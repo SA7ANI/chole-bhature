@@ -123,31 +123,74 @@ function extractTitleKeywords(title) {
 function isStreamMatchingTarget(stream, target) {
     if (!target || !target.title) return true; // Don't block if target metadata is unavailable
 
-    const rawStreamText = (stream.title || '') + ' ' + (stream.name || '');
-    const sceneDetails = extractCleanTitleAndDetails(rawStreamText.split('\n')[0]);
-    const cleanStreamTitle = sceneDetails.cleanTitle || normalizeTitleForMatching(rawStreamText.split('\n')[0]);
+    const rawStreamText = [
+        stream.title || '',
+        stream.name || '',
+        stream.description || '',
+        stream.url || ''
+    ].join(' ');
+
+    const sceneDetails = extractCleanTitleAndDetails((stream.title || stream.name || '').split('\n')[0]);
+    const cleanStreamTitle = sceneDetails.cleanTitle || '';
     
-    // 1. Keyword Overlap Validation
+    // Discard placeholder/dummy streams
+    if (cleanStreamTitle.toLowerCase().includes('anime title') || (stream.title || '').toLowerCase().includes('anime title')) {
+        return false;
+    }
+    
+    // 1. Keyword Validation: Check if stream explicitly contains target title or if stream has an obvious conflicting title
     const targetKeywords = extractTitleKeywords(target.title);
+    const altKeywords = target.originalTitle ? extractTitleKeywords(target.originalTitle) : [];
+    
+    const rawNormalizedStream = normalizeTitleForMatching(rawStreamText);
+    
+    // Check if target title matches in raw stream text or URL
+    let targetMatched = false;
     if (targetKeywords.length > 0) {
-        const rawNormalizedStream = normalizeTitleForMatching(rawStreamText);
-        let matchedKeywords = 0;
+        let matchedCount = 0;
         for (const kw of targetKeywords) {
             const kwRegex = new RegExp('(\\b|\\d)' + kw + '(\\b|\\d)', 'i');
-            if (kwRegex.test(rawNormalizedStream) || cleanStreamTitle.toLowerCase().includes(kw)) {
-                matchedKeywords++;
+            if (kwRegex.test(rawNormalizedStream) || rawNormalizedStream.includes(kw)) {
+                matchedCount++;
             }
         }
-
-        const matchRatio = matchedKeywords / targetKeywords.length;
-
-        // If target has 1 or 2 keywords (e.g. 'Heart Beast'), all distinctive words must match
-        if (targetKeywords.length <= 2 && matchRatio < 1.0) {
-            return false;
+        if (matchedCount / targetKeywords.length >= 0.5) {
+            targetMatched = true;
         }
-        // If target has 3+ keywords, at least 70% must match
-        if (matchRatio < 0.70) {
-            return false;
+    }
+
+    if (!targetMatched && altKeywords.length > 0) {
+        let altMatchedCount = 0;
+        for (const kw of altKeywords) {
+            const kwRegex = new RegExp('(\\b|\\d)' + kw + '(\\b|\\d)', 'i');
+            if (kwRegex.test(rawNormalizedStream) || rawNormalizedStream.includes(kw)) {
+                altMatchedCount++;
+            }
+        }
+        if (altMatchedCount / altKeywords.length >= 0.5) {
+            targetMatched = true;
+        }
+    }
+
+    // Check if the stream title has another distinct movie name that conflicts
+    // E.g. Target: 'Heart of the Beast', Stream: 'Heart of the Hunter'
+    if (cleanStreamTitle && cleanStreamTitle.length > 3) {
+        const streamWords = extractTitleKeywords(cleanStreamTitle);
+        // If stream has words that are purely generic quality/tech (e.g. ['1080p', 'fhd']), don't reject
+        const nonTechStreamWords = streamWords.filter(w => !/^(2160p|1080p|720p|480p|4k|fhd|hd|web|dl|rip|bluray|hevc|x265|x264|hindi|english|dual|multi|audio|org|dd|ddp|atmos)$/i.test(w));
+        
+        if (nonTechStreamWords.length > 0 && targetKeywords.length > 0) {
+            const hasAnyTargetKeyword = targetKeywords.some(kw => rawNormalizedStream.includes(kw));
+            if (!hasAnyTargetKeyword && nonTechStreamWords.length >= 2) {
+                // Completely different title
+                return false;
+            }
+
+            // If target is 'Heart of the Beast', targetKeywords = ['heart', 'beast']
+            // stream has 'heart' and 'hunter', where 'hunter' is a major conflict and 'beast' is missing
+            if (targetKeywords.length === 2 && !targetMatched && nonTechStreamWords.length >= 2) {
+                return false;
+            }
         }
     }
 
@@ -1011,17 +1054,13 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
     // Filter out streams that do not match the target media title / year / episode
     let validStreams = streams;
     if (config && config.target && config.target.title) {
-        validStreams = streams.filter(s => {
-            const matches = isStreamMatchingTarget(s, config.target);
-            if (!matches) {
-                console.log(`[MetaSorter] Filtered out mismatched stream "${(s.title || s.name || '').split('\n')[0]}" for target "${config.target.title}" (${config.target.year || 'N/A'})`);
-            }
-            return matches;
-        });
-    }
-
-    if (validStreams.length === 0) {
-        return [];
+        const filtered = streams.filter(s => isStreamMatchingTarget(s, config.target));
+        if (filtered.length > 0) {
+            validStreams = filtered;
+        } else {
+            console.log(`[MetaSorter] Retained all ${streams.length} candidate streams as fallback for "${config.target.title}"`);
+            validStreams = streams;
+        }
     }
 
     const showSeeders = config && config.showSeeders !== false;

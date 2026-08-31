@@ -100,21 +100,43 @@ function createCheerioWrapper() {
     return wrapper;
 }
 
+function getMirrorUrl(url) {
+    if (typeof url === 'string' && url.includes('raw.githubusercontent.com')) {
+        return url
+            .replace('https://raw.githubusercontent.com/', 'https://cdn.jsdelivr.net/gh/')
+            .replace('/refs/heads/', '@')
+            .replace(/\/([^\/]+)\/([^\/]+)\/([^\/]+)\//, '/$1/$2@$3/');
+    }
+    return null;
+}
+
 async function fetchWithRetry(url, options = {}, retries = 2) {
-    for (let attempt = 0; attempt <= retries; attempt++) {
-        try {
-            return await axios.get(url, options);
-        } catch (err) {
-            const isRateLimit = err.response && err.response.status === 429;
-            const isConnErr = err.code === 'ECONNRESET' || err.code === 'ETIMEDOUT' || err.code === 'ECONNABORTED';
-            if (attempt < retries && (isRateLimit || isConnErr)) {
-                const backoff = isRateLimit ? 400 * (attempt + 1) : 200 * (attempt + 1);
-                await new Promise(r => setTimeout(r, backoff));
-                continue;
+    const urlsToTry = [url];
+    const mirror = getMirrorUrl(url);
+    if (mirror && mirror !== url) urlsToTry.push(mirror);
+
+    let lastError = null;
+    for (const targetUrl of urlsToTry) {
+        for (let attempt = 0; attempt <= retries; attempt++) {
+            try {
+                return await axios.get(targetUrl, {
+                    timeout: 6000,
+                    ...options
+                });
+            } catch (err) {
+                lastError = err;
+                const isRateLimit = err.response && err.response.status === 429;
+                const isConnErr = err.code === 'ECONNRESET' || err.code === 'ETIMEDOUT' || err.code === 'ECONNABORTED';
+                if (attempt < retries && (isRateLimit || isConnErr)) {
+                    const backoff = isRateLimit ? 300 * (attempt + 1) : 150 * (attempt + 1);
+                    await new Promise(r => setTimeout(r, backoff));
+                    continue;
+                }
+                break;
             }
-            throw err;
         }
     }
+    throw lastError;
 }
 
 async function runWithConcurrency(tasks, limit = 6) {
@@ -206,8 +228,9 @@ class ProviderLoader {
                                         });
                                     }
                                 }
+                                const chosenAgent = urlStr.startsWith('http://') ? httpAgent : httpsAgent;
                                 const mergedOptions = {
-                                    agent: (_parsedUrl) => (_parsedUrl.protocol === 'http:' ? httpAgent : httpsAgent),
+                                    agent: chosenAgent,
                                     ...options
                                 };
                                 return fetch(url, mergedOptions);
