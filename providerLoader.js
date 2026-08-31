@@ -295,6 +295,7 @@ class ProviderLoader {
                                     constructor() { this.signal = { aborted: false }; }
                                     abort() { this.signal.aborted = true; }
                                 },
+                                AbortSignal: typeof AbortSignal !== 'undefined' ? AbortSignal : (globalThis.AbortSignal || class AbortSignal {}),
                                 FormData: typeof FormData !== 'undefined' ? FormData : class FormData {},
                                 Event: typeof Event !== 'undefined' ? Event : class Event {},
                                 CustomEvent: typeof CustomEvent !== 'undefined' ? CustomEvent : class CustomEvent {},
