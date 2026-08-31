@@ -918,11 +918,16 @@ function createAddon(config) {
 
             console.log(`[Stremio] Collected ${allStreams.length} total streams for ${type} ${id}. Testing speeds...`);
             const sortStartTime = Date.now();
+            const targetYear = parseInt(mediaMeta?.year, 10);
+            const currentYear = new Date().getFullYear();
+            const isUnreleased = Boolean(type === 'movie' && targetYear && targetYear > currentYear);
+
             const sortedAndTaggedStreams = await sortAndTagStreams(allStreams, {
                 target: {
                     title: mediaMeta?.title || '',
                     originalTitle: mediaMeta?.originalTitle || '',
                     year: mediaMeta?.year || null,
+                    isUnreleased: isUnreleased,
                     type: type,
                     season: season,
                     episode: episode

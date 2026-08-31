@@ -167,11 +167,20 @@ function isStreamMatchingTarget(stream, target) {
         return false;
     }
 
-    // 2. Year Validation (for movies)
-    if (target.type === 'movie' && target.year && sceneDetails.year) {
+    // 2. Year & Unreleased Movie Validation
+    if (target.type === 'movie' && target.year) {
         const tYear = parseInt(target.year, 10);
-        const sYear = parseInt(sceneDetails.year, 10);
-        if (!isNaN(tYear) && !isNaN(sYear) && Math.abs(tYear - sYear) > 2) {
+        const yearMatch = rawStreamText.match(/\b(19\d{2}|20\d{2})\b/);
+        const sYear = sceneDetails.year ? parseInt(sceneDetails.year, 10) : (yearMatch ? parseInt(yearMatch[1], 10) : null);
+        
+        // Strict year drift check (must be within 1 year of target release)
+        if (sYear && !isNaN(tYear) && !isNaN(sYear) && Math.abs(tYear - sYear) > 1) {
+            return false;
+        }
+
+        // Future unreleased movies (scheduled beyond current calendar year) have no digital releases yet
+        const currentYear = new Date().getFullYear();
+        if (!isNaN(tYear) && tYear > currentYear && target.isUnreleased) {
             return false;
         }
     }
