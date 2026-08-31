@@ -676,7 +676,7 @@ async function getMediaMetadata(imdbId, type) {
                 tmdbId: tmdbId || null,
                 title: cRes.data.meta.name,
                 originalTitle: cRes.data.meta.name,
-                year: cRes.data.meta.year ? String(cRes.data.meta.year).split('–')[0].trim() : null
+                year: (cRes.data.meta.year || cRes.data.meta.releaseInfo) ? String(cRes.data.meta.year || cRes.data.meta.releaseInfo).split('–')[0].trim() : null
             };
         }
     } catch (e) {}
