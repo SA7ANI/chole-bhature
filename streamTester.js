@@ -103,6 +103,93 @@ function extractCleanTitleAndDetails(rawText) {
     };
 }
 
+const STOP_WORDS = new Set(['the', 'a', 'an', 'of', 'and', 'in', 'on', 'for', 'to', 'with', 'at', 'by', 'from', 'part', 'vol', 'volume', 'chapter', 'movie', 'film']);
+
+function normalizeTitleForMatching(raw) {
+    if (!raw) return '';
+    return raw
+        .toLowerCase()
+        .replace(/['’]/g, '')
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function extractTitleKeywords(title) {
+    const norm = normalizeTitleForMatching(title);
+    return norm.split(' ').filter(w => w.length > 0 && !STOP_WORDS.has(w));
+}
+
+function isStreamMatchingTarget(stream, target) {
+    if (!target || !target.title) return true; // Don't block if target metadata is unavailable
+
+    const rawStreamText = (stream.title || '') + ' ' + (stream.name || '');
+    const sceneDetails = extractCleanTitleAndDetails(rawStreamText.split('\n')[0]);
+    const cleanStreamTitle = sceneDetails.cleanTitle || normalizeTitleForMatching(rawStreamText.split('\n')[0]);
+    
+    // 1. Keyword Overlap Validation
+    const targetKeywords = extractTitleKeywords(target.title);
+    if (targetKeywords.length > 0) {
+        const rawNormalizedStream = normalizeTitleForMatching(rawStreamText);
+        let matchedKeywords = 0;
+        for (const kw of targetKeywords) {
+            const kwRegex = new RegExp('(\\b|\\d)' + kw + '(\\b|\\d)', 'i');
+            if (kwRegex.test(rawNormalizedStream) || cleanStreamTitle.toLowerCase().includes(kw)) {
+                matchedKeywords++;
+            }
+        }
+
+        const matchRatio = matchedKeywords / targetKeywords.length;
+
+        // If target has 1 or 2 keywords (e.g. 'Heart Beast'), all distinctive words must match
+        if (targetKeywords.length <= 2 && matchRatio < 1.0) {
+            return false;
+        }
+        // If target has 3+ keywords, at least 70% must match
+        if (matchRatio < 0.70) {
+            return false;
+        }
+    }
+
+    // 2. Year Validation (for movies)
+    if (target.type === 'movie' && target.year && sceneDetails.year) {
+        const tYear = parseInt(target.year, 10);
+        const sYear = parseInt(sceneDetails.year, 10);
+        if (!isNaN(tYear) && !isNaN(sYear) && Math.abs(tYear - sYear) > 2) {
+            return false;
+        }
+    }
+
+    // 3. Series / Episode Validation (for TV series)
+    if ((target.type === 'series' || target.type === 'tv') && target.season && target.episode) {
+        const reqS = parseInt(target.season, 10);
+        const reqE = parseInt(target.episode, 10);
+        
+        if (sceneDetails.seasonEpisode) {
+            const seStr = sceneDetails.seasonEpisode.toUpperCase();
+            const epMatch = seStr.match(/S(\d+)E(\d+)/i) || seStr.match(/(\d+)X(\d+)/i);
+            if (epMatch) {
+                const sNum = parseInt(epMatch[1], 10);
+                const eNum = parseInt(epMatch[2], 10);
+                if (sNum !== reqS || eNum !== reqE) {
+                    return false;
+                }
+            } else {
+                const seasonOnlyMatch = seStr.match(/S(\d+)(?:-S?(\d+))?/i);
+                if (seasonOnlyMatch) {
+                    const startS = parseInt(seasonOnlyMatch[1], 10);
+                    const endS = seasonOnlyMatch[2] ? parseInt(seasonOnlyMatch[2], 10) : startS;
+                    if (reqS < startS || reqS > endS) {
+                        return false;
+                    }
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
 function parseStreamMetadata(stream) {
     const rawName = stream.name || '';
     const rawTitle = stream.title || stream.description || stream.quality || '';
@@ -921,11 +1008,27 @@ async function testStream(stream, showSeeders = true, config = {}) {
 async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
     if (!streams || streams.length === 0) return [];
 
+    // Filter out streams that do not match the target media title / year / episode
+    let validStreams = streams;
+    if (config && config.target && config.target.title) {
+        validStreams = streams.filter(s => {
+            const matches = isStreamMatchingTarget(s, config.target);
+            if (!matches) {
+                console.log(`[MetaSorter] Filtered out mismatched stream "${(s.title || s.name || '').split('\n')[0]}" for target "${config.target.title}" (${config.target.year || 'N/A'})`);
+            }
+            return matches;
+        });
+    }
+
+    if (validStreams.length === 0) {
+        return [];
+    }
+
     const showSeeders = config && config.showSeeders !== false;
     const deduplicate = config && config.deduplicateStreams !== false;
 
     // Deduplicate and merge identical streams across providers
-    const uniqueStreams = deduplicateAndMergeStreams(streams, deduplicate);
+    const uniqueStreams = deduplicateAndMergeStreams(validStreams, deduplicate);
 
     // Run tests concurrently
     const testedStreams = await Promise.all(

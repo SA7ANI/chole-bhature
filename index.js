@@ -602,36 +602,90 @@ const TMDB_API_KEYS = [
     'b025d23315a6b0c266cc6cb221a68134'
 ];
 
-async function getTmdbId(imdbId, type) {
-    if (imdbId.startsWith('tmdb:')) {
-        return imdbId.split(':')[1];
+async function getMediaMetadata(imdbId, type) {
+    const rawId = imdbId.split(':')[0];
+    let tmdbId = null;
+    let title = null;
+    let originalTitle = null;
+    let year = null;
+
+    if (rawId.startsWith('tmdb:')) {
+        tmdbId = rawId.split(':')[1];
+    } else if (/^\d+$/.test(rawId)) {
+        tmdbId = rawId;
     }
-    
-    const id = imdbId.split(':')[0];
-    
-    if (/^\d+$/.test(id)) {
-        return id;
-    }
-    
-    if (id.startsWith('tt')) {
+
+    // 1. If TMDB ID is directly provided, fetch details from TMDB
+    if (tmdbId) {
+        const tmdbType = (type === 'series' || type === 'tv') ? 'tv' : 'movie';
         for (const key of TMDB_API_KEYS) {
             try {
-                const res = await axios.get(`https://api.themoviedb.org/3/find/${id}?api_key=${key}&external_source=imdb_id`, { 
+                const res = await axios.get(`https://api.themoviedb.org/3/${tmdbType}/${tmdbId}?api_key=${key}`, {
                     timeout: 4000,
+                    httpsAgent: dohHttpsAgent,
+                    headers: { 'Accept': 'application/json' }
+                });
+                if (res.data) {
+                    title = res.data.title || res.data.name;
+                    originalTitle = res.data.original_title || res.data.original_name;
+                    const dateStr = res.data.release_date || res.data.first_air_date;
+                    year = dateStr ? dateStr.split('-')[0] : null;
+                    return { tmdbId, title, originalTitle, year };
+                }
+            } catch (err) {}
+        }
+    }
+
+    // 2. If IMDb ID (tt...), search TMDB by external_source=imdb_id
+    if (rawId.startsWith('tt')) {
+        for (const key of TMDB_API_KEYS) {
+            try {
+                const res = await axios.get(`https://api.themoviedb.org/3/find/${rawId}?api_key=${key}&external_source=imdb_id`, {
+                    timeout: 4000,
+                    httpsAgent: dohHttpsAgent,
                     headers: { 'Accept': 'application/json' }
                 });
                 if (type === 'movie' && res.data && res.data.movie_results && res.data.movie_results.length > 0) {
-                    return res.data.movie_results[0].id.toString();
+                    const m = res.data.movie_results[0];
+                    return {
+                        tmdbId: m.id.toString(),
+                        title: m.title,
+                        originalTitle: m.original_title,
+                        year: m.release_date ? m.release_date.split('-')[0] : null
+                    };
                 } else if ((type === 'series' || type === 'tv') && res.data && res.data.tv_results && res.data.tv_results.length > 0) {
-                    return res.data.tv_results[0].id.toString();
+                    const t = res.data.tv_results[0];
+                    return {
+                        tmdbId: t.id.toString(),
+                        title: t.name,
+                        originalTitle: t.original_name,
+                        year: t.first_air_date ? t.first_air_date.split('-')[0] : null
+                    };
                 }
-            } catch (err) {
-                // try next key
-            }
+            } catch (err) {}
         }
     }
-    
-    return null;
+
+    // 3. Cinemeta Fallback
+    try {
+        const cinemetaType = (type === 'tv' ? 'series' : type);
+        const cRes = await axios.get(`https://v3-cinemeta.strem.io/meta/${cinemetaType}/${rawId}.json`, { timeout: 3000 });
+        if (cRes.data && cRes.data.meta) {
+            return {
+                tmdbId: tmdbId || null,
+                title: cRes.data.meta.name,
+                originalTitle: cRes.data.meta.name,
+                year: cRes.data.meta.year ? String(cRes.data.meta.year).split('–')[0].trim() : null
+            };
+        }
+    } catch (e) {}
+
+    return { tmdbId, title, originalTitle, year };
+}
+
+async function getTmdbId(imdbId, type) {
+    const meta = await getMediaMetadata(imdbId, type);
+    return meta ? meta.tmdbId : null;
 }
 
 // Debrid Resolver Endpoint
@@ -763,9 +817,10 @@ function createAddon(config) {
                 episode = parts[2];
             }
 
-            const tmdbId = await getTmdbId(imdbId, type);
-            if (!tmdbId) {
-                console.log('[Stremio] Could not resolve TMDB ID for', imdbId);
+            const mediaMeta = await getMediaMetadata(imdbId, type);
+            const tmdbId = mediaMeta ? mediaMeta.tmdbId : null;
+            if (!tmdbId && !mediaMeta?.title) {
+                console.log('[Stremio] Could not resolve TMDB ID or metadata for', imdbId);
                 return [];
             }
 
@@ -860,6 +915,14 @@ function createAddon(config) {
             console.log(`[Stremio] Collected ${allStreams.length} total streams for ${type} ${id}. Testing speeds...`);
             const sortStartTime = Date.now();
             const sortedAndTaggedStreams = await sortAndTagStreams(allStreams, {
+                target: {
+                    title: mediaMeta?.title || '',
+                    originalTitle: mediaMeta?.originalTitle || '',
+                    year: mediaMeta?.year || null,
+                    type: type,
+                    season: season,
+                    episode: episode
+                },
                 hideDead: config.hideDead,
                 hideSlow: config.hideSlow,
                 hideCam: config.hideCam || config.blockCam,
