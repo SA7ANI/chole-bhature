@@ -253,6 +253,9 @@ function loadAdminSettings() {
             if (process.env.VERCEL_API_TOKEN) {
                 globalServerSettings.vercelApiToken = process.env.VERCEL_API_TOKEN;
             }
+            if (globalServerSettings.globalScraperOverrides) {
+                providerLoader.setGlobalScraperOverrides(globalServerSettings.globalScraperOverrides);
+            }
             console.log('[Admin] Loaded server admin settings from admin_settings.json');
         }
     } catch (e) {
@@ -262,6 +265,9 @@ function loadAdminSettings() {
 
 function saveAdminSettings() {
     try {
+        if (globalServerSettings.globalScraperOverrides) {
+            providerLoader.setGlobalScraperOverrides(globalServerSettings.globalScraperOverrides);
+        }
         fs.writeFileSync(ADMIN_SETTINGS_FILE, JSON.stringify(globalServerSettings, null, 2));
     } catch (e) {
         // Safe failover for read-only serverless filesystems
@@ -561,6 +567,60 @@ const handleResetQuarantineState = (req, res) => {
 };
 app.post('/api/telemetry/reset-quarantine', handleResetQuarantineState);
 app.post('/api/admin/reset-quarantine', handleResetQuarantineState);
+
+// Live Scraper Domain & Override Probing / Test Route
+app.post('/api/test-scraper', async (req, res) => {
+    try {
+        const { providerName, manifestUrl, domain, fallbackMirrors, headers, mediaId, type } = req.body || {};
+        if (!providerName) {
+            return res.status(400).json({ success: false, error: 'providerName is required' });
+        }
+        const targetManifest = manifestUrl || 'https://cdn.jsdelivr.net/gh/D3adlyRocket/All-in-One-Nuvio@main/manifest.json';
+        const overrides = {
+            domain: domain || '',
+            fallbackMirrors: Array.isArray(fallbackMirrors) 
+                ? fallbackMirrors 
+                : (fallbackMirrors ? String(fallbackMirrors).split(/[\n,]+/).map(s => s.trim()).filter(Boolean) : []),
+            headers: headers && typeof headers === 'object' ? headers : {}
+        };
+        const result = await providerLoader.testScraper(targetManifest, providerName, overrides, mediaId || 'tt0137523', type || 'movie');
+        return res.json(result);
+    } catch (err) {
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Admin Global Scraper Overrides
+app.get('/api/admin/scraper-overrides', (req, res) => {
+    res.json({ success: true, overrides: globalServerSettings.globalScraperOverrides || {} });
+});
+
+app.post('/api/admin/scraper-overrides', (req, res) => {
+    if (!checkDiagnosticsAuth(req)) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    const { overrides } = req.body || {};
+    if (overrides && typeof overrides === 'object') {
+        globalServerSettings.globalScraperOverrides = overrides;
+        saveAdminSettings();
+        console.log(`[Admin] Saved global scraper overrides for ${Object.keys(overrides).length} scrapers`);
+        return res.json({ success: true, overrides: globalServerSettings.globalScraperOverrides });
+    }
+    res.status(400).json({ success: false, error: 'Invalid overrides payload' });
+});
+
+// Scraper Default Information and Detected Domains
+app.get('/api/scraper-info', async (req, res) => {
+    try {
+        const { providerName, manifestUrl } = req.query || {};
+        if (!providerName) return res.status(400).json({ success: false, error: 'providerName required' });
+        const targetManifest = manifestUrl || 'https://cdn.jsdelivr.net/gh/D3adlyRocket/All-in-One-Nuvio@main/manifest.json';
+        const info = await providerLoader.getScraperInfo(targetManifest, providerName);
+        res.json({ success: true, ...info });
+    } catch (e) {
+        res.status(500).json({ success: false, error: e.message });
+    }
+});
 
 // DoH Resolver Status
 app.get('/api/doh/status', (req, res) => {

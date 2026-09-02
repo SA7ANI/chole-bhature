@@ -1831,6 +1831,34 @@
             right: 14px;
         }
 
+        .btn-config-scraper {
+            background: rgba(139, 92, 246, 0.12);
+            border: 1px solid rgba(139, 92, 246, 0.35);
+            color: #c4b5fd;
+            padding: 4px 10px;
+            border-radius: var(--radius-pill);
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-config-scraper:hover {
+            background: rgba(139, 92, 246, 0.25);
+            border-color: rgba(139, 92, 246, 0.6);
+            color: #ffffff;
+            transform: translateY(-1px);
+        }
+
+        .scraper-override-badge {
+            background: rgba(16, 185, 129, 0.15) !important;
+            border-color: rgba(16, 185, 129, 0.35) !important;
+            color: #34d399 !important;
+        }
+
         /* ===== TOAST ISLAND NOTIFICATION ===== */
         .toast-bubble {
             position: fixed;
@@ -3278,6 +3306,85 @@
         </div>
     </div>
 
+    <!-- Dynamic Scraper Domain & Override Manager Modal -->
+    <div id="cb-scraper-modal" class="aesthetic-modal-backdrop" style="display: none;">
+        <div class="aesthetic-modal-card" style="max-width: 520px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div id="scraper-modal-icon" class="aesthetic-modal-icon-wrap" style="width: 42px; height: 42px; font-size: 20px; margin-bottom: 0;">🔌</div>
+                    <div>
+                        <h3 class="aesthetic-modal-title" id="scraper-modal-title" style="margin: 0; font-size: 17px; text-align: left;">Scraper Settings</h3>
+                        <span id="scraper-modal-repo" style="font-size: 11px; color: var(--text-muted);">Repository</span>
+                    </div>
+                </div>
+                <button type="button" class="tour-close-btn" onclick="closeScraperModal()" title="Close">✕</button>
+            </div>
+
+            <!-- Currently Working / Active Base Domain Banner -->
+            <div style="background: rgba(139, 92, 246, 0.08); border: 1px solid rgba(139, 92, 246, 0.25); border-radius: 12px; padding: 10px 14px; margin-top: 6px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                <div style="min-width: 0; flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 3px;">
+                        <span style="font-size: 10.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Currently Working Base Domain</span>
+                        <span id="scraper-status-chip" class="format-tag scraper-override-badge" style="font-size: 9.5px; padding: 1px 6px;">🟢 Default</span>
+                    </div>
+                    <div id="scraper-current-active-url" style="font-size: 13.5px; font-weight: 700; color: #a78bfa; word-break: break-all;">
+                        Detecting...
+                    </div>
+                </div>
+                <button type="button" class="pill-btn pill-btn-glass" onclick="prefillCurrentDomain()" style="padding: 5px 10px; font-size: 11px; flex-shrink: 0; color: #c4b5fd; border-color: rgba(139, 92, 246, 0.35);" title="Copy into Edit Input">
+                    ✏️ Edit
+                </button>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 14px; text-align: left; margin: 16px 0;">
+                <div>
+                    <label style="display: block; font-size: 12px; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px;">
+                        🌐 Primary Domain / Base URL Override
+                    </label>
+                    <input type="url" id="scraper-input-domain" placeholder="e.g. https://..." style="width: 100%; box-sizing: border-box;">
+                    <span style="font-size: 11px; color: var(--text-muted); margin-top: 4px; display: block;">Replaces outgoing site requests dynamically with zero redeployment.</span>
+                </div>
+
+                <div>
+                    <label style="display: block; font-size: 12px; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px;">
+                        🔄 Fallback Mirrors (One per line or comma-separated)
+                    </label>
+                    <textarea id="scraper-input-mirrors" rows="2" placeholder="https://hdhub4u.fit&#10;https://hdhub4u.work" style="width: 100%; box-sizing: border-box; resize: vertical; border-radius: 12px; padding: 10px; background: rgba(0,0,0,0.35); border: 1px solid var(--border-subtle); color: var(--text-primary); font-family: inherit; font-size: 12px;"></textarea>
+                    <span style="font-size: 11px; color: var(--text-muted); margin-top: 4px; display: block;">If the primary domain fails, these mirrors will be tried automatically.</span>
+                </div>
+
+                <div>
+                    <label style="display: block; font-size: 12px; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px;">
+                        🔑 Custom Request Headers (Optional JSON)
+                    </label>
+                    <textarea id="scraper-input-headers" rows="2" placeholder='{"User-Agent": "Mozilla/5.0...", "Referer": "https://site.com"}' style="width: 100%; box-sizing: border-box; resize: vertical; border-radius: 12px; padding: 10px; background: rgba(0,0,0,0.35); border: 1px solid var(--border-subtle); color: var(--text-primary); font-family: monospace; font-size: 11.5px;"></textarea>
+                </div>
+
+                <!-- Live Test Probe Box -->
+                <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-subtle); border-radius: 14px; padding: 12px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                        <span style="font-size: 12px; font-weight: 700; color: var(--text-primary);">⚡ Live Test Probe</span>
+                        <button type="button" class="pill-btn pill-btn-emerald" id="btn-test-scraper-run" onclick="runLiveScraperTest()" style="padding: 5px 12px; font-size: 11.5px;">
+                            <span>▶️</span> Test Now
+                        </button>
+                    </div>
+                    <div id="scraper-test-result-box" style="margin-top: 10px; display: none; font-size: 12px;">
+                        <!-- Injected dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="aesthetic-modal-actions" style="margin-top: 8px;">
+                <button type="button" class="pill-btn pill-btn-glass" onclick="resetScraperDefaults()" style="color: #f87171;">
+                    Reset
+                </button>
+                <button type="button" class="pill-btn pill-btn-emerald" onclick="saveScraperOverrides()">
+                    Save Overrides
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Floating Bottom Pill Navigation Bar (Mobile / Tablet Only) -->
     <nav class="bottom-nav-bar">
         <a class="nav-item active" onclick="switchTab('tab-home', this)">
@@ -3805,7 +3912,8 @@
                 prioritizeQuality: settings.sortBy === 'quality',
                 prioritizeHindi: settings.prioritizeHindi,
                 preferredLanguages: settings.preferredLanguages || [],
-                disabled: settings.disabledProviders || []
+                disabled: settings.disabledProviders || [],
+                scraperOverrides: settings.scraperOverrides || {}
             };
         }
 
@@ -4690,6 +4798,9 @@
                 }
             }
             if (cfg.disabled && Array.isArray(cfg.disabled)) settings.disabledProviders = cfg.disabled;
+            if (cfg.scraperOverrides && typeof cfg.scraperOverrides === 'object') {
+                settings.scraperOverrides = cfg.scraperOverrides;
+            }
             
             localStorage.setItem('nuvio_settings', JSON.stringify(settings));
             
@@ -4971,20 +5082,25 @@
                 return;
             }
 
+            settings.scraperOverrides = settings.scraperOverrides || {};
+
             let html = '';
             allProvidersData.forEach((p) => {
                 const iconHtml = p.logo ? `<img src="${p.logo}" alt="logo" onerror="this.outerHTML='🧩'">` : '🧩';
                 const typesStr = p.supportedTypes.map(t => t === 'movie' ? '🎬 Movie' : t === 'tv' ? '📺 TV' : t).join(' • ');
                 const isDisabled = settings.disabledProviders && settings.disabledProviders.includes(p.name);
+                const override = settings.scraperOverrides[p.name];
+                const hasCustomDomain = Boolean(override && override.domain);
+                const safeName = p.name.replace(/'/g, "\\'");
                 
                 html += `
                     <div class="provider-item-card" style="opacity: ${isDisabled ? '0.45' : '1'};">
                         <div class="provider-switch-pos" style="display: flex; align-items: center; gap: 8px;">
                             <label class="switch-toggle">
-                                <input type="checkbox" onchange="toggleProvider('${p.name}', this.checked)" ${!isDisabled ? 'checked' : ''}>
+                                <input type="checkbox" onchange="toggleProvider('${safeName}', this.checked)" ${!isDisabled ? 'checked' : ''}>
                                 <span class="switch-slider"></span>
                             </label>
-                            <button class="btn-delete-icon" style="width: 28px; height: 28px; font-size: 11px;" title="Disable Provider" onclick="removeProvider('${p.name}')">✕</button>
+                            <button class="btn-delete-icon" style="width: 28px; height: 28px; font-size: 11px;" title="Disable Provider" onclick="removeProvider('${safeName}')">✕</button>
                         </div>
                         <div class="provider-header-row">
                             <div class="provider-avatar">${iconHtml}</div>
@@ -4998,13 +5114,287 @@
                             <div class="tag-list">
                                 <span class="format-tag">${typesStr}</span>
                                 <span class="format-tag">v${p.version}</span>
+                                ${hasCustomDomain ? `<span class="format-tag scraper-override-badge" title="${override.domain}">🌐 Custom Mirror</span>` : ''}
                                 ${isDisabled ? '<span class="format-tag" style="background: rgba(239, 68, 68, 0.2); color: #f87171; border-color: rgba(239, 68, 68, 0.4);">Disabled</span>' : ''}
                             </div>
+                            <button type="button" class="btn-config-scraper" onclick="openScraperModal('${safeName}')" title="Configure Domain, Mirrors & Test Scraper">
+                                ⚙️ Edit & Test
+                            </button>
                         </div>
                     </div>
                 `;
             });
             providersContainer.innerHTML = html;
+        }
+
+        let currentEditingScraper = null;
+
+        function prefillCurrentDomain() {
+            triggerHaptic('light');
+            const activeUrlEl = document.getElementById('scraper-current-active-url');
+            const domainInput = document.getElementById('scraper-input-domain');
+            if (activeUrlEl && domainInput) {
+                const text = activeUrlEl.innerText.trim();
+                if (text && text.startsWith('http')) {
+                    domainInput.value = text;
+                    domainInput.focus();
+                    showToast('📋 Copied active domain to edit field!');
+                }
+            }
+        }
+
+        async function openScraperModal(providerName) {
+            triggerHaptic('medium');
+            const provider = allProvidersData.find(p => p.name === providerName) || { name: providerName, repoName: 'Repository' };
+            currentEditingScraper = providerName;
+
+            const titleEl = document.getElementById('scraper-modal-title');
+            const repoEl = document.getElementById('scraper-modal-repo');
+            const iconEl = document.getElementById('scraper-modal-icon');
+            const domainInput = document.getElementById('scraper-input-domain');
+            const mirrorsInput = document.getElementById('scraper-input-mirrors');
+            const headersInput = document.getElementById('scraper-input-headers');
+            const resultBox = document.getElementById('scraper-test-result-box');
+            const activeUrlEl = document.getElementById('scraper-current-active-url');
+            const statusChipEl = document.getElementById('scraper-status-chip');
+
+            if (titleEl) titleEl.innerText = provider.name;
+            if (repoEl) repoEl.innerText = `${provider.repoName} • v${provider.version || '1.0.0'}`;
+            if (iconEl) {
+                iconEl.innerHTML = provider.logo ? `<img src="${provider.logo}" style="width: 24px; height: 24px; border-radius: 6px;" onerror="this.outerHTML='🔌'">` : '🔌';
+            }
+
+            settings.scraperOverrides = settings.scraperOverrides || {};
+            const override = settings.scraperOverrides[providerName] || {};
+
+            if (domainInput) domainInput.value = override.domain || '';
+            if (mirrorsInput) {
+                const mirrorsList = Array.isArray(override.fallbackMirrors) ? override.fallbackMirrors.join('\n') : (override.fallbackMirrors || '');
+                mirrorsInput.value = mirrorsList;
+            }
+            if (headersInput) {
+                headersInput.value = (override.headers && Object.keys(override.headers).length > 0) ? JSON.stringify(override.headers, null, 2) : '';
+            }
+            if (resultBox) {
+                resultBox.style.display = 'none';
+                resultBox.innerHTML = '';
+            }
+
+            // Display Active Working Domain
+            if (override.domain) {
+                if (activeUrlEl) activeUrlEl.innerText = override.domain;
+                if (statusChipEl) {
+                    statusChipEl.innerText = '🟣 Custom Override Active';
+                    statusChipEl.style.background = 'rgba(139, 92, 246, 0.2)';
+                    statusChipEl.style.borderColor = 'rgba(139, 92, 246, 0.4)';
+                    statusChipEl.style.color = '#c4b5fd';
+                }
+            } else {
+                if (activeUrlEl) activeUrlEl.innerText = 'Detecting default domain...';
+                if (statusChipEl) {
+                    statusChipEl.innerText = '⏳ Detecting...';
+                    statusChipEl.style.background = 'rgba(255, 255, 255, 0.05)';
+                    statusChipEl.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                    statusChipEl.style.color = 'var(--text-muted)';
+                }
+
+                // Fetch detected default domain from server
+                try {
+                    const manifestUrl = repos[0] || 'https://cdn.jsdelivr.net/gh/D3adlyRocket/All-in-One-Nuvio@main/manifest.json';
+                    const res = await fetch(`/api/scraper-info?providerName=${encodeURIComponent(providerName)}&manifestUrl=${encodeURIComponent(manifestUrl)}`);
+                    const infoData = await res.json();
+                    if (infoData && infoData.success && infoData.defaultDomain) {
+                        if (activeUrlEl) activeUrlEl.innerText = infoData.defaultDomain;
+                        if (statusChipEl) {
+                            statusChipEl.innerText = '🟢 Default Repo Domain';
+                            statusChipEl.style.background = 'rgba(16, 185, 129, 0.15)';
+                            statusChipEl.style.borderColor = 'rgba(16, 185, 129, 0.35)';
+                            statusChipEl.style.color = '#34d399';
+                        }
+                        if (domainInput) domainInput.placeholder = `e.g. ${infoData.defaultDomain}`;
+                        if (mirrorsInput && Array.isArray(infoData.detectedMirrors) && infoData.detectedMirrors.length > 1) {
+                            mirrorsInput.placeholder = infoData.detectedMirrors.slice(1).join('\n');
+                        }
+                    } else {
+                        if (activeUrlEl) activeUrlEl.innerText = 'Default Repository Origin';
+                        if (statusChipEl) {
+                            statusChipEl.innerText = '🟢 Default';
+                            statusChipEl.style.background = 'rgba(16, 185, 129, 0.15)';
+                            statusChipEl.style.borderColor = 'rgba(16, 185, 129, 0.35)';
+                            statusChipEl.style.color = '#34d399';
+                        }
+                    }
+                } catch (e) {
+                    if (activeUrlEl) activeUrlEl.innerText = 'Default Repository Origin';
+                }
+            }
+
+            const modal = document.getElementById('cb-scraper-modal');
+            if (modal) modal.style.display = 'flex';
+        }
+
+        function closeScraperModal() {
+            triggerHaptic('light');
+            const modal = document.getElementById('cb-scraper-modal');
+            if (modal) modal.style.display = 'none';
+            currentEditingScraper = null;
+        }
+
+        async function runLiveScraperTest() {
+            if (!currentEditingScraper) return;
+            triggerHaptic('medium');
+            const btn = document.getElementById('btn-test-scraper-run');
+            const resultBox = document.getElementById('scraper-test-result-box');
+            const domainInput = document.getElementById('scraper-input-domain');
+            const mirrorsInput = document.getElementById('scraper-input-mirrors');
+            const headersInput = document.getElementById('scraper-input-headers');
+
+            const domain = domainInput ? domainInput.value.trim() : '';
+            const rawMirrors = mirrorsInput ? mirrorsInput.value.trim() : '';
+            const fallbackMirrors = rawMirrors ? rawMirrors.split(/[\n,]+/).map(s => s.trim()).filter(Boolean) : [];
+
+            let headers = {};
+            if (headersInput && headersInput.value.trim()) {
+                try {
+                    headers = JSON.parse(headersInput.value.trim());
+                } catch (e) {
+                    showToast('⚠️ Headers must be valid JSON format');
+                    return;
+                }
+            }
+
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="pulse-dot"></span> Testing...';
+            }
+
+            if (resultBox) {
+                resultBox.style.display = 'block';
+                resultBox.innerHTML = '<div style="color: var(--text-muted); padding: 8px 0;"><span class="pulse-dot"></span> Probing scraper with active configuration...</div>';
+            }
+
+            try {
+                const manifestUrl = repos[0] || 'https://cdn.jsdelivr.net/gh/D3adlyRocket/All-in-One-Nuvio@main/manifest.json';
+
+                const res = await fetch('/api/test-scraper', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        providerName: currentEditingScraper,
+                        manifestUrl: manifestUrl,
+                        domain: domain,
+                        fallbackMirrors: fallbackMirrors,
+                        headers: headers,
+                        mediaId: 'tt0137523',
+                        type: 'movie'
+                    })
+                });
+
+                const data = await res.json();
+                if (data && data.success) {
+                    triggerHaptic('success');
+                    let streamsHtml = '';
+                    if (Array.isArray(data.streams) && data.streams.length > 0) {
+                        streamsHtml = data.streams.map(s => `
+                            <div style="background: rgba(0,0,0,0.3); padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                <span style="color: #a78bfa; font-weight: 700;">${s.title || s.name || 'Stream'}</span>
+                                ${s.size ? `<span style="font-size: 10.5px; color: var(--text-muted); margin-left: 6px;">(${s.size})</span>` : ''}
+                            </div>
+                        `).join('');
+                    }
+
+                    resultBox.innerHTML = `
+                        <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px; padding: 10px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <span style="color: #34d399; font-weight: 700;">🟢 Scraper Online</span>
+                                <span style="font-size: 11px; color: #a78bfa; background: rgba(139,92,246,0.15); padding: 2px 8px; border-radius: 9999px;">${data.latencyMs}ms</span>
+                            </div>
+                            <div style="font-size: 11.5px; color: var(--text-secondary); margin-top: 4px;">
+                                📦 Probed <b>${data.streamCount}</b> stream(s) for benchmark title.
+                            </div>
+                            ${streamsHtml ? `<div style="margin-top: 6px; max-height: 120px; overflow-y: auto;">${streamsHtml}</div>` : ''}
+                        </div>
+                    `;
+                } else {
+                    triggerHaptic('error');
+                    resultBox.innerHTML = `
+                        <div style="background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 10px; padding: 10px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <span style="color: #f87171; font-weight: 700;">🔴 Scrape Failed</span>
+                                <span style="font-size: 11px; color: var(--text-muted);">${data.latencyMs || 0}ms</span>
+                            </div>
+                            <div style="font-size: 11.5px; color: #fca5a5; margin-top: 4px; word-break: break-all;">
+                                ${data.error || 'Connection timed out or returned zero streams.'}
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (e) {
+                triggerHaptic('error');
+                resultBox.innerHTML = `
+                    <div style="background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 10px; padding: 10px; color: #f87171;">
+                        ❌ Network error testing scraper: ${e.message}
+                    </div>
+                `;
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<span>▶️</span> Test Now';
+                }
+            }
+        }
+
+        function saveScraperOverrides() {
+            if (!currentEditingScraper) return;
+            triggerHaptic('success');
+            const domainInput = document.getElementById('scraper-input-domain');
+            const mirrorsInput = document.getElementById('scraper-input-mirrors');
+            const headersInput = document.getElementById('scraper-input-headers');
+
+            const domain = domainInput ? domainInput.value.trim() : '';
+            const rawMirrors = mirrorsInput ? mirrorsInput.value.trim() : '';
+            const fallbackMirrors = rawMirrors ? rawMirrors.split(/[\n,]+/).map(s => s.trim()).filter(Boolean) : [];
+
+            let headers = {};
+            if (headersInput && headersInput.value.trim()) {
+                try {
+                    headers = JSON.parse(headersInput.value.trim());
+                } catch (e) {
+                    showToast('⚠️ Headers must be valid JSON');
+                    return;
+                }
+            }
+
+            settings.scraperOverrides = settings.scraperOverrides || {};
+            if (domain || fallbackMirrors.length > 0 || Object.keys(headers).length > 0) {
+                settings.scraperOverrides[currentEditingScraper] = {
+                    domain: domain,
+                    fallbackMirrors: fallbackMirrors,
+                    headers: headers
+                };
+                showToast(`✨ <b>Overrides Saved:</b> ${currentEditingScraper}`);
+            } else {
+                delete settings.scraperOverrides[currentEditingScraper];
+                showToast(`✨ <b>Reset to Default:</b> ${currentEditingScraper}`);
+            }
+
+            saveSettingsLocal();
+            saveConfigurationToServer(true);
+            renderProviders();
+            closeScraperModal();
+        }
+
+        function resetScraperDefaults() {
+            if (!currentEditingScraper) return;
+            triggerHaptic('warning');
+            settings.scraperOverrides = settings.scraperOverrides || {};
+            delete settings.scraperOverrides[currentEditingScraper];
+            
+            saveSettingsLocal();
+            saveConfigurationToServer(true);
+            renderProviders();
+            closeScraperModal();
+            showToast(`🔄 <b>Restored defaults for:</b> ${currentEditingScraper}`);
         }
 
         function toggleProvider(name, isEnabled) {

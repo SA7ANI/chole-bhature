@@ -156,6 +156,55 @@ async function runWithConcurrency(tasks, limit = 6) {
     return Promise.all(results);
 }
 
+// Scraper Overrides Registry (in-memory + configurable per request)
+let globalScraperOverrides = {};
+
+function setGlobalScraperOverrides(overrides) {
+    if (overrides && typeof overrides === 'object') {
+        globalScraperOverrides = overrides;
+    }
+}
+
+function getGlobalScraperOverrides() {
+    return globalScraperOverrides;
+}
+
+/**
+ * Normalizes a user-input domain/mirror to a valid origin string (e.g. "https://hdhub4u.tv")
+ */
+function normalizeDomainUrl(raw) {
+    if (!raw || typeof raw !== 'string') return '';
+    let trimmed = raw.trim();
+    if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+        trimmed = 'https://' + trimmed;
+    }
+    return trimmed.replace(/\/+$/, '');
+}
+
+/**
+ * Rewrites a URL using the scraper's domain override and/or fallback mirrors
+ */
+function applyDomainOverride(urlStr, override) {
+    if (!override || typeof urlStr !== 'string') return urlStr;
+    const targetDomain = normalizeDomainUrl(override.domain);
+    if (!targetDomain) return urlStr;
+
+    // Don't rewrite TMDB, Google, Cloudflare, Github, or metadata APIs
+    if (urlStr.includes('themoviedb.org') || urlStr.includes('tmdb.org') || urlStr.includes('github.com') || urlStr.includes('jsdelivr.net') || urlStr.includes('cloudflare') || urlStr.includes('cinemeta.strem.io')) {
+        return urlStr;
+    }
+
+    try {
+        const parsedOrig = new URL(urlStr);
+        const parsedTarget = new URL(targetDomain);
+        parsedOrig.protocol = parsedTarget.protocol;
+        parsedOrig.host = parsedTarget.host;
+        return parsedOrig.toString();
+    } catch (e) {
+        return urlStr;
+    }
+}
+
 class ProviderLoader {
     constructor() {
         this.providerCache = new Map();
@@ -216,9 +265,14 @@ class ProviderLoader {
                                 this.scriptCache.set(scriptUrl, scriptCode);
                             }
 
-                            // Intercept fetch for TMDB and inject connection pooling
+                            // Dynamic context for current invocation
+                            let activeContext = { config: {}, override: {} };
+
+                            // Intercept fetch for TMDB and inject connection pooling & domain overrides
                             const customFetch = async (url, options = {}) => {
-                                const urlStr = typeof url === 'string' ? url : (url && url.url ? url.url : String(url));
+                                let urlStr = typeof url === 'string' ? url : (url && url.url ? url.url : String(url));
+                                const override = activeContext.override || (activeContext.config?.scraperOverrides && activeContext.config.scraperOverrides[scraper.name]) || globalScraperOverrides[scraper.name];
+
                                 if (urlStr.includes('themoviedb.org') || urlStr.includes('tmdb.org')) {
                                     const cached = await fetchTmdbWithFallback(urlStr);
                                     if (cached) {
@@ -228,46 +282,116 @@ class ProviderLoader {
                                         });
                                     }
                                 }
+
+                                // Apply domain override
+                                if (override && override.domain) {
+                                    urlStr = applyDomainOverride(urlStr, override);
+                                }
+
+                                // Merge custom headers
+                                let mergedHeaders = { ...(options.headers || {}) };
+                                if (override && override.headers && typeof override.headers === 'object') {
+                                    mergedHeaders = { ...mergedHeaders, ...override.headers };
+                                }
+
                                 const chosenAgent = urlStr.startsWith('http://') ? httpAgent : httpsAgent;
                                 const mergedOptions = {
                                     agent: chosenAgent,
-                                    ...options
+                                    ...options,
+                                    headers: mergedHeaders
                                 };
-                                return fetch(url, mergedOptions);
+
+                                try {
+                                    const res = await fetch(urlStr, mergedOptions);
+                                    // Automatic fallback mirror retry on failure
+                                    if (!res.ok && override && Array.isArray(override.fallbackMirrors) && override.fallbackMirrors.length > 0) {
+                                        for (const mirror of override.fallbackMirrors) {
+                                            try {
+                                                const fallbackUrl = applyDomainOverride(urlStr, { domain: mirror });
+                                                const fbRes = await fetch(fallbackUrl, mergedOptions);
+                                                if (fbRes.ok) return fbRes;
+                                            } catch (e) {}
+                                        }
+                                    }
+                                    return res;
+                                } catch (err) {
+                                    if (override && Array.isArray(override.fallbackMirrors) && override.fallbackMirrors.length > 0) {
+                                        for (const mirror of override.fallbackMirrors) {
+                                            try {
+                                                const fallbackUrl = applyDomainOverride(urlStr, { domain: mirror });
+                                                return await fetch(fallbackUrl, mergedOptions);
+                                            } catch (e) {}
+                                        }
+                                    }
+                                    throw err;
+                                }
                             };
 
-                            // Intercept axios for TMDB and inject connection pooling
+                            // Intercept axios for TMDB and inject connection pooling & domain overrides
                             const axiosInstance = axios.create({
                                 httpAgent,
                                 httpsAgent,
                                 timeout: 20000
                             });
 
-                            const customAxios = async (config) => {
-                                const urlStr = typeof config === 'string' ? config : (config && config.url ? config.url : '');
+                            const wrapAxiosUrlAndOptions = (targetUrlOrConfig, customConfig = {}) => {
+                                let urlStr = '';
+                                let conf = {};
+                                if (typeof targetUrlOrConfig === 'string') {
+                                    urlStr = targetUrlOrConfig;
+                                    conf = { ...customConfig };
+                                } else if (targetUrlOrConfig && typeof targetUrlOrConfig === 'object') {
+                                    urlStr = targetUrlOrConfig.url || '';
+                                    conf = { ...targetUrlOrConfig, ...customConfig };
+                                }
+
+                                const override = activeContext.override || (activeContext.config?.scraperOverrides && activeContext.config.scraperOverrides[scraper.name]) || globalScraperOverrides[scraper.name];
+
+                                if (override && override.domain) {
+                                    urlStr = applyDomainOverride(urlStr, override);
+                                }
+
+                                let headers = { ...(conf.headers || {}) };
+                                if (override && override.headers && typeof override.headers === 'object') {
+                                    headers = { ...headers, ...override.headers };
+                                }
+
+                                return { urlStr, config: { ...conf, url: urlStr, headers } };
+                            };
+
+                            const customAxios = async (targetUrlOrConfig, optConfig = {}) => {
+                                const { urlStr, config } = wrapAxiosUrlAndOptions(targetUrlOrConfig, optConfig);
                                 if (urlStr.includes('themoviedb.org') || urlStr.includes('tmdb.org')) {
                                     const cached = await fetchTmdbWithFallback(urlStr);
                                     if (cached) {
                                         return { data: cached, status: 200, statusText: 'OK', headers: {}, config };
                                     }
                                 }
-                                return axiosInstance(config);
-                            };
-                            customAxios.get = async (url, config = {}) => {
-                                if (typeof url === 'string' && (url.includes('themoviedb.org') || url.includes('tmdb.org'))) {
-                                    const cached = await fetchTmdbWithFallback(url);
-                                    if (cached) {
-                                        return { data: cached, status: 200, statusText: 'OK', headers: {}, config };
+                                const override = activeContext.override || (activeContext.config?.scraperOverrides && activeContext.config.scraperOverrides[scraper.name]) || globalScraperOverrides[scraper.name];
+                                try {
+                                    return await axiosInstance(config);
+                                } catch (err) {
+                                    if (override && Array.isArray(override.fallbackMirrors) && override.fallbackMirrors.length > 0) {
+                                        for (const mirror of override.fallbackMirrors) {
+                                            try {
+                                                const fallbackUrl = applyDomainOverride(urlStr, { domain: mirror });
+                                                return await axiosInstance({ ...config, url: fallbackUrl });
+                                            } catch (e) {}
+                                        }
                                     }
+                                    throw err;
                                 }
-                                return axiosInstance.get(url, config);
                             };
-                            customAxios.post = (url, data, config) => axiosInstance.post(url, data, config);
-                            customAxios.head = (url, config) => axiosInstance.head(url, config);
-                            customAxios.put = (url, data, config) => axiosInstance.put(url, data, config);
-                            customAxios.delete = (url, config) => axiosInstance.delete(url, config);
-                            customAxios.patch = (url, data, config) => axiosInstance.patch(url, data, config);
-                            customAxios.options = (url, config) => axiosInstance.options(url, config);
+
+                            customAxios.get = async (url, config = {}) => {
+                                return customAxios(url, { ...config, method: 'GET' });
+                            };
+                            customAxios.post = (url, data, config = {}) => customAxios(url, { ...config, method: 'POST', data });
+                            customAxios.head = (url, config = {}) => customAxios(url, { ...config, method: 'HEAD' });
+                            customAxios.put = (url, data, config = {}) => customAxios(url, { ...config, method: 'PUT', data });
+                            customAxios.delete = (url, config = {}) => customAxios(url, { ...config, method: 'DELETE' });
+                            customAxios.patch = (url, data, config = {}) => customAxios(url, { ...config, method: 'PATCH', data });
+                            customAxios.options = (url, config = {}) => customAxios(url, { ...config, method: 'OPTIONS' });
                             customAxios.request = (config) => customAxios(config);
                             customAxios.create = () => customAxios;
                             customAxios.default = customAxios;
@@ -338,10 +462,22 @@ class ProviderLoader {
                             
                             const providerModule = sandbox.module.exports;
                             if (typeof providerModule.getStreams === 'function') {
+                                const originalGetStreams = providerModule.getStreams;
                                 return {
                                     id: scraper.id,
                                     name: scraper.name,
-                                    getStreams: providerModule.getStreams
+                                    getStreams: async (id, type, season, episode, userConfig = {}) => {
+                                        const override = (userConfig.scraperOverrides && userConfig.scraperOverrides[scraper.name]) || globalScraperOverrides[scraper.name] || {};
+                                        if (override.disabled || (userConfig.disabledProviders && userConfig.disabledProviders.includes(scraper.name))) {
+                                            return [];
+                                        }
+                                        activeContext = { config: userConfig, override: override };
+                                        try {
+                                            return await originalGetStreams(id, type, season, episode, userConfig);
+                                        } finally {
+                                            activeContext = { config: {}, override: {} };
+                                        }
+                                    }
                                 };
                             }
                         } catch (err) {
@@ -372,6 +508,118 @@ class ProviderLoader {
             this.inFlightManifests.delete(manifestUrl);
         }
     }
+
+    /**
+     * Test a single scraper in isolation with custom domain/header overrides
+     */
+    async testScraper(manifestUrl, providerName, overrides = {}, mediaId = 'tt0137523', type = 'movie') {
+        const startTime = Date.now();
+        try {
+            const providers = await this.loadProviders(manifestUrl);
+            const targetProvider = providers.find(p => p.name.toLowerCase() === providerName.toLowerCase() || p.id === providerName);
+            if (!targetProvider) {
+                return {
+                    success: false,
+                    providerName,
+                    error: `Provider "${providerName}" not found in manifest`,
+                    latencyMs: Date.now() - startTime
+                };
+            }
+
+            const testConfig = {
+                scraperOverrides: {
+                    [targetProvider.name]: overrides
+                }
+            };
+
+            const streams = await targetProvider.getStreams(mediaId, type, null, null, testConfig);
+            const latencyMs = Date.now() - startTime;
+            const validStreams = Array.isArray(streams) ? streams : [];
+
+            return {
+                success: true,
+                providerName: targetProvider.name,
+                latencyMs,
+                streamCount: validStreams.length,
+                streams: validStreams.slice(0, 5),
+                message: `Successfully tested ${targetProvider.name}: found ${validStreams.length} stream(s)`
+            };
+        } catch (err) {
+            return {
+                success: false,
+                providerName,
+                error: err.message || 'Scraper test execution error',
+                latencyMs: Date.now() - startTime
+            };
+        }
+    }
+
+    /**
+     * Extracts detected default domains and metadata from a scraper
+     */
+    async getScraperInfo(manifestUrl, providerName) {
+        try {
+            const manifestRes = await fetchWithRetry(manifestUrl, { timeout: 8000, httpAgent, httpsAgent });
+            const manifest = manifestRes.data;
+            const scraper = (manifest.scrapers || []).find(s => s.name.toLowerCase() === providerName.toLowerCase() || s.id === providerName);
+            if (!scraper) return { defaultDomain: '', detectedMirrors: [] };
+
+            const baseUrl = manifestUrl.substring(0, manifestUrl.lastIndexOf('/'));
+            const scriptUrl = `${baseUrl}/${scraper.filename}`;
+            let scriptCode = this.scriptCache.get(scriptUrl);
+            if (!scriptCode) {
+                const scriptRes = await fetchWithRetry(scriptUrl, { timeout: 8000, httpAgent, httpsAgent });
+                scriptCode = scriptRes.data;
+                this.scriptCache.set(scriptUrl, scriptCode);
+            }
+
+            const rawMatches = (scriptCode.match(/https?:\/\/[a-zA-Z0-9.-]+\.[a-z]{2,}/g) || [])
+                .filter(u => !u.includes('themoviedb.org') && !u.includes('tmdb.org') && !u.includes('postimg.cc') && !u.includes('github.com') && !u.includes('jsdelivr.net') && !u.includes('graphql.anilist.co') && !u.includes('cinemeta.strem.io') && !u.includes('strem.io') && !u.includes('w3.org'));
+
+            const KNOWN_DEFAULT_DOMAINS = {
+                'hdhub4u': 'https://new1.hdhub4u.af',
+                'vegamovies': 'https://vegamovies.im',
+                'moviesdrive': 'https://moviesdrive.fit',
+                'moviesmod': 'https://moviesmod.cc',
+                'castle': 'https://castletv.in',
+                'modmirage': 'https://modmirage.org',
+                'topmovies': 'https://topmovies.guru',
+                'katmoviehd': 'https://katmoviehd.cx',
+                'allanime': 'https://allanime.day',
+                '4khdhub': 'https://4khdhub.one',
+                '1shows': 'https://www.1shows.org',
+                'animekai': 'https://www3.anikai.cc',
+                'animepahe': 'https://animepahe.com',
+                'animesalt': 'https://animesalt.link',
+                'animetsu': 'https://animetsu.live',
+                'allwish': 'https://megaplay.buzz',
+                'dahmermovies': 'https://dahmermovies.org',
+                'movieshunt': 'https://movieshunt.site',
+                'ringz': 'https://ringz.to',
+                'dvdplay': 'https://dvdplay.top'
+            };
+
+            const cleanKey = providerName.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const fallbackKnown = KNOWN_DEFAULT_DOMAINS[cleanKey] || '';
+
+            const unique = [...new Set(rawMatches)];
+            const chosenDomain = unique[0] || fallbackKnown || '';
+
+            return {
+                name: scraper.name,
+                defaultDomain: chosenDomain,
+                detectedMirrors: unique.length > 0 ? unique : (fallbackKnown ? [fallbackKnown] : [])
+            };
+        } catch (e) {
+            return { defaultDomain: '', detectedMirrors: [] };
+        }
+    }
 }
 
-module.exports = new ProviderLoader();
+const providerLoaderInstance = new ProviderLoader();
+providerLoaderInstance.setGlobalScraperOverrides = setGlobalScraperOverrides;
+providerLoaderInstance.getGlobalScraperOverrides = getGlobalScraperOverrides;
+providerLoaderInstance.normalizeDomainUrl = normalizeDomainUrl;
+providerLoaderInstance.applyDomainOverride = applyDomainOverride;
+
+module.exports = providerLoaderInstance;
