@@ -3307,78 +3307,85 @@
     </div>
 
     <!-- Dynamic Scraper Domain & Override Manager Modal -->
-    <div id="cb-scraper-modal" class="aesthetic-modal-backdrop" style="display: none;">
-        <div class="aesthetic-modal-card" style="max-width: 520px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+    <div id="cb-scraper-modal" class="aesthetic-modal-backdrop" style="display: none; padding: 16px;">
+        <div class="aesthetic-modal-card" style="max-width: 480px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; padding: 20px;">
+            <!-- Header -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-shrink: 0;">
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <div id="scraper-modal-icon" class="aesthetic-modal-icon-wrap" style="width: 42px; height: 42px; font-size: 20px; margin-bottom: 0;">🔌</div>
+                    <div id="scraper-modal-icon" class="aesthetic-modal-icon-wrap" style="width: 38px; height: 38px; font-size: 18px; margin-bottom: 0; border-radius: 10px;">🔌</div>
                     <div>
-                        <h3 class="aesthetic-modal-title" id="scraper-modal-title" style="margin: 0; font-size: 17px; text-align: left;">Scraper Settings</h3>
+                        <h3 class="aesthetic-modal-title" id="scraper-modal-title" style="margin: 0; font-size: 16.5px; text-align: left; font-weight: 700;">Scraper Settings</h3>
                         <span id="scraper-modal-repo" style="font-size: 11px; color: var(--text-muted);">Repository</span>
                     </div>
                 </div>
                 <button type="button" class="tour-close-btn" onclick="closeScraperModal()" title="Close">✕</button>
             </div>
 
-            <!-- Currently Working / Active Base Domain Banner -->
-            <div style="background: rgba(139, 92, 246, 0.08); border: 1px solid rgba(139, 92, 246, 0.25); border-radius: 12px; padding: 10px 14px; margin-top: 6px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-                <div style="min-width: 0; flex: 1;">
-                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 3px;">
-                        <span style="font-size: 10.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Currently Working Base Domain</span>
-                        <span id="scraper-status-chip" class="format-tag scraper-override-badge" style="font-size: 9.5px; padding: 1px 6px;">🟢 Default</span>
+            <!-- Scrollable Body Content -->
+            <div style="overflow-y: auto; overflow-x: hidden; padding-right: 4px; display: flex; flex-direction: column; gap: 12px; margin: 4px 0 10px 0;">
+                
+                <!-- Currently Working Base Domain Banner -->
+                <div style="background: rgba(139, 92, 246, 0.08); border: 1px solid rgba(139, 92, 246, 0.25); border-radius: 12px; padding: 10px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                    <div style="min-width: 0; flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 3px; flex-wrap: wrap;">
+                            <span style="font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Active Base Domain</span>
+                            <span id="scraper-status-chip" class="format-tag scraper-override-badge" style="font-size: 9.5px; padding: 1px 6px;">🟢 Default</span>
+                        </div>
+                        <div id="scraper-current-active-url" style="font-size: 13px; font-weight: 600; color: #c4b5fd; word-break: break-all; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">
+                            Detecting...
+                        </div>
                     </div>
-                    <div id="scraper-current-active-url" style="font-size: 13.5px; font-weight: 700; color: #a78bfa; word-break: break-all;">
-                        Detecting...
-                    </div>
+                    <button type="button" class="pill-btn pill-btn-glass" onclick="prefillCurrentDomain()" style="padding: 5px 10px; font-size: 11px; flex-shrink: 0; color: #c4b5fd; border-color: rgba(139, 92, 246, 0.35);" title="Copy into Edit Input">
+                        ✏️ Edit
+                    </button>
                 </div>
-                <button type="button" class="pill-btn pill-btn-glass" onclick="prefillCurrentDomain()" style="padding: 5px 10px; font-size: 11px; flex-shrink: 0; color: #c4b5fd; border-color: rgba(139, 92, 246, 0.35);" title="Copy into Edit Input">
-                    ✏️ Edit
-                </button>
-            </div>
 
-            <div style="display: flex; flex-direction: column; gap: 14px; text-align: left; margin: 16px 0;">
+                <!-- Primary Domain -->
                 <div>
-                    <label style="display: block; font-size: 12px; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px;">
+                    <label style="display: block; font-size: 11.5px; font-weight: 700; color: var(--text-secondary); margin-bottom: 5px;">
                         🌐 Primary Domain / Base URL Override
                     </label>
-                    <input type="url" id="scraper-input-domain" placeholder="e.g. https://..." style="width: 100%; box-sizing: border-box;">
-                    <span style="font-size: 11px; color: var(--text-muted); margin-top: 4px; display: block;">Replaces outgoing site requests dynamically with zero redeployment.</span>
+                    <input type="url" id="scraper-input-domain" placeholder="e.g. https://..." style="width: 100%; box-sizing: border-box; font-size: 12.5px; padding: 9px 12px; border-radius: 10px;">
+                    <span style="font-size: 10.5px; color: var(--text-muted); margin-top: 3px; display: block;">Replaces outgoing site requests dynamically with zero redeployment.</span>
                 </div>
 
+                <!-- Fallback Mirrors -->
                 <div>
-                    <label style="display: block; font-size: 12px; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px;">
+                    <label style="display: block; font-size: 11.5px; font-weight: 700; color: var(--text-secondary); margin-bottom: 5px;">
                         🔄 Fallback Mirrors (One per line or comma-separated)
                     </label>
-                    <textarea id="scraper-input-mirrors" rows="2" placeholder="https://hdhub4u.fit&#10;https://hdhub4u.work" style="width: 100%; box-sizing: border-box; resize: vertical; border-radius: 12px; padding: 10px; background: rgba(0,0,0,0.35); border: 1px solid var(--border-subtle); color: var(--text-primary); font-family: inherit; font-size: 12px;"></textarea>
-                    <span style="font-size: 11px; color: var(--text-muted); margin-top: 4px; display: block;">If the primary domain fails, these mirrors will be tried automatically.</span>
+                    <textarea id="scraper-input-mirrors" rows="2" placeholder="https://mirror1.com&#10;https://mirror2.com" style="width: 100%; box-sizing: border-box; resize: vertical; border-radius: 10px; padding: 8px 12px; background: rgba(0,0,0,0.35); border: 1px solid var(--border-subtle); color: var(--text-primary); font-family: inherit; font-size: 11.5px;"></textarea>
+                    <span style="font-size: 10.5px; color: var(--text-muted); margin-top: 3px; display: block;">If the primary domain fails, these mirrors will be tried automatically.</span>
                 </div>
 
+                <!-- Custom Request Headers -->
                 <div>
-                    <label style="display: block; font-size: 12px; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px;">
+                    <label style="display: block; font-size: 11.5px; font-weight: 700; color: var(--text-secondary); margin-bottom: 5px;">
                         🔑 Custom Request Headers (Optional JSON)
                     </label>
-                    <textarea id="scraper-input-headers" rows="2" placeholder='{"User-Agent": "Mozilla/5.0...", "Referer": "https://site.com"}' style="width: 100%; box-sizing: border-box; resize: vertical; border-radius: 12px; padding: 10px; background: rgba(0,0,0,0.35); border: 1px solid var(--border-subtle); color: var(--text-primary); font-family: monospace; font-size: 11.5px;"></textarea>
+                    <textarea id="scraper-input-headers" rows="2" placeholder='{"User-Agent": "Mozilla/5.0...", "Referer": "https://site.com"}' style="width: 100%; box-sizing: border-box; resize: vertical; border-radius: 10px; padding: 8px 12px; background: rgba(0,0,0,0.35); border: 1px solid var(--border-subtle); color: var(--text-primary); font-family: monospace; font-size: 11px;"></textarea>
                 </div>
 
                 <!-- Live Test Probe Box -->
-                <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-subtle); border-radius: 14px; padding: 12px;">
+                <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 10px 12px;">
                     <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                        <span style="font-size: 12px; font-weight: 700; color: var(--text-primary);">⚡ Live Test Probe</span>
-                        <button type="button" class="pill-btn pill-btn-emerald" id="btn-test-scraper-run" onclick="runLiveScraperTest()" style="padding: 5px 12px; font-size: 11.5px;">
+                        <span style="font-size: 11.5px; font-weight: 700; color: var(--text-primary);">⚡ Live Test Probe</span>
+                        <button type="button" class="pill-btn pill-btn-emerald" id="btn-test-scraper-run" onclick="runLiveScraperTest()" style="padding: 4px 12px; font-size: 11px;">
                             <span>▶️</span> Test Now
                         </button>
                     </div>
-                    <div id="scraper-test-result-box" style="margin-top: 10px; display: none; font-size: 12px;">
+                    <div id="scraper-test-result-box" style="margin-top: 8px; display: none; font-size: 11.5px;">
                         <!-- Injected dynamically -->
                     </div>
                 </div>
             </div>
 
-            <div class="aesthetic-modal-actions" style="margin-top: 8px;">
-                <button type="button" class="pill-btn pill-btn-glass" onclick="resetScraperDefaults()" style="color: #f87171;">
+            <!-- Bottom Actions -->
+            <div class="aesthetic-modal-actions" style="margin-top: 4px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.06); flex-shrink: 0;">
+                <button type="button" class="pill-btn pill-btn-glass" onclick="resetScraperDefaults()" style="color: #f87171; font-size: 12px; padding: 8px 16px;">
                     Reset
                 </button>
-                <button type="button" class="pill-btn pill-btn-emerald" onclick="saveScraperOverrides()">
+                <button type="button" class="pill-btn pill-btn-emerald" onclick="saveScraperOverrides()" style="font-size: 12px; padding: 8px 18px;">
                     Save Overrides
                 </button>
             </div>
@@ -5152,11 +5159,14 @@
             }
         }
 
+        const scraperInfoCache = new Map();
+
         async function openScraperModal(providerName) {
             triggerHaptic('medium');
             const provider = allProvidersData.find(p => p.name === providerName) || { name: providerName, repoName: 'Repository' };
             currentEditingScraper = providerName;
 
+            const modal = document.getElementById('cb-scraper-modal');
             const titleEl = document.getElementById('scraper-modal-title');
             const repoEl = document.getElementById('scraper-modal-repo');
             const iconEl = document.getElementById('scraper-modal-icon');
@@ -5189,6 +5199,9 @@
                 resultBox.innerHTML = '';
             }
 
+            // Open Modal Instantly (0ms delay)
+            if (modal) modal.style.display = 'flex';
+
             // Display Active Working Domain
             if (override.domain) {
                 if (activeUrlEl) activeUrlEl.innerText = override.domain;
@@ -5197,6 +5210,19 @@
                     statusChipEl.style.background = 'rgba(139, 92, 246, 0.2)';
                     statusChipEl.style.borderColor = 'rgba(139, 92, 246, 0.4)';
                     statusChipEl.style.color = '#c4b5fd';
+                }
+            } else if (scraperInfoCache.has(providerName)) {
+                const infoData = scraperInfoCache.get(providerName);
+                if (activeUrlEl) activeUrlEl.innerText = infoData.defaultDomain || 'Default Repository Origin';
+                if (statusChipEl) {
+                    statusChipEl.innerText = '🟢 Default Repo Domain';
+                    statusChipEl.style.background = 'rgba(16, 185, 129, 0.15)';
+                    statusChipEl.style.borderColor = 'rgba(16, 185, 129, 0.35)';
+                    statusChipEl.style.color = '#34d399';
+                }
+                if (domainInput && !domainInput.value) domainInput.placeholder = `e.g. ${infoData.defaultDomain}`;
+                if (mirrorsInput && !mirrorsInput.value && Array.isArray(infoData.detectedMirrors) && infoData.detectedMirrors.length > 1) {
+                    mirrorsInput.placeholder = infoData.detectedMirrors.slice(1).join('\n');
                 }
             } else {
                 if (activeUrlEl) activeUrlEl.innerText = 'Detecting default domain...';
@@ -5207,39 +5233,43 @@
                     statusChipEl.style.color = 'var(--text-muted)';
                 }
 
-                // Fetch detected default domain from server
-                try {
-                    const manifestUrl = provider.manifestUrl || repos[0] || 'https://cdn.jsdelivr.net/gh/D3adlyRocket/All-in-One-Nuvio@main/manifest.json';
-                    const res = await fetch(`/api/scraper-info?providerName=${encodeURIComponent(providerName)}&manifestUrl=${encodeURIComponent(manifestUrl)}`);
-                    const infoData = await res.json();
-                    if (infoData && infoData.success && infoData.defaultDomain) {
-                        if (activeUrlEl) activeUrlEl.innerText = infoData.defaultDomain;
-                        if (statusChipEl) {
-                            statusChipEl.innerText = '🟢 Default Repo Domain';
-                            statusChipEl.style.background = 'rgba(16, 185, 129, 0.15)';
-                            statusChipEl.style.borderColor = 'rgba(16, 185, 129, 0.35)';
-                            statusChipEl.style.color = '#34d399';
+                // Asynchronously fetch detected default domain without blocking modal opening
+                (async () => {
+                    try {
+                        const manifestUrl = provider.manifestUrl || repos[0] || 'https://cdn.jsdelivr.net/gh/D3adlyRocket/All-in-One-Nuvio@main/manifest.json';
+                        const res = await fetch(`/api/scraper-info?providerName=${encodeURIComponent(providerName)}&manifestUrl=${encodeURIComponent(manifestUrl)}`);
+                        const infoData = await res.json();
+                        if (infoData && infoData.success && infoData.defaultDomain) {
+                            scraperInfoCache.set(providerName, infoData);
+                            if (currentEditingScraper === providerName) {
+                                if (activeUrlEl) activeUrlEl.innerText = infoData.defaultDomain;
+                                if (statusChipEl) {
+                                    statusChipEl.innerText = '🟢 Default Repo Domain';
+                                    statusChipEl.style.background = 'rgba(16, 185, 129, 0.15)';
+                                    statusChipEl.style.borderColor = 'rgba(16, 185, 129, 0.35)';
+                                    statusChipEl.style.color = '#34d399';
+                                }
+                                if (domainInput && !domainInput.value) domainInput.placeholder = `e.g. ${infoData.defaultDomain}`;
+                                if (mirrorsInput && !mirrorsInput.value && Array.isArray(infoData.detectedMirrors) && infoData.detectedMirrors.length > 1) {
+                                    mirrorsInput.placeholder = infoData.detectedMirrors.slice(1).join('\n');
+                                }
+                            }
+                        } else if (currentEditingScraper === providerName) {
+                            if (activeUrlEl) activeUrlEl.innerText = 'Default Repository Origin';
+                            if (statusChipEl) {
+                                statusChipEl.innerText = '🟢 Default';
+                                statusChipEl.style.background = 'rgba(16, 185, 129, 0.15)';
+                                statusChipEl.style.borderColor = 'rgba(16, 185, 129, 0.35)';
+                                statusChipEl.style.color = '#34d399';
+                            }
                         }
-                        if (domainInput) domainInput.placeholder = `e.g. ${infoData.defaultDomain}`;
-                        if (mirrorsInput && Array.isArray(infoData.detectedMirrors) && infoData.detectedMirrors.length > 1) {
-                            mirrorsInput.placeholder = infoData.detectedMirrors.slice(1).join('\n');
-                        }
-                    } else {
-                        if (activeUrlEl) activeUrlEl.innerText = 'Default Repository Origin';
-                        if (statusChipEl) {
-                            statusChipEl.innerText = '🟢 Default';
-                            statusChipEl.style.background = 'rgba(16, 185, 129, 0.15)';
-                            statusChipEl.style.borderColor = 'rgba(16, 185, 129, 0.35)';
-                            statusChipEl.style.color = '#34d399';
+                    } catch (e) {
+                        if (currentEditingScraper === providerName && activeUrlEl) {
+                            activeUrlEl.innerText = 'Default Repository Origin';
                         }
                     }
-                } catch (e) {
-                    if (activeUrlEl) activeUrlEl.innerText = 'Default Repository Origin';
-                }
+                })();
             }
-
-            const modal = document.getElementById('cb-scraper-modal');
-            if (modal) modal.style.display = 'flex';
         }
 
         function closeScraperModal() {
