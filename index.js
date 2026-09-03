@@ -830,14 +830,54 @@ function createAddon(config) {
         ? `${config.addonProtocol || 'http'}://${config.addonHost}/icon-512.png?v=3` 
         : 'https://raw.githubusercontent.com/yoruix/nuvio-providers/main/public/icon-512.png?v=3';
 
+    // Build Curated Catalogs list if enabled
+    const enabledCatalogs = [];
+    if (config.enableCatalogs !== false) {
+        if (config.catalogTrending !== false) {
+            enabledCatalogs.push({
+                type: 'movie',
+                id: 'cb_trending_movies',
+                name: '🔥 Trending Movies',
+                extra: [{ name: 'genre', isRequired: false }, { name: 'skip', isRequired: false }]
+            });
+            enabledCatalogs.push({
+                type: 'series',
+                id: 'cb_trending_series',
+                name: '📺 Trending Series',
+                extra: [{ name: 'genre', isRequired: false }, { name: 'skip', isRequired: false }]
+            });
+        }
+        if (config.catalogIndian !== false) {
+            enabledCatalogs.push({
+                type: 'movie',
+                id: 'cb_indian_cinema',
+                name: '🇮🇳 Trending Indian Cinema',
+                extra: [{ name: 'genre', isRequired: false }, { name: 'skip', isRequired: false }]
+            });
+        }
+        if (config.catalogAnime !== false) {
+            enabledCatalogs.push({
+                type: 'series',
+                id: 'cb_anime_trending',
+                name: '⛩️ Trending Anime',
+                extra: [{ name: 'genre', isRequired: false }, { name: 'skip', isRequired: false }]
+            });
+        }
+    }
+
+    const resources = ['stream'];
+    if (enabledCatalogs.length > 0) {
+        resources.push('catalog');
+    }
+
     const builder = new addonBuilder({
         id: addonId,
-        version: '4.1.0',
+        version: '4.2.0',
         name: addonName,
-        description: 'High-Performance Stream Meta-Sorter & Priority Engine for Nuvio & Stremio. Scrapes, verifies, filters dead links, and organizes streams by speed, quality, and language.',
+        description: 'High-Performance Stream Meta-Sorter & Discovery Hub for Nuvio & Stremio. Scrapes, verifies, filters dead links, organizes streams by speed/quality/audio, and provides curated Indian Cinema, Trending & Anime feeds.',
         logo: addonLogo,
-        catalogs: [],
-        resources: ['stream'],
+        catalogs: enabledCatalogs,
+        resources: resources,
         types: ['movie', 'series', 'anime', 'tv', 'other'],
         idPrefixes: ['tt', 'tmdb:', 'kitsu:'],
         behaviorHints: { configurable: true, configurationRequired: true }
@@ -1068,7 +1108,78 @@ function createAddon(config) {
         }
     });
 
-    // No catalogs defined
+    // Curated Discovery Catalogs Handler
+    const catalogCache = new Map();
+
+    async function fetchCuratedCatalog(catalogId, page = 1) {
+        const cacheKey = `${catalogId}:${page}`;
+        const cached = catalogCache.get(cacheKey);
+        if (cached && Date.now() - cached.timestamp < 6 * 3600 * 1000) {
+            return cached.metas;
+        }
+
+        const urlsToTry = [];
+        if (catalogId === 'cb_trending_movies') {
+            urlsToTry.push(`https://api.themoviedb.org/3/trending/movie/day?page=${page}`);
+            urlsToTry.push(`https://api.themoviedb.org/3/discover/movie?sort_by=popularity.desc&page=${page}`);
+        } else if (catalogId === 'cb_trending_series') {
+            urlsToTry.push(`https://api.themoviedb.org/3/trending/tv/day?page=${page}`);
+            urlsToTry.push(`https://api.themoviedb.org/3/discover/tv?sort_by=popularity.desc&page=${page}`);
+        } else if (catalogId === 'cb_indian_cinema') {
+            urlsToTry.push(`https://api.themoviedb.org/3/discover/movie?with_original_language=hi|te|ta|ml|kn&sort_by=popularity.desc&page=${page}`);
+        } else if (catalogId === 'cb_anime_trending') {
+            urlsToTry.push(`https://api.themoviedb.org/3/discover/tv?with_genres=16&with_original_language=ja&sort_by=popularity.desc&page=${page}`);
+        }
+
+        if (urlsToTry.length === 0) return [];
+
+        for (const url of urlsToTry) {
+            for (const key of TMDB_API_KEYS) {
+                try {
+                    const reqUrl = `${url}${url.includes('?') ? '&' : '?'}api_key=${key}`;
+                    const res = await axios.get(reqUrl, {
+                        timeout: 5000,
+                        httpsAgent: dohHttpsAgent,
+                        headers: { 'Accept': 'application/json' }
+                    });
+
+                    if (res.data && Array.isArray(res.data.results) && res.data.results.length > 0) {
+                        const metas = res.data.results.map(item => {
+                            const isTv = Boolean(item.name || item.first_air_date);
+                            const title = item.title || item.name || 'Untitled';
+                            const year = (item.release_date || item.first_air_date || '').split('-')[0] || '';
+                            const poster = item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : null;
+                            const background = item.backdrop_path ? `https://image.tmdb.org/t/p/w1280${item.backdrop_path}` : null;
+                            return {
+                                id: `tmdb:${item.id}`,
+                                type: isTv ? 'series' : 'movie',
+                                name: title,
+                                poster: poster,
+                                background: background,
+                                posterShape: 'poster',
+                                releaseInfo: year,
+                                imdbRating: item.vote_average ? String(Math.round(item.vote_average * 10) / 10) : null,
+                                description: item.overview || ''
+                            };
+                        });
+                        catalogCache.set(cacheKey, { timestamp: Date.now(), metas });
+                        return metas;
+                    }
+                } catch (err) {}
+            }
+        }
+        return [];
+    }
+
+    if (enabledCatalogs.length > 0) {
+        builder.defineCatalogHandler(async ({ type, id, extra }) => {
+            console.log(`[Catalog] Request for ${type} catalog: ${id}`);
+            const skip = extra && extra.skip ? parseInt(extra.skip, 10) : 0;
+            const page = Math.floor(skip / 20) + 1;
+            const metas = await fetchCuratedCatalog(id, page);
+            return { metas };
+        });
+    }
 
     return builder.getInterface();
 }

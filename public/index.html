@@ -17,7 +17,7 @@
     <link rel="apple-touch-icon" sizes="182x182" href="/icon-192.png?v=4">
     <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png?v=4">
     <link rel="apple-touch-icon" sizes="512x512" href="/icon-512.png?v=4">
-    <title>Chole Bhature • Nuvio & Stremio Meta-Sorter v4.1.0</title>
+    <title>Chole Bhature • Nuvio & Stremio Meta-Sorter v4.2.0</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -2306,7 +2306,7 @@
         <a href="#" class="nav-brand-pill" onclick="handleSecretLogoClick(event); return false;">
             <img src="/icon-192.png?v=4" alt="Chole Bhature Logo" class="nav-brand-logo" onerror="this.onerror=null; this.src='/icon-192.png';">
             <span class="nav-brand-name">Chole Bhature</span>
-            <span class="nav-brand-version">v4.1.0</span>
+            <span class="nav-brand-version">v4.2.0</span>
         </a>
 
         <!-- Desktop Navigation Tabs -->
@@ -2524,17 +2524,19 @@
                         <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; flex-wrap: wrap;">
                             <div class="setting-text-block" style="flex: 1; min-width: 240px;">
                                 <div class="setting-headline">
-                                    ⚡ Real-Debrid / AllDebrid
-                                    <span class="tag-pill-badge" style="background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.4); color: #fbbf24;">10Gbps Direct Stream</span>
+                                    ⚡ Real-Debrid / TorBox / AllDebrid
+                                    <span class="tag-pill-badge" style="background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.4); color: #fbbf24;">⚡ [RD+] / [TB+] Instant</span>
                                 </div>
-                                <div class="setting-description">Unlock zero-buffering high-speed direct streaming by automatically unrestricting torrents through your Debrid account.</div>
+                                <div class="setting-description">Unlock zero-buffering 10Gbps direct streaming. Automatically detects and badges instant cached torrents (<b>[RD+]</b> / <b>[TB+]</b>) for 0-buffer playback.</div>
                             </div>
                         </div>
                         <div class="input-bar-group" style="margin-top: 4px; flex-direction: column; gap: 10px;">
                             <select id="debridProvider" onchange="onSettingChanged()" style="width: 100%; font-weight: 600; cursor: pointer; font-family: inherit; color-scheme: dark;">
-                                <option value="none">❌ None (Free Links Only)</option>
-                                <option value="realdebrid">🟢 Real-Debrid</option>
+                                <option value="none">❌ None (Free Direct Links Only)</option>
+                                <option value="realdebrid">🟢 Real-Debrid (⚡ [RD+] Instant Check)</option>
+                                <option value="torbox">⚡ TorBox (⚡ [TB+] Instant Check)</option>
                                 <option value="alldebrid">🔵 AllDebrid</option>
+                                <option value="premiumize">👑 Premiumize</option>
                             </select>
                             <div id="debrid-input-container" style="width: 100%; display: none; position: relative;">
                                 <input type="password" id="debridApiKey" placeholder="Enter your Debrid API Key / Token..." onchange="onSettingChanged()" style="width: 100%; padding-right: 44px; box-sizing: border-box;">
@@ -2733,6 +2735,60 @@
                     </div>
                     <div class="lang-chips-grid" id="lang-chips-container">
                         <!-- Populated dynamically via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Curated Discovery Catalogs -->
+            <div class="section-wrap" id="section-catalogs">
+                <div class="section-label-bar">
+                    <span class="section-label">🎬 Curated Discovery Catalogs</span>
+                    <span class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.35); color: #34d399;">✨ Stremio Home Feed</span>
+                </div>
+                <div class="section-card">
+                    <div class="setting-item-row" style="padding-bottom: 8px; border-bottom: none;">
+                        <div class="setting-text-block">
+                            <div class="setting-headline">
+                                🌟 Enable Curated Catalogs
+                                <span class="tag-pill-badge" style="background: rgba(139, 92, 246, 0.15); border-color: rgba(139, 92, 246, 0.35); color: #c4b5fd;">Discovery Hub</span>
+                            </div>
+                            <div class="setting-description">Adds high-resolution discovery carousels to Stremio's home screen for trending movies, TV series, Bollywood, and anime.</div>
+                        </div>
+                        <div class="dual-filter-group">
+                            <label class="filter-capsule">
+                                <span class="filter-capsule-text">🎬 Catalogs</span>
+                                <div class="switch-toggle">
+                                    <input type="checkbox" id="enableCatalogs" checked onchange="onSettingChanged()">
+                                    <span class="switch-slider"></span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="catalogs-sub-options" style="border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 14px; margin-top: 8px;">
+                        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                            <label class="filter-capsule" title="Trending Movies & TV Shows">
+                                <span class="filter-capsule-text">🔥 Trending Feeds</span>
+                                <div class="switch-toggle">
+                                    <input type="checkbox" id="catalogTrending" checked onchange="onSettingChanged()">
+                                    <span class="switch-slider"></span>
+                                </div>
+                            </label>
+                            <label class="filter-capsule" title="Trending Indian & Bollywood Cinema (Hindi, Telugu, Tamil, Malayalam)">
+                                <span class="filter-capsule-text">🇮🇳 Indian Cinema</span>
+                                <div class="switch-toggle">
+                                    <input type="checkbox" id="catalogIndian" checked onchange="onSettingChanged()">
+                                    <span class="switch-slider"></span>
+                                </div>
+                            </label>
+                            <label class="filter-capsule" title="Trending Anime Series & Movies">
+                                <span class="filter-capsule-text">⛩️ Trending Anime</span>
+                                <div class="switch-toggle">
+                                    <input type="checkbox" id="catalogAnime" checked onchange="onSettingChanged()">
+                                    <span class="switch-slider"></span>
+                                </div>
+                            </label>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -3227,7 +3283,7 @@
         <!-- Persistent App Footer -->
         <footer class="app-footer">
             <div class="footer-content">
-                <span>🌶️ <strong>Chole Bhature</strong> v4.1.0</span>
+                <span>🌶️ <strong>Chole Bhature</strong> v4.2.0</span>
                 <span class="footer-dot">•</span>
                 <button type="button" class="footer-tour-btn" onclick="startInteractiveTour(true)" title="Start Interactive Step-by-Step Tour">
                     <span>💡</span> Interactive Guide
@@ -3844,6 +3900,10 @@
             const dohProviderEl = document.getElementById('dohProvider');
             const debridProviderEl = document.getElementById('debridProvider');
             const debridApiKeyEl = document.getElementById('debridApiKey');
+            const enableCatalogsEl = document.getElementById('enableCatalogs');
+            const catalogTrendingEl = document.getElementById('catalogTrending');
+            const catalogIndianEl = document.getElementById('catalogIndian');
+            const catalogAnimeEl = document.getElementById('catalogAnime');
             
             if (hideDeadEl) settings.hideDead = hideDeadEl.checked;
             if (hideSlowEl) settings.hideSlow = hideSlowEl.checked;
@@ -3860,6 +3920,11 @@
             if (dohProviderEl) settings.dohProvider = dohProviderEl.value;
             if (debridProviderEl) settings.debridProvider = debridProviderEl.value;
             if (debridApiKeyEl) settings.debridApiKey = debridApiKeyEl.value;
+            if (enableCatalogsEl) settings.enableCatalogs = enableCatalogsEl.checked;
+            if (catalogTrendingEl) settings.catalogTrending = catalogTrendingEl.checked;
+            if (catalogIndianEl) settings.catalogIndian = catalogIndianEl.checked;
+            if (catalogAnimeEl) settings.catalogAnime = catalogAnimeEl.checked;
+
             settings.prioritizeQuality = (settings.sortBy === 'quality');
             settings.preferredLanguages = settings.preferredLanguages || [];
             settings.prioritizeHindi = settings.preferredLanguages.includes('Hindi');
@@ -3884,6 +3949,7 @@
                 if (settings.cleanTitles !== false) activeCount++;
                 if (settings.vercelEcoMode === true) activeCount++;
                 if (settings.enableDoh !== false) activeCount++;
+                if (settings.enableCatalogs !== false) activeCount++;
                 const langCount = (settings.preferredLanguages || []).length;
                 if (langCount > 0) activeCount += langCount;
 
@@ -3914,6 +3980,10 @@
                 dohProvider: settings.dohProvider || 'cloudflare',
                 debridProvider: settings.debridProvider || 'none',
                 debridApiKey: settings.debridApiKey || '',
+                enableCatalogs: settings.enableCatalogs !== false,
+                catalogTrending: settings.catalogTrending !== false,
+                catalogIndian: settings.catalogIndian !== false,
+                catalogAnime: settings.catalogAnime !== false,
                 sortBy: settings.sortBy || 'speed',
                 sortMode: settings.sortBy || 'speed',
                 prioritizeQuality: settings.sortBy === 'quality',
@@ -4792,6 +4862,10 @@
             if (cfg.dohProvider) settings.dohProvider = cfg.dohProvider;
             if (cfg.debridProvider) settings.debridProvider = cfg.debridProvider;
             if (cfg.debridApiKey !== undefined) settings.debridApiKey = cfg.debridApiKey;
+            if (cfg.enableCatalogs !== undefined) settings.enableCatalogs = cfg.enableCatalogs;
+            if (cfg.catalogTrending !== undefined) settings.catalogTrending = cfg.catalogTrending;
+            if (cfg.catalogIndian !== undefined) settings.catalogIndian = cfg.catalogIndian;
+            if (cfg.catalogAnime !== undefined) settings.catalogAnime = cfg.catalogAnime;
             if (cfg.sortBy) settings.sortBy = cfg.sortBy;
             else if (cfg.prioritizeQuality !== undefined) settings.sortBy = cfg.prioritizeQuality ? 'quality' : 'speed';
             if (cfg.preferredLanguages && Array.isArray(cfg.preferredLanguages)) {
@@ -4836,6 +4910,15 @@
             if (debridProviderEl) debridProviderEl.value = settings.debridProvider || 'none';
             const debridApiKeyEl = document.getElementById('debridApiKey');
             if (debridApiKeyEl) debridApiKeyEl.value = settings.debridApiKey || '';
+            const enableCatalogsEl = document.getElementById('enableCatalogs');
+            if (enableCatalogsEl) enableCatalogsEl.checked = settings.enableCatalogs !== false;
+            const catalogTrendingEl = document.getElementById('catalogTrending');
+            if (catalogTrendingEl) catalogTrendingEl.checked = settings.catalogTrending !== false;
+            const catalogIndianEl = document.getElementById('catalogIndian');
+            if (catalogIndianEl) catalogIndianEl.checked = settings.catalogIndian !== false;
+            const catalogAnimeEl = document.getElementById('catalogAnime');
+            if (catalogAnimeEl) catalogAnimeEl.checked = settings.catalogAnime !== false;
+
             toggleDebridApiKeyVisibility();
             toggleDohProviderVisibility();
             

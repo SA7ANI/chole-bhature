@@ -13,6 +13,80 @@ function clearDomainLatencyCache() {
     domainLatencyPending.clear();
 }
 
+// Debrid Instant Availability Cache (5 min TTL)
+const debridAvailabilityCache = new Map();
+
+async function checkDebridAvailability(hashes, config = {}) {
+    if (!hashes || hashes.length === 0 || !config.debridApiKey) return new Set();
+    const provider = (config.debridProvider || '').toLowerCase();
+    const apiKey = config.debridApiKey.trim();
+    const cachedSet = new Set();
+
+    if (provider === 'realdebrid') {
+        const uncachedHashes = [];
+        for (const h of hashes) {
+            const lowH = h.toLowerCase();
+            const cachedEntry = debridAvailabilityCache.get(`rd:${lowH}`);
+            if (cachedEntry && Date.now() - cachedEntry.time < 300000) {
+                if (cachedEntry.available) cachedSet.add(lowH);
+            } else {
+                uncachedHashes.push(lowH);
+            }
+        }
+
+        if (uncachedHashes.length > 0) {
+            try {
+                // Batch up to 50 hashes
+                const batch = uncachedHashes.slice(0, 50);
+                const pathStr = batch.join('/');
+                const res = await axios.get(`https://api.real-debrid.com/rest/1.0/torrents/instantAvailability/${pathStr}`, {
+                    headers: { Authorization: `Bearer ${apiKey}` },
+                    timeout: 3500,
+                    httpAgent: dohHttpAgent,
+                    httpsAgent: dohHttpsAgent
+                });
+                if (res.data && typeof res.data === 'object') {
+                    for (const [hashKey, hostData] of Object.entries(res.data)) {
+                        const isInstant = Boolean(hostData && hostData.rd && Array.isArray(hostData.rd) && hostData.rd.length > 0);
+                        debridAvailabilityCache.set(`rd:${hashKey.toLowerCase()}`, { available: isInstant, time: Date.now() });
+                        if (isInstant) cachedSet.add(hashKey.toLowerCase());
+                    }
+                }
+            } catch (e) {}
+        }
+    } else if (provider === 'torbox') {
+        const uncachedHashes = [];
+        for (const h of hashes) {
+            const lowH = h.toLowerCase();
+            const cachedEntry = debridAvailabilityCache.get(`tb:${lowH}`);
+            if (cachedEntry && Date.now() - cachedEntry.time < 300000) {
+                if (cachedEntry.available) cachedSet.add(lowH);
+            } else {
+                uncachedHashes.push(lowH);
+            }
+        }
+
+        if (uncachedHashes.length > 0) {
+            try {
+                const res = await axios.get(`https://api.torbox.app/v1/api/torrents/checkcached?hash=${uncachedHashes.slice(0, 50).join(',')}&format=object`, {
+                    headers: { Authorization: `Bearer ${apiKey}` },
+                    timeout: 3500,
+                    httpAgent: dohHttpAgent,
+                    httpsAgent: dohHttpsAgent
+                });
+                if (res.data && res.data.data) {
+                    for (const [hashKey, isAvail] of Object.entries(res.data.data)) {
+                        const isInstant = Boolean(isAvail);
+                        debridAvailabilityCache.set(`tb:${hashKey.toLowerCase()}`, { available: isInstant, time: Date.now() });
+                        if (isInstant) cachedSet.add(hashKey.toLowerCase());
+                    }
+                }
+            } catch (e) {}
+        }
+    }
+    return cachedSet;
+}
+
 function cleanProviderName(rawName) {
     if (!rawName) return 'Stream';
     let clean = rawName.replace(/[🟢🟡🔴🧲]/g, '').trim();
@@ -550,10 +624,17 @@ function formatStreamLabels(stream, latency = 150, isP2P = false, isDead = false
     }
 
     let debridBadge = null;
-    if (isP2P && config.debridProvider === 'realdebrid') {
-        debridBadge = '⚡ [RD+]';
-    } else if (isP2P && config.debridProvider === 'alldebrid') {
-        debridBadge = '⚡ [AD+]';
+    const dp = (config.debridProvider || '').toLowerCase();
+    if (stream.isDebridCached) {
+        if (dp === 'torbox') debridBadge = '⚡ [TB+] Instant';
+        else if (dp === 'alldebrid') debridBadge = '⚡ [AD+] Instant';
+        else if (dp === 'premiumize') debridBadge = '⚡ [PM+] Instant';
+        else debridBadge = '⚡ [RD+] Instant';
+    } else if (isP2P && dp) {
+        if (dp === 'torbox') debridBadge = '⚡ [TB]';
+        else if (dp === 'alldebrid') debridBadge = '⚡ [AD]';
+        else if (dp === 'premiumize') debridBadge = '⚡ [PM]';
+        else if (dp === 'realdebrid') debridBadge = '⚡ [RD]';
     }
 
     // High-impact top badges for stream.name
@@ -1053,6 +1134,32 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
     // Deduplicate and merge identical streams across providers
     const uniqueStreams = deduplicateAndMergeStreams(validStreams, deduplicate);
 
+    // Batch check Debrid Instant Cache if configured
+    if (config && config.debridApiKey && (config.debridProvider === 'realdebrid' || config.debridProvider === 'torbox')) {
+        const hashesToCheck = [];
+        for (const s of uniqueStreams) {
+            let hash = s.infoHash;
+            if (!hash && s.url && s.url.startsWith('magnet:')) {
+                const match = s.url.match(/btih:([a-zA-Z0-9]{40})/i);
+                if (match) hash = match[1];
+            }
+            if (hash) {
+                s.extractedHash = hash.toLowerCase();
+                hashesToCheck.push(s.extractedHash);
+            }
+        }
+        if (hashesToCheck.length > 0) {
+            try {
+                const instantSet = await checkDebridAvailability(hashesToCheck, config);
+                for (const s of uniqueStreams) {
+                    if (s.extractedHash && instantSet.has(s.extractedHash)) {
+                        s.isDebridCached = true;
+                    }
+                }
+            } catch (e) {}
+        }
+    }
+
     // Run tests concurrently
     const testedStreams = await Promise.all(
         uniqueStreams.map(stream => testStream(stream, showSeeders, config))
@@ -1112,6 +1219,13 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
         const isDeadB = Boolean(b.isDead || b.statusCategory === 'dead' || latB >= 90000);
         if (isDeadA !== isDeadB) {
             return isDeadA ? 1 : -1;
+        }
+
+        // 2. Debrid Instant Cached streams boost to the top
+        const debridA = Boolean(a.isDebridCached);
+        const debridB = Boolean(b.isDebridCached);
+        if (debridA !== debridB) {
+            return debridA ? -1 : 1;
         }
 
         const rankA = categoryRank[a.statusCategory] || 2;
