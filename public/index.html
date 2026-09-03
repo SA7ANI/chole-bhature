@@ -5134,10 +5134,19 @@
             const activeUrlEl = document.getElementById('scraper-current-active-url');
             const domainInput = document.getElementById('scraper-input-domain');
             if (activeUrlEl && domainInput) {
-                const text = activeUrlEl.innerText.trim();
-                if (text && text.startsWith('http')) {
+                let text = activeUrlEl.innerText.trim();
+                if (!text || text.includes('Detecting') || text.includes('Default Repository')) {
+                    const ph = domainInput.placeholder || '';
+                    const match = ph.match(/https?:\/\/[^\s]+/i);
+                    if (match) text = match[0];
+                }
+                if (text && !text.includes('Detecting')) {
+                    if (!text.startsWith('http://') && !text.startsWith('https://')) {
+                        text = 'https://' + text;
+                    }
                     domainInput.value = text;
                     domainInput.focus();
+                    domainInput.select();
                     showToast('📋 Copied active domain to edit field!');
                 }
             }
@@ -5200,7 +5209,7 @@
 
                 // Fetch detected default domain from server
                 try {
-                    const manifestUrl = repos[0] || 'https://cdn.jsdelivr.net/gh/D3adlyRocket/All-in-One-Nuvio@main/manifest.json';
+                    const manifestUrl = provider.manifestUrl || repos[0] || 'https://cdn.jsdelivr.net/gh/D3adlyRocket/All-in-One-Nuvio@main/manifest.json';
                     const res = await fetch(`/api/scraper-info?providerName=${encodeURIComponent(providerName)}&manifestUrl=${encodeURIComponent(manifestUrl)}`);
                     const infoData = await res.json();
                     if (infoData && infoData.success && infoData.defaultDomain) {
@@ -5351,9 +5360,24 @@
             const mirrorsInput = document.getElementById('scraper-input-mirrors');
             const headersInput = document.getElementById('scraper-input-headers');
 
-            const domain = domainInput ? domainInput.value.trim() : '';
+            let domain = domainInput ? domainInput.value.trim() : '';
+            if (domain) {
+                if (!domain.startsWith('http://') && !domain.startsWith('https://')) {
+                    domain = 'https://' + domain;
+                }
+                if (domain.endsWith('/')) {
+                    domain = domain.slice(0, -1);
+                }
+                if (domainInput) domainInput.value = domain;
+            }
+
             const rawMirrors = mirrorsInput ? mirrorsInput.value.trim() : '';
-            const fallbackMirrors = rawMirrors ? rawMirrors.split(/[\n,]+/).map(s => s.trim()).filter(Boolean) : [];
+            const fallbackMirrors = rawMirrors ? rawMirrors.split(/[\n,]+/).map(s => {
+                let m = s.trim();
+                if (m && !m.startsWith('http://') && !m.startsWith('https://')) m = 'https://' + m;
+                if (m.endsWith('/')) m = m.slice(0, -1);
+                return m;
+            }).filter(Boolean) : [];
 
             let headers = {};
             if (headersInput && headersInput.value.trim()) {
