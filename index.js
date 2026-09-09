@@ -1036,7 +1036,7 @@ function createAddon(config) {
 
     const builder = new addonBuilder({
         id: addonId,
-        version: '4.2.0',
+        version: '4.3.0',
         name: addonName,
         description: 'High-Performance Stream Meta-Sorter & Discovery Hub for Nuvio & Stremio. Scrapes, verifies, filters dead links, organizes streams by speed/quality/audio, and provides curated Live TV, Indian Cinema, Trending & Anime feeds.',
         logo: addonLogo,
