@@ -2822,7 +2822,14 @@
 
                     <div id="catalogs-sub-options" style="border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 14px; margin-top: 8px;">
                         <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
-                            <label class="filter-capsule" title="Trending Movies & TV Shows">
+                            <label class="filter-capsule" title="Flagship Popular Right Now Feed with Popular Movies & Popular Series sub-categories">
+                                <span class="filter-capsule-text">⭐ Popular Right Now</span>
+                                <div class="switch-toggle">
+                                    <input type="checkbox" id="catalogPopular" checked onchange="onSettingChanged()">
+                                    <span class="switch-slider"></span>
+                                </div>
+                            </label>
+                            <label class="filter-capsule" title="Trending Movies & TV Shows by Specific Genre">
                                 <span class="filter-capsule-text">🔥 Trending Feeds</span>
                                 <div class="switch-toggle">
                                     <input type="checkbox" id="catalogTrending" checked onchange="onSettingChanged()">
@@ -2847,25 +2854,38 @@
 
                         <!-- Sub-Categories Showcase Inside Catalogs -->
                         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-subtle); border-radius: 14px; padding: 12px 14px;">
-                            <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
-                                <span>🏷️ Stremio Sub-Categories Inside Catalogs</span>
+                            <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+                                <span>🏷️ Nuvio & Stremio Sub-Categories Inside Catalogs</span>
+                                <span class="tag-pill-badge" style="background: rgba(139, 92, 246, 0.15); color: #c4b5fd; font-size: 10px;">Native Tab Bar</span>
                             </div>
-                            <div style="display: flex; flex-direction: column; gap: 8px; font-size: 11.5px;">
+                            <div style="display: flex; flex-direction: column; gap: 10px; font-size: 11.5px;">
+                                <!-- 1. Popular Right Now Showcase -->
                                 <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                                    <span style="font-weight: 700; color: #f8fafc; min-width: 130px;">🔥 Trending Feeds:</span>
-                                    <span class="tag-pill-badge" style="background: rgba(139, 92, 246, 0.12); color: #c4b5fd;">Action</span>
-                                    <span class="tag-pill-badge" style="background: rgba(139, 92, 246, 0.12); color: #c4b5fd;">Comedy</span>
-                                    <span class="tag-pill-badge" style="background: rgba(139, 92, 246, 0.12); color: #c4b5fd;">Drama</span>
-                                    <span class="tag-pill-badge" style="background: rgba(139, 92, 246, 0.12); color: #c4b5fd;">Sci-Fi</span>
-                                    <span class="tag-pill-badge" style="background: rgba(139, 92, 246, 0.12); color: #c4b5fd;">Horror</span>
-                                    <span class="tag-pill-badge" style="background: rgba(139, 92, 246, 0.12); color: #c4b5fd;">Thriller</span>
-                                    <span class="tag-pill-badge" style="background: rgba(139, 92, 246, 0.12); color: #c4b5fd;">Romance</span>
-                                    <span class="tag-pill-badge" style="background: rgba(139, 92, 246, 0.12); color: #c4b5fd;">Crime</span>
-                                    <span class="tag-pill-badge" style="background: rgba(139, 92, 246, 0.12); color: #c4b5fd;">Animation</span>
-                                    <span class="tag-pill-badge" style="background: rgba(139, 92, 246, 0.12); color: #c4b5fd;">+7 More</span>
+                                    <span style="font-weight: 800; color: #ffffff; min-width: 135px;">⭐ Popular Right Now:</span>
+                                    <span class="tag-pill-badge" style="background: rgba(139, 92, 246, 0.25); border: 1px solid #8b5cf6; color: #ffffff; font-weight: 700; box-shadow: 0 0 10px rgba(139, 92, 246, 0.35);">All</span>
+                                    <span class="tag-pill-badge" style="background: rgba(139, 92, 246, 0.12); border: 1px solid rgba(139, 92, 246, 0.35); color: #c4b5fd; font-weight: 600;">Popular Movies</span>
+                                    <span class="tag-pill-badge" style="background: rgba(139, 92, 246, 0.12); border: 1px solid rgba(139, 92, 246, 0.35); color: #c4b5fd; font-weight: 600;">Popular Series</span>
                                 </div>
+                                <!-- 2. Live TV Showcase (Matching Screenshot 2) -->
                                 <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                                    <span style="font-weight: 700; color: #f8fafc; min-width: 130px;">🇮🇳 Indian Cinema:</span>
+                                    <span style="font-weight: 800; color: #ffffff; min-width: 135px;">📡 Live TV / IPTV:</span>
+                                    <span class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.25); border: 1px solid #10b981; color: #ffffff; font-weight: 700; box-shadow: 0 0 10px rgba(16, 185, 129, 0.35);">All</span>
+                                    <span class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.12); color: #6ee7b7;">News</span>
+                                    <span class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.12); color: #6ee7b7;">Music</span>
+                                    <span class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.12); color: #6ee7b7;">Movies</span>
+                                    <span class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.12); color: #6ee7b7;">Religious</span>
+                                    <span class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.12); color: #6ee7b7;">Entertainment</span>
+                                    <span class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.12); color: #6ee7b7;">Culture</span>
+                                    <span class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.12); color: #6ee7b7;">Animation</span>
+                                    <span class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.12); color: #6ee7b7;">Lifestyle</span>
+                                    <span class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.12); color: #6ee7b7;">Business</span>
+                                    <span class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.12); color: #6ee7b7;">Sports</span>
+                                    <span class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.12); color: #6ee7b7;">India</span>
+                                </div>
+                                <!-- 3. Indian Cinema Showcase -->
+                                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                    <span style="font-weight: 800; color: #ffffff; min-width: 135px;">🇮🇳 Indian Cinema:</span>
+                                    <span class="tag-pill-badge" style="background: rgba(245, 158, 11, 0.25); border: 1px solid #f59e0b; color: #ffffff; font-weight: 700;">All Indian</span>
                                     <span class="tag-pill-badge" style="background: rgba(245, 158, 11, 0.12); color: #fcd34d;">Bollywood (Hindi)</span>
                                     <span class="tag-pill-badge" style="background: rgba(245, 158, 11, 0.12); color: #fcd34d;">Tollywood (Telugu)</span>
                                     <span class="tag-pill-badge" style="background: rgba(245, 158, 11, 0.12); color: #fcd34d;">Kollywood (Tamil)</span>
@@ -2874,8 +2894,10 @@
                                     <span class="tag-pill-badge" style="background: rgba(245, 158, 11, 0.12); color: #fcd34d;">Punjabi</span>
                                     <span class="tag-pill-badge" style="background: rgba(245, 158, 11, 0.12); color: #fcd34d;">Bengali</span>
                                 </div>
+                                <!-- 4. Anime Showcase -->
                                 <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                                    <span style="font-weight: 700; color: #f8fafc; min-width: 130px;">⛩️ Trending Anime:</span>
+                                    <span style="font-weight: 800; color: #ffffff; min-width: 135px;">⛩️ Trending Anime:</span>
+                                    <span class="tag-pill-badge" style="background: rgba(244, 63, 94, 0.25); border: 1px solid #f43f5e; color: #ffffff; font-weight: 700;">All Anime</span>
                                     <span class="tag-pill-badge" style="background: rgba(244, 63, 94, 0.12); color: #fda4af;">Action</span>
                                     <span class="tag-pill-badge" style="background: rgba(244, 63, 94, 0.12); color: #fda4af;">Adventure</span>
                                     <span class="tag-pill-badge" style="background: rgba(244, 63, 94, 0.12); color: #fda4af;">Comedy</span>
@@ -2883,17 +2905,18 @@
                                     <span class="tag-pill-badge" style="background: rgba(244, 63, 94, 0.12); color: #fda4af;">Sci-Fi</span>
                                     <span class="tag-pill-badge" style="background: rgba(244, 63, 94, 0.12); color: #fda4af;">Mystery</span>
                                 </div>
+                                <!-- 5. Genre Feeds Showcase -->
                                 <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                                    <span style="font-weight: 700; color: #f8fafc; min-width: 130px;">📡 Live TV / IPTV:</span>
-                                    <span class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.12); color: #6ee7b7;">News</span>
-                                    <span class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.12); color: #6ee7b7;">Sports</span>
-                                    <span class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.12); color: #6ee7b7;">Movies</span>
-                                    <span class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.12); color: #6ee7b7;">Music</span>
-                                    <span class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.12); color: #6ee7b7;">Animation & Kids</span>
-                                    <span class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.12); color: #6ee7b7;">Documentary</span>
-                                    <span class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.12); color: #6ee7b7;">India</span>
-                                    <span class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.12); color: #6ee7b7;">UK</span>
-                                    <span class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.12); color: #6ee7b7;">USA</span>
+                                    <span style="font-weight: 800; color: #ffffff; min-width: 135px;">🎬 Movies & Series:</span>
+                                    <span class="tag-pill-badge" style="background: rgba(59, 130, 246, 0.12); color: #93c5fd;">Action</span>
+                                    <span class="tag-pill-badge" style="background: rgba(59, 130, 246, 0.12); color: #93c5fd;">Comedy</span>
+                                    <span class="tag-pill-badge" style="background: rgba(59, 130, 246, 0.12); color: #93c5fd;">Drama</span>
+                                    <span class="tag-pill-badge" style="background: rgba(59, 130, 246, 0.12); color: #93c5fd;">Sci-Fi</span>
+                                    <span class="tag-pill-badge" style="background: rgba(59, 130, 246, 0.12); color: #93c5fd;">Horror</span>
+                                    <span class="tag-pill-badge" style="background: rgba(59, 130, 246, 0.12); color: #93c5fd;">Thriller</span>
+                                    <span class="tag-pill-badge" style="background: rgba(59, 130, 246, 0.12); color: #93c5fd;">Romance</span>
+                                    <span class="tag-pill-badge" style="background: rgba(59, 130, 246, 0.12); color: #93c5fd;">Crime</span>
+                                    <span class="tag-pill-badge" style="background: rgba(59, 130, 246, 0.12); color: #93c5fd;">+10 More</span>
                                 </div>
                             </div>
                         </div>
@@ -4297,6 +4320,7 @@
             const debridProviderEl = document.getElementById('debridProvider');
             const debridApiKeyEl = document.getElementById('debridApiKey');
             const enableCatalogsEl = document.getElementById('enableCatalogs');
+            const catalogPopularEl = document.getElementById('catalogPopular');
             const catalogTrendingEl = document.getElementById('catalogTrending');
             const catalogIndianEl = document.getElementById('catalogIndian');
             const catalogAnimeEl = document.getElementById('catalogAnime');
@@ -4317,6 +4341,7 @@
             if (debridProviderEl) settings.debridProvider = debridProviderEl.value;
             if (debridApiKeyEl) settings.debridApiKey = debridApiKeyEl.value;
             if (enableCatalogsEl) settings.enableCatalogs = enableCatalogsEl.checked;
+            if (catalogPopularEl) settings.catalogPopular = catalogPopularEl.checked;
             if (catalogTrendingEl) settings.catalogTrending = catalogTrendingEl.checked;
             if (catalogIndianEl) settings.catalogIndian = catalogIndianEl.checked;
             if (catalogAnimeEl) settings.catalogAnime = catalogAnimeEl.checked;
@@ -4396,6 +4421,7 @@
                 debridProvider: settings.debridProvider || 'none',
                 debridApiKey: settings.debridApiKey || '',
                 enableCatalogs: settings.enableCatalogs !== false,
+                catalogPopular: settings.catalogPopular !== false,
                 catalogTrending: settings.catalogTrending !== false,
                 catalogIndian: settings.catalogIndian !== false,
                 catalogAnime: settings.catalogAnime !== false,
@@ -5287,6 +5313,7 @@
             if (cfg.debridProvider) settings.debridProvider = cfg.debridProvider;
             if (cfg.debridApiKey !== undefined) settings.debridApiKey = cfg.debridApiKey;
             if (cfg.enableCatalogs !== undefined) settings.enableCatalogs = cfg.enableCatalogs;
+            if (cfg.catalogPopular !== undefined) settings.catalogPopular = cfg.catalogPopular;
             if (cfg.catalogTrending !== undefined) settings.catalogTrending = cfg.catalogTrending;
             if (cfg.catalogIndian !== undefined) settings.catalogIndian = cfg.catalogIndian;
             if (cfg.catalogAnime !== undefined) settings.catalogAnime = cfg.catalogAnime;
@@ -5336,6 +5363,8 @@
             if (debridApiKeyEl) debridApiKeyEl.value = settings.debridApiKey || '';
             const enableCatalogsEl = document.getElementById('enableCatalogs');
             if (enableCatalogsEl) enableCatalogsEl.checked = settings.enableCatalogs !== false;
+            const catalogPopularEl = document.getElementById('catalogPopular');
+            if (catalogPopularEl) catalogPopularEl.checked = settings.catalogPopular !== false;
             const catalogTrendingEl = document.getElementById('catalogTrending');
             if (catalogTrendingEl) catalogTrendingEl.checked = settings.catalogTrending !== false;
             const catalogIndianEl = document.getElementById('catalogIndian');
@@ -7322,6 +7351,10 @@
             const container = document.getElementById('explorer-category-chips');
             if (!container) return;
             setupDesktopChipsScroll();
+
+            if (!m3uCategoriesCache || m3uCategoriesCache.length <= 1) {
+                m3uCategoriesCache = ['All', 'News', 'Music', 'Movies', 'Religious', 'Entertainment', 'Culture', 'Animation', 'Lifestyle', 'Business', 'Sports', 'India'];
+            }
 
             // Deduplicate and filter out any "Undefined" or empty items
             const cleanCats = m3uCategoriesCache.filter(c => c && c.toLowerCase() !== 'undefined' && c.toLowerCase() !== 'null');

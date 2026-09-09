@@ -32,8 +32,8 @@ Instead of waiting through buffering wheels or clicking broken links, Chole Bhat
 | :--- | :--- |
 | ⚡ **Real-Time Latency Probing** | Concurrently tests HTTP/HLS streams via lightweight `HEAD`/`Range` requests. Dynamically tags links with `🟢 FAST (<800ms)`, `🟡 SLOW (≥800ms)`, or `🔴 DEAD`. |
 | 💎 **Debrid Premium Integration** | Add your Real-Debrid or AllDebrid API key to instantly unrestrict torrent links. Replaces magnet URLs with high-speed direct links using a zero-buffering server-side resolver and tags them with `⚡ [RD+]` or `⚡ [AD+]`. |
-| 📺 **Curated Stremio Catalogs** | Built-in catalogs for Trending, Popular, and Top Rated movies and series seamlessly integrated into your Stremio discover menu. |
-| 📡 **Live TV & IPTV Integration** | Built-in Live TV discover catalog with curated public feeds (Sports, 24/7 News, Indian TV, Movies, Music), custom M3U/M3U8 playlist support, and Xtream Codes login. |
+| 📺 **Curated Discovery Catalogs** | Built-in feeds for **Popular Right Now** (`All`, `Popular Movies`, `Popular Series`), **Live TV / IPTV** (`News`, `Music`, `Movies`, `Religious`, `Entertainment`, `Culture`, `Animation`, `Lifestyle`, `Business`, `Sports`, `India`), **Trending Indian Cinema**, and **Anime** with native sub-category tab bars in Stremio and Nuvio. |
+| 📡 **Live TV & IPTV Playlist Studio** | Pro-grade IPTV hub with 1-click community presets, Live Channel Explorer with desktop mouse scroll controls, live stream probe, custom M3U/M3U8 playlists, and Xtream Codes login. |
 | 🛑 **Provider Quarantine System** | Automatically isolates failing or offline scrapers for 10 minutes after consecutive failures to eliminate scrape timeout penalties. |
 | 🎛️ **Granular Scraper Toggles** | Manage scrapers individually with the Sources tab. Instantly bulk enable/disable hundreds of providers at once with one click. |
 | 🎬 **Strict 4K UHD Hierarchy** | Strict resolution-first ordering (`4K UHD` > `1080p FHD` > `720p HD` > `480p SD`). Lower resolutions will never leapfrog 4K content in Quality mode. |

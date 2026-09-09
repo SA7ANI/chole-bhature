@@ -238,6 +238,79 @@ const CURATED_CHANNELS = [
         country: 'UK',
         url: 'https://nowmusic-samsunguk.amagi.tv/playlist.m3u8',
         description: 'Chart-topping greatest hits, pop icons, rock anthems and music videos.'
+    },
+
+    // --- RELIGIOUS ---
+    {
+        id: 'iptv:curated:ewtn_global',
+        name: 'EWTN Global Catholic',
+        logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/EWTN_logo.svg/500px-EWTN_logo.svg.png',
+        category: 'Religious',
+        country: 'USA',
+        url: 'https://ewtn-ewtn-1-us.samsung.wurl.tv/playlist.m3u8',
+        description: '24/7 Global religious discussions, spiritual reflections, and services.'
+    },
+    {
+        id: 'iptv:curated:peace_tv',
+        name: 'Peace TV Live',
+        logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Peace_TV_logo.svg/500px-Peace_TV_logo.svg.png',
+        category: 'Religious',
+        country: 'India',
+        url: 'https://d2e1asnsl7br7b.cloudfront.net/datnlive/smil:datn.smil/playlist.m3u8',
+        description: 'Spiritual talks, interfaith dialogues and educational programming.'
+    },
+
+    // --- BUSINESS ---
+    {
+        id: 'iptv:curated:bloomberg_tv',
+        name: 'Bloomberg Television',
+        logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Bloomberg_Television_logo.svg/1200px-Bloomberg_Television_logo.svg.png',
+        category: 'Business',
+        country: 'USA',
+        url: 'https://bloomberg-bloombergtv-1-us.samsung.wurl.tv/playlist.m3u8',
+        description: 'Global business, financial markets, stocks, and economic insights.'
+    },
+    {
+        id: 'iptv:curated:yahoo_finance',
+        name: 'Yahoo Finance HD',
+        logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Yahoo%21_Finance_logo_2021.svg/500px-Yahoo%21_Finance_logo_2021.svg.png',
+        category: 'Business',
+        country: 'USA',
+        url: 'https://yahoofinance-samsungus.amagi.tv/playlist.m3u8',
+        description: 'Live stock market coverage, tech investment trends and earnings reports.'
+    },
+
+    // --- CULTURE & DOCUMENTARY ---
+    {
+        id: 'iptv:curated:dw_culture',
+        name: 'DW Documentary & Culture',
+        logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Deutsche_Welle_symbol_2012.svg/500px-Deutsche_Welle_symbol_2012.svg.png',
+        category: 'Culture',
+        country: 'Germany',
+        url: 'https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8',
+        description: 'Fascinating global documentaries, deep investigative journalism, and world heritage.'
+    },
+
+    // --- ANIMATION & KIDS ---
+    {
+        id: 'iptv:curated:toon_goggles',
+        name: 'Toon Goggles Kids',
+        logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/Banana-Single.jpg/500px-Banana-Single.jpg',
+        category: 'Animation',
+        country: 'USA',
+        url: 'https://tgkids-samsungus.amagi.tv/playlist.m3u8',
+        description: 'Kid-safe cartoons, animated series, fun games, and comedy shorts.'
+    },
+
+    // --- LIFESTYLE ---
+    {
+        id: 'iptv:curated:tastemade_food',
+        name: 'Tastemade Food & Travel',
+        logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Silver_fork_and_knife_icon.svg/500px-Silver_fork_and_knife_icon.svg.png',
+        category: 'Lifestyle',
+        country: 'USA',
+        url: 'https://tastemade-samsungus.amagi.tv/playlist.m3u8',
+        description: 'Culinary adventures, street food travel, modern recipes, and home styling.'
     }
 ];
 
@@ -485,14 +558,17 @@ async function getChannelsCatalog({ genre = 'All', search = '', skip = 0, limit 
             const name = (ch.name || '').toLowerCase();
             
             if (target === 'news') return cat.includes('news') || name.includes('news') || cat.includes('info');
-            if (target === 'sports') return cat.includes('sport') || name.includes('sport') || cat.includes('combat') || cat.includes('racing');
+            if (target === 'music') return cat.includes('music') || name.includes('music') || cat.includes('song') || cat.includes('audio');
             if (target === 'movies') return cat.includes('movie') || cat.includes('cinema') || cat.includes('film') || name.includes('cinema');
-            if (target === 'music') return cat.includes('music') || name.includes('music') || cat.includes('song');
-            if (target === 'entertainment') return cat.includes('entertain') || cat.includes('general') || cat.includes('series');
-            if (target === 'animation' || target === 'kids') return cat.includes('anim') || cat.includes('kid') || cat.includes('cartoon');
+            if (target === 'religious') return cat.includes('relig') || cat.includes('spirit') || cat.includes('faith') || cat.includes('peace') || cat.includes('god') || cat.includes('church');
+            if (target === 'entertainment') return cat.includes('entertain') || cat.includes('general') || cat.includes('series') || cat.includes('show');
+            if (target === 'culture') return cat.includes('cultur') || cat.includes('classic') || cat.includes('art') || cat.includes('travel') || cat.includes('heritage') || cat.includes('world');
+            if (target === 'animation' || target === 'kids') return cat.includes('anim') || cat.includes('kid') || cat.includes('cartoon') || cat.includes('toon');
+            if (target === 'lifestyle') return cat.includes('life') || cat.includes('style') || cat.includes('food') || cat.includes('cook') || cat.includes('home') || cat.includes('fashion') || cat.includes('health');
+            if (target === 'business') return cat.includes('busin') || cat.includes('finan') || cat.includes('econ') || cat.includes('market') || cat.includes('stock') || cat.includes('trade');
+            if (target === 'sports') return cat.includes('sport') || name.includes('sport') || cat.includes('combat') || cat.includes('racing');
             if (target === 'documentary') return cat.includes('doc') || cat.includes('history') || cat.includes('science');
-            if (target === 'religious') return cat.includes('relig') || cat.includes('spirit') || cat.includes('faith');
-            if (target === 'india') return country === 'in' || country.includes('india') || cat.includes('hindi') || cat.includes('telugu') || cat.includes('tamil');
+            if (target === 'india') return country === 'in' || country.includes('india') || cat.includes('hindi') || cat.includes('telugu') || cat.includes('tamil') || cat.includes('malayalam');
             if (target === 'usa') return country === 'us' || country.includes('usa') || country.includes('america');
             if (target === 'uk') return country === 'uk' || country.includes('brit') || cat.includes('bbc') || cat.includes('sky');
 
