@@ -4,6 +4,7 @@ const path = require('path');
 const providerLoader = require('./providerLoader');
 const { sortAndTagStreams, clearDomainLatencyCache } = require('./streamTester');
 const { setDohEnabled, setDohProvider, getDohConfig, dohHttpsAgent } = require('./dohResolver');
+const iptvManager = require('./iptvManager');
 const axios = require('axios');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -627,6 +628,86 @@ app.get('/api/doh/status', (req, res) => {
     res.json(getDohConfig());
 });
 
+// Live IPTV Playlist & Stream Validation Endpoint
+
+// Fast Channel Explorer Search Endpoint
+app.get('/api/iptv/channels', async (req, res) => {
+    try {
+        const { url, search, category, skip = 0, limit = 60 } = req.query;
+        let channels = [];
+        if (url) {
+            channels = await iptvManager.fetchRemoteM3u(url);
+        } else {
+            channels = await iptvManager.getAllConfiguredChannels({});
+        }
+
+        if (category && category !== 'All') {
+            const catLower = category.toLowerCase();
+            channels = channels.filter(c => (c.category || '').toLowerCase().includes(catLower));
+        }
+
+        if (search && search.trim()) {
+            const q = search.toLowerCase().trim();
+            channels = channels.filter(c => (c.name || '').toLowerCase().includes(q) || (c.category || '').toLowerCase().includes(q));
+        }
+
+        const total = channels.length;
+        const page = channels.slice(Number(skip), Number(skip) + Number(limit));
+
+        res.json({
+            success: true,
+            total,
+            channels: page
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+
+// Live Stream Latency & Reachability Probe Endpoint
+app.post('/api/iptv/probe', async (req, res) => {
+    try {
+        const { url, userAgent } = req.body || {};
+        if (!url) return res.status(400).json({ online: false, latency: 9999, error: 'URL is required' });
+        const result = await iptvManager.probeLiveStream(url, userAgent);
+        res.json(result);
+    } catch (err) {
+        res.json({ online: false, latency: 9999, error: err.message });
+    }
+});
+
+app.post('/api/iptv/test', async (req, res) => {
+    try {
+        const { url, userAgent, forceRefresh, xtreamServer, xtreamUser, xtreamPassword } = req.body || {};
+        if (url) {
+            const channels = await iptvManager.fetchRemoteM3u(url, userAgent, !!forceRefresh);
+            const allCats = channels.flatMap(c => (c.category || '').split(/[;,]/).map(s => s.trim())).filter(Boolean);
+            const categories = [...new Set(allCats)];
+            return res.json({
+                success: true,
+                count: channels.length,
+                categories: categories.slice(0, 20),
+                preview: channels.slice(0, 120)
+            });
+        }
+        if (xtreamServer && xtreamUser && xtreamPassword) {
+            const channels = await iptvManager.fetchXtreamChannels(xtreamServer, xtreamUser, xtreamPassword);
+            const allCats = channels.flatMap(c => (c.category || '').split(/[;,]/).map(s => s.trim())).filter(Boolean);
+            const categories = [...new Set(allCats)];
+            return res.json({
+                success: true,
+                count: channels.length,
+                categories: categories.slice(0, 20),
+                preview: channels.slice(0, 120)
+            });
+        }
+        return res.status(400).json({ success: false, error: 'M3U URL or Xtream Codes required' });
+    } catch (err) {
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 // Proxy endpoint to bypass CORS for frontend manifest loading
 app.get('/api/proxy', async (req, res) => {
     try {
@@ -838,13 +919,27 @@ function createAddon(config) {
                 type: 'movie',
                 id: 'cb_trending_movies',
                 name: '🔥 Trending Movies',
-                extra: [{ name: 'genre', isRequired: false }, { name: 'skip', isRequired: false }]
+                extra: [
+                    { 
+                        name: 'genre', 
+                        isRequired: false, 
+                        options: ['All', 'Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Documentary', 'Drama', 'Family', 'Fantasy', 'Horror', 'Mystery', 'Romance', 'Sci-Fi', 'Thriller', 'War', 'Western'] 
+                    },
+                    { name: 'skip', isRequired: false }
+                ]
             });
             enabledCatalogs.push({
                 type: 'series',
                 id: 'cb_trending_series',
                 name: '📺 Trending Series',
-                extra: [{ name: 'genre', isRequired: false }, { name: 'skip', isRequired: false }]
+                extra: [
+                    { 
+                        name: 'genre', 
+                        isRequired: false, 
+                        options: ['All', 'Action & Adventure', 'Animation', 'Comedy', 'Crime', 'Documentary', 'Drama', 'Family', 'Kids', 'Mystery', 'News', 'Reality', 'Sci-Fi & Fantasy', 'War & Politics', 'Western'] 
+                    },
+                    { name: 'skip', isRequired: false }
+                ]
             });
         }
         if (config.catalogIndian !== false) {
@@ -852,7 +947,14 @@ function createAddon(config) {
                 type: 'movie',
                 id: 'cb_indian_cinema',
                 name: '🇮🇳 Trending Indian Cinema',
-                extra: [{ name: 'genre', isRequired: false }, { name: 'skip', isRequired: false }]
+                extra: [
+                    { 
+                        name: 'genre', 
+                        isRequired: false, 
+                        options: ['All Indian', 'Hindi (Bollywood)', 'Telugu (Tollywood)', 'Tamil (Kollywood)', 'Malayalam (Mollywood)', 'Kannada (Sandalwood)', 'Punjabi', 'Bengali', 'Action', 'Comedy', 'Drama', 'Thriller', 'Romance'] 
+                    },
+                    { name: 'skip', isRequired: false }
+                ]
             });
         }
         if (config.catalogAnime !== false) {
@@ -860,30 +962,65 @@ function createAddon(config) {
                 type: 'series',
                 id: 'cb_anime_trending',
                 name: '⛩️ Trending Anime',
-                extra: [{ name: 'genre', isRequired: false }, { name: 'skip', isRequired: false }]
+                extra: [
+                    { 
+                        name: 'genre', 
+                        isRequired: false, 
+                        options: ['All Anime', 'Action', 'Adventure', 'Comedy', 'Drama', 'Fantasy', 'Sci-Fi', 'Mystery'] 
+                    },
+                    { name: 'skip', isRequired: false }
+                ]
             });
         }
+    }
+
+    // Add Live TV / IPTV Catalog if enabled
+    if (config.enableIptv !== false) {
+        enabledCatalogs.push({
+            type: 'tv',
+            id: 'cb_live_tv',
+            name: '📡 Live TV / IPTV',
+            extra: [
+                { 
+                    name: 'genre', 
+                    isRequired: false, 
+                    options: ['All', 'Sports', 'News', 'India', 'Movies', 'Entertainment', 'Music', 'UK', 'USA'] 
+                },
+                { name: 'search', isRequired: false },
+                { name: 'skip', isRequired: false }
+            ]
+        });
     }
 
     const resources = ['stream'];
     if (enabledCatalogs.length > 0) {
         resources.push('catalog');
     }
+    if (config.enableIptv !== false) {
+        resources.push('meta');
+    }
 
     const builder = new addonBuilder({
         id: addonId,
         version: '4.2.0',
         name: addonName,
-        description: 'High-Performance Stream Meta-Sorter & Discovery Hub for Nuvio & Stremio. Scrapes, verifies, filters dead links, organizes streams by speed/quality/audio, and provides curated Indian Cinema, Trending & Anime feeds.',
+        description: 'High-Performance Stream Meta-Sorter & Discovery Hub for Nuvio & Stremio. Scrapes, verifies, filters dead links, organizes streams by speed/quality/audio, and provides curated Live TV, Indian Cinema, Trending & Anime feeds.',
         logo: addonLogo,
         catalogs: enabledCatalogs,
         resources: resources,
         types: ['movie', 'series', 'anime', 'tv', 'other'],
-        idPrefixes: ['tt', 'tmdb:', 'kitsu:'],
+        idPrefixes: ['tt', 'tmdb:', 'kitsu:', 'iptv:'],
         behaviorHints: { configurable: true, configurationRequired: true }
     });
 
     builder.defineStreamHandler(async ({ type, id }) => {
+        // Direct handling for live IPTV channels
+        if (id && id.startsWith('iptv:')) {
+            console.log(`[Stremio IPTV] Resolving live streams for channel: ${id}`);
+            const streams = await iptvManager.getChannelStreams(id, config);
+            return { streams };
+        }
+
         console.log(`[Stremio] Request for ${type} ${id} (Addon: ${addonName})`);
         
         const cacheKey = `${type}:${id}:${JSON.stringify(config)}`;
@@ -1111,24 +1248,86 @@ function createAddon(config) {
     // Curated Discovery Catalogs Handler
     const catalogCache = new Map();
 
-    async function fetchCuratedCatalog(catalogId, page = 1) {
-        const cacheKey = `${catalogId}:${page}`;
+    async function fetchCuratedCatalog(catalogId, page = 1, genre = 'All') {
+        const cacheKey = `${catalogId}:${page}:${genre || 'All'}`;
         const cached = catalogCache.get(cacheKey);
         if (cached && Date.now() - cached.timestamp < 6 * 3600 * 1000) {
             return cached.metas;
         }
 
         const urlsToTry = [];
+
+        // 1. Trending Movies with Genre Sub-Categories
         if (catalogId === 'cb_trending_movies') {
-            urlsToTry.push(`https://api.themoviedb.org/3/trending/movie/day?page=${page}`);
-            urlsToTry.push(`https://api.themoviedb.org/3/discover/movie?sort_by=popularity.desc&page=${page}`);
-        } else if (catalogId === 'cb_trending_series') {
-            urlsToTry.push(`https://api.themoviedb.org/3/trending/tv/day?page=${page}`);
-            urlsToTry.push(`https://api.themoviedb.org/3/discover/tv?sort_by=popularity.desc&page=${page}`);
-        } else if (catalogId === 'cb_indian_cinema') {
-            urlsToTry.push(`https://api.themoviedb.org/3/discover/movie?with_original_language=hi|te|ta|ml|kn&sort_by=popularity.desc&page=${page}`);
-        } else if (catalogId === 'cb_anime_trending') {
-            urlsToTry.push(`https://api.themoviedb.org/3/discover/tv?with_genres=16&with_original_language=ja&sort_by=popularity.desc&page=${page}`);
+            const MOVIE_GENRES = {
+                'Action': 28, 'Adventure': 12, 'Animation': 16, 'Comedy': 35,
+                'Crime': 80, 'Documentary': 99, 'Drama': 18, 'Family': 10751,
+                'Fantasy': 14, 'Horror': 27, 'Mystery': 9648, 'Romance': 10749,
+                'Sci-Fi': 878, 'Thriller': 53, 'War': 10752, 'Western': 37
+            };
+            if (!genre || genre === 'All') {
+                urlsToTry.push(`https://api.themoviedb.org/3/trending/movie/day?page=${page}`);
+                urlsToTry.push(`https://api.themoviedb.org/3/discover/movie?sort_by=popularity.desc&page=${page}`);
+            } else if (MOVIE_GENRES[genre]) {
+                urlsToTry.push(`https://api.themoviedb.org/3/discover/movie?with_genres=${MOVIE_GENRES[genre]}&sort_by=popularity.desc&page=${page}`);
+            } else {
+                urlsToTry.push(`https://api.themoviedb.org/3/discover/movie?sort_by=popularity.desc&page=${page}`);
+            }
+        } 
+        // 2. Trending TV Series with Genre Sub-Categories
+        else if (catalogId === 'cb_trending_series') {
+            const TV_GENRES = {
+                'Action & Adventure': 10759, 'Animation': 16, 'Comedy': 35,
+                'Crime': 80, 'Documentary': 99, 'Drama': 18, 'Family': 10751,
+                'Kids': 10762, 'Mystery': 9648, 'News': 10763, 'Reality': 10764,
+                'Sci-Fi & Fantasy': 10765, 'War & Politics': 10768, 'Western': 37
+            };
+            if (!genre || genre === 'All') {
+                urlsToTry.push(`https://api.themoviedb.org/3/trending/tv/day?page=${page}`);
+                urlsToTry.push(`https://api.themoviedb.org/3/discover/tv?sort_by=popularity.desc&page=${page}`);
+            } else if (TV_GENRES[genre]) {
+                urlsToTry.push(`https://api.themoviedb.org/3/discover/tv?with_genres=${TV_GENRES[genre]}&sort_by=popularity.desc&page=${page}`);
+            } else {
+                urlsToTry.push(`https://api.themoviedb.org/3/discover/tv?sort_by=popularity.desc&page=${page}`);
+            }
+        } 
+        // 3. Indian Cinema with Language & Genre Sub-Categories
+        else if (catalogId === 'cb_indian_cinema') {
+            const INDIAN_LANGS = {
+                'Hindi (Bollywood)': 'hi',
+                'Telugu (Tollywood)': 'te',
+                'Tamil (Kollywood)': 'ta',
+                'Malayalam (Mollywood)': 'ml',
+                'Kannada (Sandalwood)': 'kn',
+                'Punjabi': 'pa',
+                'Bengali': 'bn'
+            };
+            const INDIAN_GENRES = {
+                'Action': 28, 'Comedy': 35, 'Drama': 18, 'Thriller': 53, 'Romance': 10749
+            };
+            if (!genre || genre === 'All Indian' || genre === 'All') {
+                urlsToTry.push(`https://api.themoviedb.org/3/discover/movie?with_original_language=hi|te|ta|ml|kn&sort_by=popularity.desc&page=${page}`);
+            } else if (INDIAN_LANGS[genre]) {
+                urlsToTry.push(`https://api.themoviedb.org/3/discover/movie?with_original_language=${INDIAN_LANGS[genre]}&sort_by=popularity.desc&page=${page}`);
+            } else if (INDIAN_GENRES[genre]) {
+                urlsToTry.push(`https://api.themoviedb.org/3/discover/movie?with_original_language=hi|te|ta|ml|kn&with_genres=${INDIAN_GENRES[genre]}&sort_by=popularity.desc&page=${page}`);
+            } else {
+                urlsToTry.push(`https://api.themoviedb.org/3/discover/movie?with_original_language=hi|te|ta|ml|kn&sort_by=popularity.desc&page=${page}`);
+            }
+        } 
+        // 4. Anime with Sub-Genres
+        else if (catalogId === 'cb_anime_trending') {
+            const ANIME_GENRES = {
+                'Action': 10759, 'Adventure': 10759, 'Comedy': 35, 'Drama': 18,
+                'Fantasy': 10765, 'Sci-Fi': 10765, 'Mystery': 9648
+            };
+            if (!genre || genre === 'All Anime' || genre === 'All') {
+                urlsToTry.push(`https://api.themoviedb.org/3/discover/tv?with_genres=16&with_original_language=ja&sort_by=popularity.desc&page=${page}`);
+            } else if (ANIME_GENRES[genre]) {
+                urlsToTry.push(`https://api.themoviedb.org/3/discover/tv?with_genres=16,${ANIME_GENRES[genre]}&with_original_language=ja&sort_by=popularity.desc&page=${page}`);
+            } else {
+                urlsToTry.push(`https://api.themoviedb.org/3/discover/tv?with_genres=16&with_original_language=ja&sort_by=popularity.desc&page=${page}`);
+            }
         }
 
         if (urlsToTry.length === 0) return [];
@@ -1168,16 +1367,64 @@ function createAddon(config) {
                 } catch (err) {}
             }
         }
+        // 5. High-Reliability Cinemeta Fallback if TMDB is unreachable
+        try {
+            if (catalogId === 'cb_trending_movies') {
+                const cinemetaUrl = `https://v3-cinemeta.strem.io/catalog/movie/top${genre && genre !== 'All' ? `/genre=${encodeURIComponent(genre)}` : ''}.json`;
+                const cRes = await axios.get(cinemetaUrl, { timeout: 4000 });
+                if (cRes.data && Array.isArray(cRes.data.metas) && cRes.data.metas.length > 0) {
+                    catalogCache.set(cacheKey, { timestamp: Date.now(), metas: cRes.data.metas });
+                    return cRes.data.metas;
+                }
+            } else if (catalogId === 'cb_trending_series') {
+                const cinemetaUrl = `https://v3-cinemeta.strem.io/catalog/series/top${genre && genre !== 'All' ? `/genre=${encodeURIComponent(genre)}` : ''}.json`;
+                const cRes = await axios.get(cinemetaUrl, { timeout: 4000 });
+                if (cRes.data && Array.isArray(cRes.data.metas) && cRes.data.metas.length > 0) {
+                    catalogCache.set(cacheKey, { timestamp: Date.now(), metas: cRes.data.metas });
+                    return cRes.data.metas;
+                }
+            } else if (catalogId === 'cb_anime_trending') {
+                const cinemetaUrl = `https://v3-cinemeta.strem.io/catalog/series/top/genre=Animation.json`;
+                const cRes = await axios.get(cinemetaUrl, { timeout: 4000 });
+                if (cRes.data && Array.isArray(cRes.data.metas) && cRes.data.metas.length > 0) {
+                    catalogCache.set(cacheKey, { timestamp: Date.now(), metas: cRes.data.metas });
+                    return cRes.data.metas;
+                }
+            }
+        } catch (cErr) {}
+
         return [];
     }
 
     if (enabledCatalogs.length > 0) {
         builder.defineCatalogHandler(async ({ type, id, extra }) => {
-            console.log(`[Catalog] Request for ${type} catalog: ${id}`);
+            console.log(`[Catalog] Request for ${type} catalog: ${id} (genre: ${extra?.genre || 'All'})`);
+            if (type === 'tv' && id === 'cb_live_tv') {
+                const metas = await iptvManager.getChannelsCatalog({
+                    genre: extra?.genre || 'All',
+                    search: extra?.search || '',
+                    skip: extra?.skip ? parseInt(extra.skip, 10) : 0,
+                    limit: 40,
+                    config
+                });
+                return { metas };
+            }
+
             const skip = extra && extra.skip ? parseInt(extra.skip, 10) : 0;
             const page = Math.floor(skip / 20) + 1;
-            const metas = await fetchCuratedCatalog(id, page);
+            const genre = extra && extra.genre ? extra.genre : 'All';
+            const metas = await fetchCuratedCatalog(id, page, genre);
             return { metas };
+        });
+    }
+
+    if (config.enableIptv !== false) {
+        builder.defineMetaHandler(async ({ type, id }) => {
+            if (id && id.startsWith('iptv:')) {
+                const meta = await iptvManager.getChannelMeta(id, config);
+                return { meta };
+            }
+            return { meta: null };
         });
     }
 
@@ -1408,7 +1655,7 @@ app.get('/c/:configId/clear-cache/:type/:id', (req, res) => {
 // Dynamic configuration endpoints for Stremio Router (With Vercel Edge CDN Headers)
 app.use('/c/:configId', (req, res, next) => {
     // Only intercept Stremio API routes
-    if (req.path === '/manifest.json' || req.path.startsWith('/stream/') || req.path.startsWith('/catalog/')) {
+    if (req.path === '/manifest.json' || req.path.startsWith('/stream/') || req.path.startsWith('/catalog/') || req.path.startsWith('/meta/')) {
         try {
             if (req.path === '/manifest.json') {
                 res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400');
@@ -1440,7 +1687,7 @@ app.use('/c/:configId', (req, res, next) => {
 
 app.use('/:configJSON', (req, res, next) => {
     // Only intercept Stremio API routes
-    if (req.path === '/manifest.json' || req.path.startsWith('/stream/') || req.path.startsWith('/catalog/')) {
+    if (req.path === '/manifest.json' || req.path.startsWith('/stream/') || req.path.startsWith('/catalog/') || req.path.startsWith('/meta/')) {
         try {
             if (req.path === '/manifest.json') {
                 res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400');
@@ -1469,6 +1716,14 @@ app.use('/:configJSON', (req, res, next) => {
     }
     next();
 });
+
+// Mount default Stremio Addon router at root (for /manifest.json, /stream/..., /catalog/...)
+try {
+    const defaultAddon = createAddon({});
+    app.use(getRouter(defaultAddon));
+} catch (err) {
+    console.error('[Default Addon Mount Error]', err);
+}
 
 const PORT = process.env.PORT || 7000;
 if (!process.env.VERCEL) {

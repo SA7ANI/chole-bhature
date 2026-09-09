@@ -5,7 +5,7 @@
   # Chole Bhature
   ### High-Performance Stream Meta-Sorter & Priority Engine for Nuvio & Stremio
 
-  [![Version](https://img.shields.io/badge/version-4.1.0-indigo.svg?style=for-the-badge)](https://github.com/SA7ANI/chole-bhature)
+  [![Version](https://img.shields.io/badge/version-4.2.0-indigo.svg?style=for-the-badge)](https://github.com/SA7ANI/chole-bhature)
   [![Platform](https://img.shields.io/badge/Platform-Nuvio%20%7C%20Stremio-purple.svg?style=for-the-badge)](https://github.com/SA7ANI/chole-bhature)
   [![License](https://img.shields.io/badge/License-GNU%20AGPLv3-amber.svg?style=for-the-badge)](LICENSE)
   [![Author](https://img.shields.io/badge/Author-SA7ANI-blue.svg?style=for-the-badge)](https://github.com/SA7ANI)
@@ -22,7 +22,7 @@
 
 **Chole Bhature** is a high-performance stream meta-sorter and priority engine designed for **Nuvio** and **Stremio**. 
 
-Instead of waiting through buffering wheels or clicking broken links, Chole Bhature intercepts stream requests from **120+ scrapers across multiple repositories**, concurrently **live-probes every stream for latency and health**, eliminates duplicates, and serves a cleanly formatted, deterministic stream list tailored to your exact audio, quality, and speed preferences.
+Instead of waiting through buffering wheels or clicking broken links, Chole Bhature intercepts stream requests from **120+ scrapers across multiple provider repositories**, concurrently **live-probes every stream for latency and health**, eliminates duplicates, and serves a cleanly formatted, deterministic stream list tailored to your exact audio, quality, and speed preferences.
 
 ---
 
@@ -32,17 +32,19 @@ Instead of waiting through buffering wheels or clicking broken links, Chole Bhat
 | :--- | :--- |
 | ⚡ **Real-Time Latency Probing** | Concurrently tests HTTP/HLS streams via lightweight `HEAD`/`Range` requests. Dynamically tags links with `🟢 FAST (<800ms)`, `🟡 SLOW (≥800ms)`, or `🔴 DEAD`. |
 | 💎 **Debrid Premium Integration** | Add your Real-Debrid or AllDebrid API key to instantly unrestrict torrent links. Replaces magnet URLs with high-speed direct links using a zero-buffering server-side resolver and tags them with `⚡ [RD+]` or `⚡ [AD+]`. |
-| 🛑 **Provider Quarantine System** | Automatically isolates failing or offline scrapers for 30 minutes after 3 consecutive failures to eliminate 26-second delay penalties. |
-| 🎛️ **Granular Scraper Toggles** | Manage scrapers individually with the new Sources tab. Instantly bulk enable/disable hundreds of providers at once. |
+| 📺 **Curated Stremio Catalogs** | Built-in catalogs for Trending, Popular, and Top Rated movies and series seamlessly integrated into your Stremio discover menu. |
+| 📡 **Live TV & IPTV Integration** | Built-in Live TV discover catalog with curated public feeds (Sports, 24/7 News, Indian TV, Movies, Music), custom M3U/M3U8 playlist support, and Xtream Codes login. |
+| 🛑 **Provider Quarantine System** | Automatically isolates failing or offline scrapers for 10 minutes after consecutive failures to eliminate scrape timeout penalties. |
+| 🎛️ **Granular Scraper Toggles** | Manage scrapers individually with the Sources tab. Instantly bulk enable/disable hundreds of providers at once with one click. |
 | 🎬 **Strict 4K UHD Hierarchy** | Strict resolution-first ordering (`4K UHD` > `1080p FHD` > `720p HD` > `480p SD`). Lower resolutions will never leapfrog 4K content in Quality mode. |
 | 🚫 **Auto-Hide CAM & Theater Rips** | Automatically filters out blurry theater recordings (`CAM`, `HDCAM`, `TeleSync`, `TC`, and `Screeners`). |
 | 🧲 **Smart P2P Torrent Health** | Accurately maps torrent swarm seeders to health badges (`🟢 20+ Healthy`, `🟡 5–19 Moderate`, `🔴 1–4 Buffering Risk`) to prevent stalled playback. |
 | 🌐 **Regional & Multi-Audio Priority** | Float preferred languages (`Hindi`, `Tamil`, `Telugu`, `Malayalam`, `Dual-Audio`, `Anime/Jap`, etc.) directly to the top of your stream list. |
-| 🧩 **Multi-Source Deduplication** | Merges identical streams found across different providers into unified entries with multi-source badges (e.g. `CinemaHD + Torrentio`) and maximum seeder counts. |
+| 🧩 **Multi-Source Deduplication** | Merges identical streams found across different providers into unified entries with multi-source badges and maximum seeder counts. |
 | 🛡️ **DNS-over-HTTPS (DoH)** | Built-in DoH engine with Cloudflare, Google, AdGuard, and Quad9 resolvers to bypass ISP-level domain blocks with zero latency impact. |
-| 📊 **Live Analytics Dashboard** | Real-time web UI dashboard that displays millisecond-accurate ping latencies, success rates, and health statuses for all scrapers. |
-| 🚀 **Stale-While-Revalidate Caching** | Advanced caching system returns streams instantly from stale cache while silently re-testing scrapers in the background for blazing fast subsequent loads. |
-| ☁️ **Instant Cloud Sync** | Save your configuration once on the web UI and changes sync live to your player—no need to reinstall the addon! |
+| 📊 **Live Analytics & Health Dashboard** | Real-time web dashboard displaying millisecond-accurate ping latencies, success rates, domains, and scraper health. |
+| 🚀 **Stale-While-Revalidate Caching** | Returns streams instantly from stale cache while silently re-testing scrapers in the background for blazing fast subsequent loads. |
+| ☁️ **Instant Cloud Sync** | Stateless Base64 URL configuration allows changes to sync live to your player without needing to reinstall the addon. |
 | 🏷️ **Rich Metadata Badges** | Automatically extracts and displays badges for `HDR10`, `Dolby Vision`, `IMAX`, `REMUX`, `HEVC`, `Dolby Atmos`, `5.1/7.1 Audio`, and file size. |
 
 ---
@@ -60,12 +62,11 @@ Choose how your streams are ranked in the configuration dashboard:
 
 ## 🚀 Getting Started
 
-
 ### 💻 Running Locally
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/your-username/chole-bhature.git
+git clone https://github.com/SA7ANI/chole-bhature.git
 cd chole-bhature
 
 # 2. Install dependencies
@@ -79,6 +80,15 @@ Open [http://localhost:7000/configure](http://localhost:7000/configure) in your 
 
 ---
 
+## 🛠️ Tech Stack & Architecture
+
+* **Runtime:** Node.js (v18+)
+* **Server Framework:** Express.js (Docker & Serverless compatible)
+* **SDK:** Stremio Addon SDK (`stremio-addon-sdk`)
+* **Scraper Engine:** Axios, Cheerio, Crypto-JS
+* **Frontend:** Vanilla HTML5, CSS3 Glassmorphism, Responsive PWA with Service Worker offline shell
+
+---
 
 ## ⚖️ Attribution & Anti-Leech Policy
 

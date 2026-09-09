@@ -163,17 +163,19 @@
             left: 50%;
             transform: translateX(-50%);
             z-index: 1000;
-            width: min(920px, calc(100% - clamp(20px, 5vw, 40px)));
-            background: rgba(13, 17, 28, 0.82);
+            width: fit-content;
+            max-width: calc(100% - clamp(16px, 3vw, 32px));
+            min-width: min(840px, calc(100% - clamp(16px, 3vw, 32px)));
+            background: rgba(13, 17, 28, 0.85);
             backdrop-filter: blur(24px) saturate(190%);
             -webkit-backdrop-filter: blur(24px) saturate(190%);
-            border: 1px solid rgba(255, 255, 255, 0.10);
+            border: 1px solid rgba(255, 255, 255, 0.12);
             border-radius: var(--radius-pill);
-            padding: 6px 10px;
+            padding: 6px 8px 6px 12px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 10px;
+            gap: 12px;
             box-sizing: border-box;
             box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.14);
             transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -768,6 +770,15 @@
             text-overflow: ellipsis;
         }
 
+        /* ===== IPTV SUBSECTIONS SPACING ===== */
+        #iptv-subsections {
+            display: flex;
+            flex-direction: column;
+            gap: clamp(16px, 3vw, 28px);
+            width: 100%;
+            margin-top: clamp(16px, 3vw, 28px);
+        }
+
         /* ===== SECTION CARDS & LABELS ===== */
         .section-wrap {
             display: flex;
@@ -1202,16 +1213,56 @@
             box-shadow: 0 0 16px rgba(139, 92, 246, 0.35);
         }
         
-        .input-bar-group select option {
-            background-color: #0e111a;
-            color: #f8fafc;
-            font-weight: 600;
-            padding: 12px;
+        select, option {
+            color-scheme: dark;
         }
 
-        body.light-theme .input-bar-group select option {
-            background-color: #ffffff;
-            color: #0f172a;
+        select option, .input-bar-group select option {
+            background-color: #0e111a !important;
+            color: #f8fafc !important;
+            font-weight: 600;
+            padding: 10px 14px;
+        }
+
+        body.light-theme select, body.light-theme option {
+            color-scheme: light;
+        }
+
+        body.light-theme select option, body.light-theme .input-bar-group select option {
+            background-color: #ffffff !important;
+            color: #0f172a !important;
+        }
+
+        
+        /* Global Sleek Dark Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.14);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-primary, #8b5cf6);
+        }
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+        }
+        
+        #explorer-category-chips {
+            overflow-x: auto;
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
+        }
+        #explorer-category-chips::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
         }
 
         /* ===== SITE AESTHETIC CUSTOM MODAL ENGINE ===== */
@@ -2323,6 +2374,10 @@
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.95;"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 12.5-9.17 4.16a2 2 0 0 1-1.66 0L2 12.5"/><path d="m22 17.5-9.17 4.16a2 2 0 0 1-1.66 0L2 17.5"/></svg>
                 Sources
             </a>
+            <a class="nav-pill-item" onclick="switchTab('tab-iptv', this)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.95;"><rect width="20" height="15" x="2" y="7" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg>
+                Live TV
+            </a>
             <a class="nav-pill-item" onclick="switchTab('tab-analytics', this)">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.95;"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
                 Analytics
@@ -2766,7 +2821,7 @@
                     </div>
 
                     <div id="catalogs-sub-options" style="border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 14px; margin-top: 8px;">
-                        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
                             <label class="filter-capsule" title="Trending Movies & TV Shows">
                                 <span class="filter-capsule-text">🔥 Trending Feeds</span>
                                 <div class="switch-toggle">
@@ -2788,6 +2843,59 @@
                                     <span class="switch-slider"></span>
                                 </div>
                             </label>
+                        </div>
+
+                        <!-- Sub-Categories Showcase Inside Catalogs -->
+                        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-subtle); border-radius: 14px; padding: 12px 14px;">
+                            <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                                <span>🏷️ Stremio Sub-Categories Inside Catalogs</span>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 8px; font-size: 11.5px;">
+                                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                    <span style="font-weight: 700; color: #f8fafc; min-width: 130px;">🔥 Trending Feeds:</span>
+                                    <span class="tag-pill-badge" style="background: rgba(139, 92, 246, 0.12); color: #c4b5fd;">Action</span>
+                                    <span class="tag-pill-badge" style="background: rgba(139, 92, 246, 0.12); color: #c4b5fd;">Comedy</span>
+                                    <span class="tag-pill-badge" style="background: rgba(139, 92, 246, 0.12); color: #c4b5fd;">Drama</span>
+                                    <span class="tag-pill-badge" style="background: rgba(139, 92, 246, 0.12); color: #c4b5fd;">Sci-Fi</span>
+                                    <span class="tag-pill-badge" style="background: rgba(139, 92, 246, 0.12); color: #c4b5fd;">Horror</span>
+                                    <span class="tag-pill-badge" style="background: rgba(139, 92, 246, 0.12); color: #c4b5fd;">Thriller</span>
+                                    <span class="tag-pill-badge" style="background: rgba(139, 92, 246, 0.12); color: #c4b5fd;">Romance</span>
+                                    <span class="tag-pill-badge" style="background: rgba(139, 92, 246, 0.12); color: #c4b5fd;">Crime</span>
+                                    <span class="tag-pill-badge" style="background: rgba(139, 92, 246, 0.12); color: #c4b5fd;">Animation</span>
+                                    <span class="tag-pill-badge" style="background: rgba(139, 92, 246, 0.12); color: #c4b5fd;">+7 More</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                    <span style="font-weight: 700; color: #f8fafc; min-width: 130px;">🇮🇳 Indian Cinema:</span>
+                                    <span class="tag-pill-badge" style="background: rgba(245, 158, 11, 0.12); color: #fcd34d;">Bollywood (Hindi)</span>
+                                    <span class="tag-pill-badge" style="background: rgba(245, 158, 11, 0.12); color: #fcd34d;">Tollywood (Telugu)</span>
+                                    <span class="tag-pill-badge" style="background: rgba(245, 158, 11, 0.12); color: #fcd34d;">Kollywood (Tamil)</span>
+                                    <span class="tag-pill-badge" style="background: rgba(245, 158, 11, 0.12); color: #fcd34d;">Malayalam</span>
+                                    <span class="tag-pill-badge" style="background: rgba(245, 158, 11, 0.12); color: #fcd34d;">Kannada</span>
+                                    <span class="tag-pill-badge" style="background: rgba(245, 158, 11, 0.12); color: #fcd34d;">Punjabi</span>
+                                    <span class="tag-pill-badge" style="background: rgba(245, 158, 11, 0.12); color: #fcd34d;">Bengali</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                    <span style="font-weight: 700; color: #f8fafc; min-width: 130px;">⛩️ Trending Anime:</span>
+                                    <span class="tag-pill-badge" style="background: rgba(244, 63, 94, 0.12); color: #fda4af;">Action</span>
+                                    <span class="tag-pill-badge" style="background: rgba(244, 63, 94, 0.12); color: #fda4af;">Adventure</span>
+                                    <span class="tag-pill-badge" style="background: rgba(244, 63, 94, 0.12); color: #fda4af;">Comedy</span>
+                                    <span class="tag-pill-badge" style="background: rgba(244, 63, 94, 0.12); color: #fda4af;">Fantasy</span>
+                                    <span class="tag-pill-badge" style="background: rgba(244, 63, 94, 0.12); color: #fda4af;">Sci-Fi</span>
+                                    <span class="tag-pill-badge" style="background: rgba(244, 63, 94, 0.12); color: #fda4af;">Mystery</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                    <span style="font-weight: 700; color: #f8fafc; min-width: 130px;">📡 Live TV / IPTV:</span>
+                                    <span class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.12); color: #6ee7b7;">News</span>
+                                    <span class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.12); color: #6ee7b7;">Sports</span>
+                                    <span class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.12); color: #6ee7b7;">Movies</span>
+                                    <span class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.12); color: #6ee7b7;">Music</span>
+                                    <span class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.12); color: #6ee7b7;">Animation & Kids</span>
+                                    <span class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.12); color: #6ee7b7;">Documentary</span>
+                                    <span class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.12); color: #6ee7b7;">India</span>
+                                    <span class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.12); color: #6ee7b7;">UK</span>
+                                    <span class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.12); color: #6ee7b7;">USA</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2920,6 +3028,288 @@
 
                 <div id="providers-list" class="providers-grid-container">
                     <div class="empty-placeholder" style="grid-column: 1 / -1;">No providers found.</div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ==================== TAB: LIVE TV / IPTV ==================== -->
+        <div id="tab-iptv" class="tab-content">
+
+            <!-- Master Live TV Toggle -->
+            <div class="section-wrap" id="section-iptv-master">
+                <div class="section-label-bar">
+                    <span class="section-label">📡 Live TV & IPTV Engine</span>
+                    <span class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.35); color: #34d399;">⚡ HLS Probed</span>
+                </div>
+                <div class="section-card">
+                    <div class="setting-item-row" style="padding-top: 0; padding-bottom: 8px;">
+                        <div class="setting-text-block">
+                            <div class="setting-headline">
+                                📡 Enable Live TV Catalogs
+                                <span class="tag-pill-badge" style="background: rgba(139, 92, 246, 0.15); border-color: rgba(139, 92, 246, 0.35); color: #c4b5fd;">📺 Stremio / Nuvio</span>
+                            </div>
+                            <div class="setting-description">Exposes the "Live TV / IPTV" discover catalog inside Stremio and Nuvio. Probes streams for instant low-latency playback with automatic DNS-over-HTTPS bypass.</div>
+                        </div>
+                        <div class="dual-filter-group">
+                            <label class="filter-capsule">
+                                <span class="filter-capsule-text">📡 Live TV</span>
+                                <div class="switch-toggle">
+                                    <input type="checkbox" id="enableIptv" checked onchange="onSettingChanged(); toggleIptvSubsections();">
+                                    <span class="switch-slider"></span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="iptv-subsections">
+                <!-- Curated Global Public Channels -->
+                <div class="section-wrap" id="section-curated-iptv">
+                    <div class="section-label-bar" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span class="section-label">🌍 Curated Free Global Channels</span>
+                        <label class="filter-capsule" style="padding: 5px 12px; margin-left: auto; display: inline-flex; align-items: center; gap: 8px;">
+                            <span class="filter-capsule-text" style="font-size: 12px; font-weight: 700;">Curated Feed</span>
+                            <div class="switch-toggle" style="margin: 0;">
+                                <input type="checkbox" id="enableCuratedIptv" checked onchange="onSettingChanged(); toggleCuratedChannelsVisibility();">
+                                <span class="switch-slider"></span>
+                            </div>
+                        </label>
+                    </div>
+                    <div class="section-card">
+                        <p class="setting-description" style="margin-bottom: 14px;">
+                            Verified legal public live streams spanning <b>Sports</b> (Red Bull TV, Combat Sports), <b>World News</b> (BBC, Sky News, Bloomberg, France24, DW, Euronews), <b>Indian TV</b> (NDTV, Aaj Tak, DD Sports), <b>Movies</b> (Retro Classics, FilmRise), and <b>Music</b>.
+                        </p>
+                        
+                        <!-- Curated Channels Interactive Showcase -->
+                        <div id="curated-channels-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;">
+                            <!-- Populated dynamically by JS with channel cards & ping testers -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Custom M3U / M3U8 Playlist Studio -->
+                <div class="section-wrap" id="section-custom-m3u">
+                    <div class="section-label-bar" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                        <span class="section-label" style="display: flex; align-items: center; gap: 8px;">
+                            <span>🔗 Custom M3U / M3U8 Playlist Studio</span>
+                        </span>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span class="tag-pill-badge" style="font-size: 10px; padding: 2px 8px; background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.3); color: #93c5fd;">HLS / DASH / MP4</span>
+                            <span class="tag-pill-badge" style="font-size: 10px; padding: 2px 8px; background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.3); color: #34d399;">Live Inspector</span>
+                        </div>
+                    </div>
+                    <div class="section-card">
+                        <div class="setting-text-block" style="margin-bottom: 14px;">
+                            <div class="setting-headline">Personal IPTV Playlist & Stream Studio</div>
+                            <div class="setting-description">Connect any M3U or M3U8 live stream playlist from an IPTV provider or community repository. Features automated channel categorization, logo resolution, custom User-Agent emulation, and an interactive in-dashboard channel browser.</div>
+                        </div>
+
+                        <!-- 1-Click Curated Presets Bar -->
+                        <div style="margin-bottom: 16px;">
+                            <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                                <span>⚡ 1-Click Community Presets</span>
+                                <span style="font-size: 10.5px; font-weight: 500; color: var(--text-tertiary); text-transform: none;">(Click to test & auto-connect)</span>
+                            </div>
+                            <div id="iptv-presets-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px;">
+                                <!-- Rendered dynamically by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Main Playlist URL Input Group -->
+                        <div style="margin-bottom: 12px;">
+                            <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 6px;">
+                                M3U / M3U8 PLAYLIST URL
+                            </label>
+                            <div class="input-bar-group" style="gap: 8px; flex-wrap: wrap;">
+                                <div style="position: relative; flex: 1; min-width: 260px; display: flex; align-items: center;">
+                                    <span style="position: absolute; left: 12px; font-size: 14px; opacity: 0.6; pointer-events: none;">🔗</span>
+                                    <input type="url" id="customIptvUrl" placeholder="https://example.com/playlist.m3u8" style="width: 100%; padding-left: 36px; padding-right: 32px;" onchange="onSettingChanged(); checkM3uInputChange();" oninput="checkM3uInputChange();">
+                                    <button type="button" id="btn-clear-m3u-input" onclick="clearM3uInputOnly()" style="position: absolute; right: 8px; background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px; padding: 4px 6px; display: none;" title="Clear Input">✕</button>
+                                </div>
+                                <button type="button" id="btn-test-m3u" class="btn-submit-action" onclick="testCustomM3u()" style="padding: 0 18px; height: 42px; white-space: nowrap; font-weight: 700;">
+                                    <span>⚡</span> Test & Connect
+                                </button>
+                                <button type="button" class="pill-btn pill-btn-glass" onclick="toggleM3uAdvancedDrawer()" style="height: 42px; padding: 0 14px; white-space: nowrap; font-size: 12px;">
+                                    <span id="adv-drawer-icon">⚙️</span> Options
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Advanced Options Drawer (Collapsible) -->
+                        <div id="m3u-advanced-drawer" style="display: none; margin-top: 12px; margin-bottom: 14px; padding: 14px; background: rgba(0, 0, 0, 0.25); border: 1px solid var(--border-subtle); border-radius: 14px;">
+                            <div style="font-size: 12px; font-weight: 800; color: var(--text-primary); margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                                <span>⚙️ Advanced Streaming & Ingest Settings</span>
+                            </div>
+                            
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                        <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">CUSTOM USER-AGENT</label>
+                                        <span style="font-size: 10px; color: var(--text-tertiary);">Bypass 403 blocks</span>
+                                    </div>
+                                    <input type="text" id="iptvUserAgent" placeholder="e.g. VLC/3.0.18 or TiviMate/4.7.0" style="width: 100%; box-sizing: border-box; font-size: 12px;" onchange="onSettingChanged()">
+                                    <div style="display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap;">
+                                        <button type="button" class="tag-pill-badge" style="cursor: pointer; background: rgba(255,255,255,0.05);" onclick="setUserAgentQuick('VLC/3.0.18')">VLC</button>
+                                        <button type="button" class="tag-pill-badge" style="cursor: pointer; background: rgba(255,255,255,0.05);" onclick="setUserAgentQuick('TiviMate/4.7.0')">TiviMate</button>
+                                        <button type="button" class="tag-pill-badge" style="cursor: pointer; background: rgba(255,255,255,0.05);" onclick="setUserAgentQuick('Kodi/20.2')">Kodi</button>
+                                        <button type="button" class="tag-pill-badge" style="cursor: pointer; background: rgba(255,255,255,0.05);" onclick="setUserAgentQuick('ExoPlayer')">ExoPlayer</button>
+                                        <button type="button" class="tag-pill-badge" style="cursor: pointer; background: rgba(255,255,255,0.05);" onclick="setUserAgentQuick('')">Clear</button>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                        <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">XMLTV / EPG URL</label>
+                                        <span style="font-size: 10px; color: var(--text-tertiary);">TV Guide metadata</span>
+                                    </div>
+                                    <input type="url" id="iptvEpgUrl" placeholder="https://iptv-org.github.io/epg/guides/..." style="width: 100%; box-sizing: border-box; font-size: 12px;" onchange="onSettingChanged()">
+                                    <div style="font-size: 10.5px; color: var(--text-tertiary); margin-top: 4px;">
+                                        Supplies channel schedule and guide data in Stremio.
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                        <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">MAX CHANNELS LIMIT</label>
+                                        <span style="font-size: 10px; color: var(--text-tertiary);">Device performance</span>
+                                    </div>
+                                    <select id="iptvLimit" style="width: 100%; box-sizing: border-box; font-size: 12.5px; height: 38px; border-radius: 10px; background-color: #0e111a; border: 1px solid var(--border-subtle); color: #f8fafc; padding: 0 10px; color-scheme: dark; cursor: pointer;" onchange="onSettingChanged()">
+                                        <option value="0" style="background-color: #0e111a; color: #f8fafc;">All Channels (Unlimited)</option>
+                                        <option value="100" style="background-color: #0e111a; color: #f8fafc;">Top 100 Channels</option>
+                                        <option value="250" style="background-color: #0e111a; color: #f8fafc;">Top 250 Channels (Firestick / TV)</option>
+                                        <option value="500" style="background-color: #0e111a; color: #f8fafc;">Top 500 Channels</option>
+                                        <option value="1000" style="background-color: #0e111a; color: #f8fafc;">Top 1000 Channels</option>
+                                    </select>
+                                    <div style="font-size: 10.5px; color: var(--text-tertiary); margin-top: 4px;">
+                                        Limits catalog items to keep low-power TV boxes smooth.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Active Connected Playlist Showcase Card -->
+                        <div id="m3u-connected-card" style="display: none; margin-top: 14px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(6, 78, 59, 0.15) 100%); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 16px; padding: 16px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; border-bottom: 1px solid rgba(16, 185, 129, 0.2); padding-bottom: 10px;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #10b981; box-shadow: 0 0 10px #10b981;"></span>
+                                    <span style="font-size: 13px; font-weight: 800; color: #34d399; letter-spacing: 0.5px;">PLAYLIST CONNECTED & ACTIVE</span>
+                                </div>
+                                <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                                    <button type="button" class="pill-btn pill-btn-glass" onclick="toggleChannelExplorer()" style="padding: 4px 10px; font-size: 11px; font-weight: 700;">
+                                        <span id="btn-explorer-icon">🔍</span> <span id="btn-explorer-text">Explore Channels</span>
+                                    </button>
+                                    <button type="button" class="pill-btn pill-btn-glass" onclick="resyncM3uPlaylist()" style="padding: 4px 10px; font-size: 11px;" title="Re-download latest channels">
+                                        🔄 Re-sync
+                                    </button>
+                                    <button type="button" class="pill-btn pill-btn-glass" onclick="copyM3uUrl()" style="padding: 4px 10px; font-size: 11px;" title="Copy URL to clipboard">
+                                        📋 Copy
+                                    </button>
+                                    <button type="button" class="pill-btn pill-btn-glass" onclick="clearCustomM3u()" style="padding: 4px 10px; font-size: 11px; color: #f87171;" title="Remove playlist">
+                                        🗑️ Disconnect
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Stat Micro-Cards -->
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 12px;">
+                                <div style="background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; padding: 10px; text-align: center;">
+                                    <div id="stat-m3u-channels" style="font-size: 20px; font-weight: 900; color: #34d399;">0</div>
+                                    <div style="font-size: 10.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Channels Loaded</div>
+                                </div>
+                                <div style="background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; padding: 10px; text-align: center;">
+                                    <div id="stat-m3u-cats" style="font-size: 20px; font-weight: 900; color: #38bdf8;">0</div>
+                                    <div style="font-size: 10.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Categories</div>
+                                </div>
+                                <div style="background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; padding: 10px; text-align: center;">
+                                    <div id="stat-m3u-status" style="font-size: 20px; font-weight: 900; color: #a78bfa;">Synced</div>
+                                    <div style="font-size: 10.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Catalog Feed</div>
+                                </div>
+                            </div>
+
+                            <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 4px;">
+                                <b>Categories:</b> <span id="m3u-category-tags" style="color: var(--text-primary);">-</span>
+                            </div>
+                            <div style="font-size: 10.5px; color: var(--text-muted); font-family: monospace; word-break: break-all;" id="m3u-active-url-display"></div>
+                        </div>
+
+                        <!-- Status Alert Message (For loading/errors) -->
+                        <div id="m3u-test-status" style="margin-top: 12px; display: none; padding: 12px 14px; border-radius: 12px; font-size: 12px;"></div>
+
+                        <!-- In-Dashboard Live Channel Explorer -->
+                        <div id="m3u-channel-explorer" style="display: none; margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--border-subtle);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 14px;">
+                                <div>
+                                    <div style="font-size: 14px; font-weight: 800; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                                        <span>📺 Live Channel Explorer</span>
+                                        <span id="explorer-count-badge" class="tag-pill-badge" style="font-size: 10.5px; padding: 2px 8px; background: rgba(139, 92, 246, 0.15); border-color: rgba(139, 92, 246, 0.3); color: #c4b5fd;">0 Channels</span>
+                                    </div>
+                                    <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">Real-time stream search, category tabs & live latency probe</div>
+                                </div>
+                                <div style="position: relative; min-width: 240px; flex: 1; max-width: 320px; display: flex; align-items: center;">
+                                    <span style="position: absolute; left: 12px; font-size: 13px; opacity: 0.5; pointer-events: none;">🔍</span>
+                                    <input type="text" id="explorerSearchInput" placeholder="Filter channel name..." style="width: 100%; height: 38px; padding-left: 34px; padding-right: 14px; font-size: 12.5px; border-radius: var(--radius-pill); background: var(--bg-input); border: 1px solid var(--border-subtle); color: var(--text-primary); box-sizing: border-box; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='var(--accent-primary)'" onblur="this.style.borderColor='var(--border-subtle)'" oninput="onExplorerSearchChanged()">
+                                </div>
+                            </div>
+
+                            <!-- Category Chips Filter with Desktop Scroll Controls & Mouse Drag Support -->
+                            <div class="chips-scroll-wrapper" style="position: relative; display: flex; align-items: center; margin-bottom: 14px; max-width: 100%;">
+                                <button type="button" id="btn-scroll-chips-left" class="pill-btn-icon-only" onclick="scrollCategoryChips(-260)" style="width: 32px; height: 32px; min-width: 32px; margin-right: 8px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-subtle); color: var(--text-secondary); cursor: pointer; flex-shrink: 0; display: none; transition: all 0.2s; font-size: 18px; font-weight: 700; line-height: 1;" title="Scroll Left (or mouse wheel)">‹</button>
+                                
+                                <div id="explorer-category-chips" onscroll="updateChipsArrowButtons()" style="display: flex; gap: 8px; overflow-x: auto; scroll-behavior: smooth; padding: 2px 2px 6px 2px; flex: 1; cursor: grab; user-select: none;">
+                                    <!-- Rendered dynamically by JS -->
+                                </div>
+                                
+                                <button type="button" id="btn-scroll-chips-right" class="pill-btn-icon-only" onclick="scrollCategoryChips(260)" style="width: 32px; height: 32px; min-width: 32px; margin-left: 8px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-subtle); color: var(--text-secondary); cursor: pointer; flex-shrink: 0; display: none; transition: all 0.2s; font-size: 18px; font-weight: 700; line-height: 1;" title="Scroll Right (or mouse wheel)">›</button>
+                            </div>
+
+                            <!-- Channels Grid (Flows Naturally with Site Layout) -->
+                            <div id="explorer-channels-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px;">
+                                <!-- Populated dynamically with channels matching .provider-item-card aesthetic -->
+                            </div>
+
+                            <!-- Pagination / Load More Bar -->
+                            <div id="explorer-pagination-bar" style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-subtle);">
+                                <button type="button" id="btn-explorer-load-more" class="pill-btn pill-btn-glass" onclick="loadMoreExplorerChannels()" style="font-size: 12px; padding: 7px 20px; font-weight: 700;">
+                                    ⬇️ Load More Channels
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Xtream Codes API (Optional) -->
+                <div class="section-wrap" id="section-xtream-codes">
+                    <div class="section-label-bar">
+                        <span class="section-label">⚡ Xtream Codes API (Subscription Login)</span>
+                    </div>
+                    <div class="section-card">
+                        <div class="setting-text-block" style="margin-bottom: 12px;">
+                            <div class="setting-headline">Xtream Subscription Details</div>
+                            <div class="setting-description">Connect your private Xtream Codes server. Your credentials are securely encoded into your private addon URL token.</div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                            <div>
+                                <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">SERVER URL</label>
+                                <input type="url" id="xtreamServer" placeholder="http://iptv-server.com:8080" style="width: 100%; box-sizing: border-box;" onchange="onSettingChanged()">
+                            </div>
+                            <div>
+                                <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">USERNAME</label>
+                                <input type="text" id="xtreamUser" placeholder="Username" style="width: 100%; box-sizing: border-box;" onchange="onSettingChanged()">
+                            </div>
+                            <div>
+                                <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">PASSWORD</label>
+                                <input type="password" id="xtreamPassword" placeholder="••••••••" style="width: 100%; box-sizing: border-box;" onchange="onSettingChanged()">
+                            </div>
+                        </div>
+                        <div style="margin-top: 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <button type="button" class="pill-btn pill-btn-emerald" onclick="testXtreamLogin()" style="padding: 0 16px; height: 38px; font-size: 12px;">
+                                <span>🔐</span> Verify Xtream Connection
+                            </button>
+                            <span id="xtream-test-status" style="font-size: 12px; font-weight: 600;"></span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -3468,6 +3858,12 @@
             </div>
             <span class="nav-label">Sources</span>
         </a>
+        <a class="nav-item" onclick="switchTab('tab-iptv', this)">
+            <div class="nav-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="15" x="2" y="7" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg>
+            </div>
+            <span class="nav-label">Live TV</span>
+        </a>
         <a class="nav-item" onclick="switchTab('tab-analytics', this)">
             <div class="nav-icon">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
@@ -3485,8 +3881,15 @@
     <!-- ==================== JAVASCRIPT ENGINE ==================== -->
     <script>
         let configId = null;
+        const DEFAULT_REPOS = [
+            'https://cdn.jsdelivr.net/gh/D3adlyRocket/All-in-One-Nuvio@main/manifest.json',
+            'https://cdn.jsdelivr.net/gh/yoruix/nuvio-providers@main/manifest.json',
+            'https://codeberg.org/eclipsia/nuvio-plugin/raw/branch/main/manifest.json'
+        ];
         let storedRepos = localStorage.getItem('nuvio_repos');
-        let repos = storedRepos !== null ? JSON.parse(storedRepos) : [];
+        let repos = (storedRepos !== null && JSON.parse(storedRepos).length > 0)
+            ? JSON.parse(storedRepos)
+            : [...DEFAULT_REPOS];
         let settings = JSON.parse(localStorage.getItem('nuvio_settings') || '{"hideDead": false, "hideSlow": false, "sortBy": "speed", "prioritizeHindi": false, "showSeeders": true, "deduplicateStreams": true, "cleanTitles": true, "showFileSize": true, "showReleaseGroup": true, "vercelEcoMode": true, "preferredLanguages": [], "disabledProviders": []}');
         let allProvidersData = [];
 
@@ -3779,8 +4182,9 @@
                 'tab-home': 0,
                 'tab-settings': 1,
                 'tab-sources': 2,
-                'tab-analytics': 3,
-                'tab-admin': 4
+                'tab-iptv': 3,
+                'tab-analytics': 4,
+                'tab-admin': 5
             };
             const idx = tabMap[tabId];
             
@@ -3797,8 +4201,11 @@
                 else el.classList.remove('active');
             });
             
-            // Auto refresh analytics on tab enter
-            if (tabId === 'tab-analytics') {
+            // Auto refresh IPTV or Analytics on tab enter
+            if (tabId === 'tab-iptv') {
+                renderCuratedChannels();
+            initM3uPresets();
+            } else if (tabId === 'tab-analytics') {
                 const card = document.getElementById('analytics-card');
                 if (card) card.style.display = 'block';
                 syncHealthData();
@@ -3851,26 +4258,15 @@
             const icon = document.getElementById('save-btn-icon');
             const text = document.getElementById('save-btn-text');
             if (!btn) return;
-
-            if (!isInstalled) {
-                if (icon) icon.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m13 2-2 2.5V8l-3 3 5 5 3-3h3.5L22 11l-9-9Z"/><path d="m4.5 15.5-1.5 4 4-1.5"/></svg>';
-                if (text) text.innerText = 'Install';
-                btn.title = 'Install Addon to Stremio / Nuvio';
-                btn.classList.remove('unsaved');
-            } else {
-                if (icon) icon.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>';
-                if (text) text.innerText = 'Save';
-                btn.title = 'Save & sync changes to cloud';
-            }
+            if (icon) icon.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m13 2-2 2.5V8l-3 3 5 5 3-3h3.5L22 11l-9-9Z"/><path d="m4.5 15.5-1.5 4 4-1.5"/></svg>';
+            if (text) text.innerText = 'Install';
+            btn.title = 'Install Addon to Stremio / Nuvio';
         }
 
-        function handleTopAction() {
+        async function handleTopAction() {
             triggerHaptic('success');
-            if (!isInstalled) {
-                installAddon();
-            } else {
-                saveConfigurationToServer(true);
-            }
+            await saveConfigurationToServer(false);
+            installAddon();
         }
 
         function onSettingChanged() {
@@ -3924,6 +4320,25 @@
             if (catalogTrendingEl) settings.catalogTrending = catalogTrendingEl.checked;
             if (catalogIndianEl) settings.catalogIndian = catalogIndianEl.checked;
             if (catalogAnimeEl) settings.catalogAnime = catalogAnimeEl.checked;
+
+            const enableIptvEl = document.getElementById('enableIptv');
+            if (enableIptvEl) settings.enableIptv = enableIptvEl.checked;
+            const enableCuratedIptvEl = document.getElementById('enableCuratedIptv');
+            if (enableCuratedIptvEl) settings.enableCuratedIptv = enableCuratedIptvEl.checked;
+            const customIptvUrlEl = document.getElementById('customIptvUrl');
+            if (customIptvUrlEl) settings.customIptvUrl = customIptvUrlEl.value.trim();
+            const iptvUserAgentEl = document.getElementById('iptvUserAgent');
+            if (iptvUserAgentEl) settings.iptvUserAgent = iptvUserAgentEl.value.trim();
+            const iptvEpgUrlEl = document.getElementById('iptvEpgUrl');
+            if (iptvEpgUrlEl) settings.iptvEpgUrl = iptvEpgUrlEl.value.trim();
+            const iptvLimitEl = document.getElementById('iptvLimit');
+            if (iptvLimitEl) settings.iptvLimit = iptvLimitEl.value;
+            const xtreamServerEl = document.getElementById('xtreamServer');
+            if (xtreamServerEl) settings.xtreamServer = xtreamServerEl.value.trim();
+            const xtreamUserEl = document.getElementById('xtreamUser');
+            if (xtreamUserEl) settings.xtreamUser = xtreamUserEl.value.trim();
+            const xtreamPasswordEl = document.getElementById('xtreamPassword');
+            if (xtreamPasswordEl) settings.xtreamPassword = xtreamPasswordEl.value.trim();
 
             settings.prioritizeQuality = (settings.sortBy === 'quality');
             settings.preferredLanguages = settings.preferredLanguages || [];
@@ -3984,6 +4399,15 @@
                 catalogTrending: settings.catalogTrending !== false,
                 catalogIndian: settings.catalogIndian !== false,
                 catalogAnime: settings.catalogAnime !== false,
+                enableIptv: settings.enableIptv !== false,
+                enableCuratedIptv: settings.enableCuratedIptv !== false,
+                customIptvUrl: settings.customIptvUrl || '',
+                iptvUserAgent: settings.iptvUserAgent || '',
+                iptvEpgUrl: settings.iptvEpgUrl || '',
+                iptvLimit: settings.iptvLimit || '0',
+                xtreamServer: settings.xtreamServer || '',
+                xtreamUser: settings.xtreamUser || '',
+                xtreamPassword: settings.xtreamPassword || '',
                 sortBy: settings.sortBy || 'speed',
                 sortMode: settings.sortBy || 'speed',
                 prioritizeQuality: settings.sortBy === 'quality',
@@ -4918,6 +5342,65 @@
             if (catalogIndianEl) catalogIndianEl.checked = settings.catalogIndian !== false;
             const catalogAnimeEl = document.getElementById('catalogAnime');
             if (catalogAnimeEl) catalogAnimeEl.checked = settings.catalogAnime !== false;
+
+            if (cfg.enableIptv !== undefined) settings.enableIptv = cfg.enableIptv;
+            if (cfg.enableCuratedIptv !== undefined) settings.enableCuratedIptv = cfg.enableCuratedIptv;
+            if (cfg.customIptvUrl !== undefined) settings.customIptvUrl = cfg.customIptvUrl;
+            if (cfg.iptvUserAgent !== undefined) settings.iptvUserAgent = cfg.iptvUserAgent;
+            if (cfg.iptvEpgUrl !== undefined) settings.iptvEpgUrl = cfg.iptvEpgUrl;
+            if (cfg.iptvLimit !== undefined) settings.iptvLimit = cfg.iptvLimit;
+            if (cfg.xtreamServer !== undefined) settings.xtreamServer = cfg.xtreamServer;
+            if (cfg.xtreamUser !== undefined) settings.xtreamUser = cfg.xtreamUser;
+            if (cfg.xtreamPassword !== undefined) settings.xtreamPassword = cfg.xtreamPassword;
+            
+            const enableIptvEl = document.getElementById('enableIptv');
+            if (enableIptvEl) enableIptvEl.checked = settings.enableIptv !== false;
+            const enableCuratedIptvEl = document.getElementById('enableCuratedIptv');
+            if (enableCuratedIptvEl) enableCuratedIptvEl.checked = settings.enableCuratedIptv !== false;
+            const customIptvUrlEl = document.getElementById('customIptvUrl');
+            if (customIptvUrlEl) customIptvUrlEl.value = settings.customIptvUrl || '';
+            const iptvUserAgentEl = document.getElementById('iptvUserAgent');
+            if (iptvUserAgentEl) iptvUserAgentEl.value = settings.iptvUserAgent || '';
+            const iptvEpgUrlEl = document.getElementById('iptvEpgUrl');
+            if (iptvEpgUrlEl) iptvEpgUrlEl.value = settings.iptvEpgUrl || '';
+            const iptvLimitEl = document.getElementById('iptvLimit');
+            if (iptvLimitEl) iptvLimitEl.value = settings.iptvLimit || '0';
+            const xtreamServerEl = document.getElementById('xtreamServer');
+            if (xtreamServerEl) xtreamServerEl.value = settings.xtreamServer || '';
+            const xtreamUserEl = document.getElementById('xtreamUser');
+            if (xtreamUserEl) xtreamUserEl.value = settings.xtreamUser || '';
+            const xtreamPasswordEl = document.getElementById('xtreamPassword');
+            if (xtreamPasswordEl) xtreamPasswordEl.value = settings.xtreamPassword || '';
+            toggleIptvSubsections();
+            renderCuratedChannels();
+
+            if (settings.customIptvUrl) {
+                const connectedCard = document.getElementById('m3u-connected-card');
+                if (connectedCard) {
+                    connectedCard.style.display = 'block';
+                    document.getElementById('stat-m3u-channels').innerText = 'Connected';
+                    document.getElementById('stat-m3u-cats').innerText = 'Auto';
+                    document.getElementById('stat-m3u-status').innerText = 'Active';
+                    document.getElementById('m3u-category-tags').innerText = 'Custom M3U Stream Feed';
+                    document.getElementById('m3u-active-url-display').innerText = settings.customIptvUrl;
+                }
+                checkM3uInputChange();
+            }
+
+            const initEnableIptv = document.getElementById('enableIptv');
+            if (initEnableIptv) initEnableIptv.checked = settings.enableIptv !== false;
+            const initEnableCuratedIptv = document.getElementById('enableCuratedIptv');
+            if (initEnableCuratedIptv) initEnableCuratedIptv.checked = settings.enableCuratedIptv !== false;
+            const initCustomIptvUrl = document.getElementById('customIptvUrl');
+            if (initCustomIptvUrl) initCustomIptvUrl.value = settings.customIptvUrl || '';
+            const initXtreamServer = document.getElementById('xtreamServer');
+            if (initXtreamServer) initXtreamServer.value = settings.xtreamServer || '';
+            const initXtreamUser = document.getElementById('xtreamUser');
+            if (initXtreamUser) initXtreamUser.value = settings.xtreamUser || '';
+            const initXtreamPassword = document.getElementById('xtreamPassword');
+            if (initXtreamPassword) initXtreamPassword.value = settings.xtreamPassword || '';
+            toggleIptvSubsections();
+            renderCuratedChannels();
 
             toggleDebridApiKeyVisibility();
             toggleDohProviderVisibility();
@@ -6333,6 +6816,736 @@
             }, 700);
         });
 
+        
+        // ===== IPTV & LIVE TV ENGINE HELPERS =====
+        const SAMPLE_CURATED_CHANNELS = [
+            { id: 'iptv:curated:bbc_news', name: 'BBC News Live', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/BBC_News_2019.svg/1200px-BBC_News_2019.svg.png', category: 'News', country: 'UK' },
+            { id: 'iptv:curated:sky_news', name: 'Sky News UK', logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/5/58/Sky_News_logo_2020.svg/1200px-Sky_News_logo_2020.svg.png', category: 'News', country: 'UK' },
+            { id: 'iptv:curated:bloomberg_tv', name: 'Bloomberg TV', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Bloomberg_Television_logo.svg/1200px-Bloomberg_Television_logo.svg.png', category: 'News', country: 'USA' },
+            { id: 'iptv:curated:redbull_tv', name: 'Red Bull TV', logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/f/f5/Red_Bull_TV_logo.svg/1200px-Red_Bull_TV_logo.svg.png', category: 'Sports', country: 'Global' },
+            { id: 'iptv:curated:fite_sports', name: 'Fight Sports', logo: 'https://upload.wikimedia.org/wikipedia/commons/7/7b/Sports_icon.png', category: 'Sports', country: 'USA' },
+            { id: 'iptv:curated:ndtv_24x7', name: 'NDTV 24x7', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/NDTV_24x7_Logo.svg/1200px-NDTV_24x7_Logo.svg.png', category: 'India', country: 'India' },
+            { id: 'iptv:curated:aaj_tak', name: 'Aaj Tak Live', logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/0/07/Aaj_Tak_logo.svg/1200px-Aaj_Tak_logo.svg.png', category: 'India', country: 'India' },
+            { id: 'iptv:curated:dd_sports', name: 'DD Sports Live', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Doordarshan_logo.svg/1200px-Doordarshan_logo.svg.png', category: 'India', country: 'India' },
+            { id: 'iptv:curated:filmrise_action', name: 'FilmRise Action', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Film_strip.svg/500px-Film_strip.svg.png', category: 'Movies', country: 'USA' },
+            { id: 'iptv:curated:dust_scifi', name: 'DUST Sci-Fi', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Orbit_icon.svg/500px-Orbit_icon.svg.png', category: 'Entertainment', country: 'USA' },
+            { id: 'iptv:curated:nasa_tv', name: 'NASA TV HD', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/NASA_logo.svg/1200px-NASA_logo.svg.png', category: 'Entertainment', country: 'USA' },
+            { id: 'iptv:curated:clubbing_tv', name: 'Clubbing TV', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Headphones_icon.svg/500px-Headphones_icon.svg.png', category: 'Music', country: 'France' }
+        ];
+
+        function toggleIptvSubsections() {
+            const isIptv = document.getElementById('enableIptv')?.checked !== false;
+            const sub = document.getElementById('iptv-subsections');
+            if (sub) sub.style.display = isIptv ? 'flex' : 'none';
+        }
+
+        function toggleCuratedChannelsVisibility() {
+            const isCurated = document.getElementById('enableCuratedIptv')?.checked !== false;
+            const grid = document.getElementById('curated-channels-grid');
+            if (grid) grid.style.opacity = isCurated ? '1' : '0.4';
+        }
+
+        function getChannelBadge(ch) {
+            const badges = {
+                'iptv:curated:bbc_news': { bg: 'linear-gradient(135deg, #bb1919 0%, #7f1d1d 100%)', text: 'BBC', sub: 'NEWS' },
+                'iptv:curated:sky_news': { bg: 'linear-gradient(135deg, #e11d48 0%, #1e3a8a 100%)', text: 'SKY', sub: 'NEWS' },
+                'iptv:curated:bloomberg_tv': { bg: 'linear-gradient(135deg, #4338ca 0%, #1e1b4b 100%)', text: 'BBG', sub: 'TV' },
+                'iptv:curated:redbull_tv': { bg: 'linear-gradient(135deg, #0f172a 0%, #b91c1c 100%)', text: 'RED', sub: 'BULL' },
+                'iptv:curated:fite_sports': { bg: 'linear-gradient(135deg, #991b1b 0%, #450a0a 100%)', text: '🥊', sub: 'FIGHT' },
+                'iptv:curated:ndtv_24x7': { bg: 'linear-gradient(135deg, #1d4ed8 0%, #172554 100%)', text: 'NDTV', sub: '24x7' },
+                'iptv:curated:aaj_tak': { bg: 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)', text: 'आज', sub: 'तक' },
+                'iptv:curated:dd_sports': { bg: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', text: 'DD', sub: 'SPORTS' },
+                'iptv:curated:filmrise_action': { bg: 'linear-gradient(135deg, #0d9488 0%, #115e59 100%)', text: 'FILM', sub: 'RISE' },
+                'iptv:curated:dust_scifi': { bg: 'linear-gradient(135deg, #7c3aed 0%, #4c1d95 100%)', text: '🛸', sub: 'DUST' },
+                'iptv:curated:nasa_tv': { bg: 'linear-gradient(135deg, #1d4ed8 0%, #0f172a 100%)', text: '🚀', sub: 'NASA' },
+                'iptv:curated:clubbing_tv': { bg: 'linear-gradient(135deg, #c026d3 0%, #701a75 100%)', text: '🎧', sub: 'CLUB' }
+            };
+            const b = badges[ch.id] || { bg: 'linear-gradient(135deg, #6366f1 0%, #4338ca 100%)', text: 'LIVE', sub: 'TV' };
+            return `
+                <div style="width: 38px; height: 38px; border-radius: 10px; background: ${b.bg}; display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.18); line-height: 1; user-select: none;">
+                    <span style="font-size: ${b.text.length > 2 ? '11px' : '13px'}; font-weight: 900; color: #ffffff; letter-spacing: -0.2px;">${b.text}</span>
+                    <span style="font-size: 7.5px; font-weight: 800; color: rgba(255,255,255,0.85); text-transform: uppercase; margin-top: 1.5px; letter-spacing: 0.3px;">${b.sub}</span>
+                </div>
+            `;
+        }
+
+        function renderCuratedChannels() {
+            const grid = document.getElementById('curated-channels-grid');
+            if (!grid) return;
+
+            grid.innerHTML = SAMPLE_CURATED_CHANNELS.map(ch => `
+                <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; gap: 8px; transition: transform 0.2s, border-color 0.2s;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        ${getChannelBadge(ch)}
+                        <div style="min-width: 0; flex: 1;">
+                            <div style="font-size: 13px; font-weight: 700; color: var(--text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${ch.name}</div>
+                            <span class="tag-pill-badge" style="font-size: 9.5px; padding: 2px 6px; background: rgba(139, 92, 246, 0.15); border-color: rgba(139, 92, 246, 0.3); color: #c4b5fd;">${ch.category} • ${ch.country}</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 2px;">
+                        <span style="font-size: 11px; color: var(--text-muted); display: inline-flex; align-items: center; gap: 4px;">🟢 24/7 Live</span>
+                        <button type="button" class="pill-btn pill-btn-glass" onclick="testChannelPing('${ch.id}', this)" style="padding: 3px 10px; font-size: 11px; line-height: 1; font-weight: 700;">
+                            ⚡ Ping
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function testChannelPing(channelId, btn) {
+            triggerHaptic('light');
+            btn.innerText = '⏳...';
+            try {
+                const res = await fetch(`/stream/tv/${channelId}.json`);
+                const data = await res.json();
+                if (data && data.streams && data.streams.length > 0) {
+                    const title = data.streams[0].title || '';
+                    const match = title.match(/\((\d+ms)\)/);
+                    const ping = match ? match[1] : 'OK';
+                    btn.innerHTML = `🟢 ${ping}`;
+                    btn.style.color = '#34d399';
+                } else {
+                    btn.innerHTML = '⚪ Ready';
+                }
+            } catch (e) {
+                btn.innerHTML = '⚪ Ready';
+            }
+        }
+
+        
+        // ============================================================
+        // PRO IPTV PLAYLIST STUDIO LOGIC & CONTROLLER
+        // ============================================================
+        const IPTV_PRESETS = [
+            {
+                id: 'in',
+                name: 'India TV & News',
+                flag: '🇮🇳',
+                url: 'https://iptv-org.github.io/iptv/countries/in.m3u',
+                desc: 'Doordarshan, Live News, Regional'
+            },
+            {
+                id: 'news',
+                name: 'World News HD',
+                flag: '📰',
+                url: 'https://iptv-org.github.io/iptv/categories/news.m3u',
+                desc: 'BBC, Sky, Bloomberg, DW, France24'
+            },
+            {
+                id: 'sports',
+                name: 'Live Sports',
+                flag: '⚽',
+                url: 'https://iptv-org.github.io/iptv/categories/sports.m3u',
+                desc: 'Red Bull TV, Combat & Extreme'
+            },
+            {
+                id: 'movies',
+                name: 'Movies & Cinema',
+                flag: '🎬',
+                url: 'https://iptv-org.github.io/iptv/categories/movies.m3u',
+                desc: 'FilmRise, Retro Classics'
+            },
+            {
+                id: 'music',
+                name: 'Music 24/7',
+                flag: '🎵',
+                url: 'https://iptv-org.github.io/iptv/categories/music.m3u',
+                desc: 'Clubbing TV, Vevo, Live Stage'
+            },
+            {
+                id: 'us',
+                name: 'USA Free Streams',
+                flag: '🇺🇸',
+                url: 'https://iptv-org.github.io/iptv/countries/us.m3u',
+                desc: 'PBS, Local News, Public TV'
+            },
+            {
+                id: 'uk',
+                name: 'UK Freeview',
+                flag: '🇬🇧',
+                url: 'https://iptv-org.github.io/iptv/countries/uk.m3u',
+                desc: 'BBC News, UK Freeview Feeds'
+            },
+            {
+                id: 'global',
+                name: 'Global Index',
+                flag: '🌍',
+                url: 'https://iptv-org.github.io/iptv/index.m3u',
+                desc: '11,000+ Worldwide Channels'
+            }
+        ];
+
+        let m3uChannelsCache = [];
+        let m3uCategoriesCache = [];
+        let m3uFilteredChannels = [];
+        let m3uSelectedCategory = 'All';
+        let m3uExplorerPage = 1;
+        const M3U_PAGE_SIZE = 36;
+        let activePresetId = null;
+
+        function initM3uPresets() {
+            const container = document.getElementById('iptv-presets-container');
+            if (!container) return;
+            const currentUrl = (settings.customIptvUrl || '').trim();
+
+            container.innerHTML = IPTV_PRESETS.map(preset => {
+                const isActive = currentUrl === preset.url;
+                return `
+                    <div onclick="applyM3uPreset('${preset.id}')" style="background: ${isActive ? 'rgba(59, 130, 246, 0.18)' : 'rgba(255, 255, 255, 0.03)'}; border: 1px solid ${isActive ? 'rgba(59, 130, 246, 0.5)' : 'var(--border-subtle)'}; border-radius: 12px; padding: 10px; cursor: pointer; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); user-select: none;" onmouseenter="this.style.transform='translateY(-2px)'" onmouseleave="this.style.transform='translateY(0)'">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                            <span style="font-size: 16px;">${preset.flag}</span>
+                            <span style="font-size: 12px; font-weight: 700; color: var(--text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${preset.name}</span>
+                        </div>
+                        <div style="font-size: 10px; color: var(--text-muted); line-height: 1.3;">${preset.desc}</div>
+                    </div>
+                `;
+            }).join('');
+            checkM3uInputChange();
+        }
+
+        function checkM3uInputChange() {
+            const input = document.getElementById('customIptvUrl');
+            const clearBtn = document.getElementById('btn-clear-m3u-input');
+            if (input && clearBtn) {
+                clearBtn.style.display = input.value.trim() ? 'block' : 'none';
+            }
+        }
+
+        function clearM3uInputOnly() {
+            const input = document.getElementById('customIptvUrl');
+            if (input) {
+                input.value = '';
+                checkM3uInputChange();
+                input.focus();
+            }
+        }
+
+        function toggleM3uAdvancedDrawer() {
+            const drawer = document.getElementById('m3u-advanced-drawer');
+            const icon = document.getElementById('adv-drawer-icon');
+            if (!drawer) return;
+            const isHidden = drawer.style.display === 'none' || !drawer.style.display;
+            drawer.style.display = isHidden ? 'block' : 'none';
+            if (icon) icon.innerText = isHidden ? '▲' : '⚙️';
+        }
+
+        function setUserAgentQuick(ua) {
+            triggerHaptic('light');
+            const input = document.getElementById('iptvUserAgent');
+            if (input) {
+                input.value = ua;
+                settings.iptvUserAgent = ua;
+                onSettingChanged();
+                showToast(`⚡ User-Agent set to: <b>${ua || 'Default'}</b>`);
+            }
+        }
+
+        function applyM3uPreset(presetId) {
+            triggerHaptic('medium');
+            const preset = IPTV_PRESETS.find(p => p.id === presetId);
+            if (!preset) return;
+            activePresetId = presetId;
+            const input = document.getElementById('customIptvUrl');
+            if (input) {
+                input.value = preset.url;
+                checkM3uInputChange();
+            }
+            initM3uPresets();
+            showToast(`⚡ Selected ${preset.flag} <b>${preset.name}</b>. Testing...`);
+            testCustomM3u();
+        }
+
+        function toggleChannelExplorer() {
+            triggerHaptic('light');
+            const explorer = document.getElementById('m3u-channel-explorer');
+            const btnIcon = document.getElementById('btn-explorer-icon');
+            const btnText = document.getElementById('btn-explorer-text');
+            if (!explorer) return;
+            const isHidden = explorer.style.display === 'none' || !explorer.style.display;
+            explorer.style.display = isHidden ? 'block' : 'none';
+            if (btnIcon) btnIcon.innerText = isHidden ? '▲' : '🔍';
+            if (btnText) btnText.innerText = isHidden ? 'Hide Explorer' : 'Explore Channels';
+            if (isHidden && m3uChannelsCache.length === 0 && settings.customIptvUrl) {
+                fetchExplorerChannelsData();
+            }
+        }
+
+        function resyncM3uPlaylist() {
+            triggerHaptic('medium');
+            showToast('🔄 <b>Re-syncing playlist:</b> Fetching fresh stream manifest...');
+            testCustomM3u(true);
+        }
+
+        function copyM3uUrl() {
+            triggerHaptic('light');
+            const url = settings.customIptvUrl || document.getElementById('customIptvUrl')?.value || '';
+            if (url) {
+                navigator.clipboard.writeText(url);
+                showToast('📋 <b>Copied:</b> Playlist URL copied to clipboard.');
+            }
+        }
+
+        function clearCustomM3u() {
+            triggerHaptic('light');
+            const input = document.getElementById('customIptvUrl');
+            if (input) input.value = '';
+            settings.customIptvUrl = '';
+            activePresetId = null;
+            m3uChannelsCache = [];
+            m3uCategoriesCache = [];
+            
+            const connectedCard = document.getElementById('m3u-connected-card');
+            if (connectedCard) connectedCard.style.display = 'none';
+            const explorer = document.getElementById('m3u-channel-explorer');
+            if (explorer) explorer.style.display = 'none';
+            const statusEl = document.getElementById('m3u-test-status');
+            if (statusEl) statusEl.style.display = 'none';
+
+            checkM3uInputChange();
+            initM3uPresets();
+            onSettingChanged();
+            showToast('🗑️ <b>Playlist Removed:</b> Custom M3U cleared.');
+        }
+
+        async function testCustomM3u(isResync = false) {
+            triggerHaptic('medium');
+            const urlInput = document.getElementById('customIptvUrl');
+            const statusEl = document.getElementById('m3u-test-status');
+            const testBtn = document.getElementById('btn-test-m3u');
+            const connectedCard = document.getElementById('m3u-connected-card');
+            
+            const url = urlInput ? urlInput.value.trim() : '';
+            if (!url) {
+                showToast('⚠️ Please enter an M3U playlist URL first.');
+                return;
+            }
+
+            const userAgent = document.getElementById('iptvUserAgent')?.value.trim() || '';
+
+            if (testBtn) {
+                testBtn.disabled = true;
+                testBtn.innerHTML = '<span>⏳</span> Parsing...';
+            }
+
+            if (statusEl) {
+                statusEl.style.display = 'block';
+                statusEl.style.background = 'rgba(139, 92, 246, 0.12)';
+                statusEl.style.border = '1px solid rgba(139, 92, 246, 0.3)';
+                statusEl.style.color = '#c4b5fd';
+                statusEl.innerHTML = '⏳ <b>Fetching and parsing live playlist...</b> Please wait.';
+            }
+
+            try {
+                const res = await fetch('/api/iptv/test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url, userAgent, forceRefresh: isResync })
+                });
+                const data = await res.json();
+                
+                if (data && data.success) {
+                    triggerHaptic('success');
+                    settings.customIptvUrl = url;
+                    onSettingChanged();
+
+                    // Process categories
+                    const catClean = (data.categories || []).flatMap(c => c.split(/[;,]/).map(s => s.trim()))
+                        .filter(c => c && c.toLowerCase() !== 'undefined' && c.toLowerCase() !== 'null' && c.length > 1)
+                        .map(c => c.charAt(0).toUpperCase() + c.slice(1));
+                    m3uCategoriesCache = ['All', ...new Set(catClean)];
+                    const catSample = m3uCategoriesCache.slice(1, 8).join(', ');
+
+                    // Store preview channels
+                    m3uChannelsCache = data.preview || [];
+                    m3uFilteredChannels = [...m3uChannelsCache];
+
+                    // Update Connected Card UI
+                    if (connectedCard) {
+                        connectedCard.style.display = 'block';
+                        document.getElementById('stat-m3u-channels').innerText = Number(data.count).toLocaleString();
+                        document.getElementById('stat-m3u-cats').innerText = m3uCategoriesCache.length - 1;
+                        document.getElementById('stat-m3u-status').innerText = 'Active';
+                        document.getElementById('m3u-category-tags').innerText = catSample || 'General TV';
+                        document.getElementById('m3u-active-url-display').innerText = url;
+                    }
+
+                    if (statusEl) {
+                        statusEl.style.display = 'none';
+                    }
+
+                    // Render Channel Explorer
+                    renderExplorerCategoryChips();
+                    renderExplorerChannelsList();
+                    const explorer = document.getElementById('m3u-channel-explorer');
+                    if (explorer) explorer.style.display = 'block';
+                    const btnIcon = document.getElementById('btn-explorer-icon');
+                    const btnText = document.getElementById('btn-explorer-text');
+                    if (btnIcon) btnIcon.innerText = '▲';
+                    if (btnText) btnText.innerText = 'Hide Explorer';
+
+                    initM3uPresets();
+                    showToast(`✅ <b>Connected!</b> Loaded ${Number(data.count).toLocaleString()} IPTV channels.`);
+                } else {
+                    triggerHaptic('error');
+                    if (statusEl) {
+                        statusEl.style.display = 'block';
+                        statusEl.style.background = 'rgba(244, 63, 94, 0.15)';
+                        statusEl.style.border = '1px solid rgba(244, 63, 94, 0.35)';
+                        statusEl.style.color = '#f87171';
+                        statusEl.innerHTML = `❌ <b>Failed to load playlist:</b> ${data.error || 'Check that the URL is valid and accessible.'}`;
+                    }
+                }
+            } catch (err) {
+                triggerHaptic('error');
+                if (statusEl) {
+                    statusEl.style.display = 'block';
+                    statusEl.style.background = 'rgba(244, 63, 94, 0.15)';
+                    statusEl.style.border = '1px solid rgba(244, 63, 94, 0.35)';
+                    statusEl.style.color = '#f87171';
+                    statusEl.innerHTML = `❌ <b>Network Connection Error:</b> ${err.message}`;
+                }
+            } finally {
+                if (testBtn) {
+                    testBtn.disabled = false;
+                    testBtn.innerHTML = '<span>⚡</span> Test & Connect';
+                }
+            }
+        }
+
+        async function fetchExplorerChannelsData() {
+            if (!settings.customIptvUrl) return;
+            try {
+                const res = await fetch(`/api/iptv/channels?url=${encodeURIComponent(settings.customIptvUrl)}&limit=100`);
+                const data = await res.json();
+                if (data && data.success && Array.isArray(data.channels)) {
+                    m3uChannelsCache = data.channels;
+                    const catClean = (data.channels || []).map(c => (c.category || 'General').split(/[;,]/)[0].trim())
+                        .filter(c => c && c.toLowerCase() !== 'undefined' && c.toLowerCase() !== 'null' && c.length > 1)
+                        .map(c => c.charAt(0).toUpperCase() + c.slice(1));
+                    m3uCategoriesCache = ['All', ...new Set(catClean)].slice(0, 20);
+                    renderExplorerCategoryChips();
+                    onExplorerSearchChanged();
+                }
+            } catch (e) {
+                console.error('[Explorer Fetch Error]', e);
+            }
+        }
+
+        let hasChipsDragged = false;
+        let isChipsDragging = false;
+        let chipsStartX = 0;
+        let chipsScrollStart = 0;
+        let chipsListenersAttached = false;
+
+        function updateChipsArrowButtons() {
+            const container = document.getElementById('explorer-category-chips');
+            const leftBtn = document.getElementById('btn-scroll-chips-left');
+            const rightBtn = document.getElementById('btn-scroll-chips-right');
+            if (!container || !leftBtn || !rightBtn) return;
+
+            const canScroll = container.scrollWidth > container.clientWidth + 5;
+            if (!canScroll) {
+                leftBtn.style.display = 'none';
+                rightBtn.style.display = 'none';
+                return;
+            }
+
+            leftBtn.style.display = 'inline-flex';
+            rightBtn.style.display = 'inline-flex';
+
+            const atStart = container.scrollLeft <= 5;
+            leftBtn.style.opacity = atStart ? '0.25' : '1';
+            leftBtn.style.pointerEvents = atStart ? 'none' : 'auto';
+
+            const atEnd = container.scrollLeft >= (container.scrollWidth - container.clientWidth - 5);
+            rightBtn.style.opacity = atEnd ? '0.25' : '1';
+            rightBtn.style.pointerEvents = atEnd ? 'none' : 'auto';
+        }
+
+        function scrollCategoryChips(offset) {
+            triggerHaptic('light');
+            const el = document.getElementById('explorer-category-chips');
+            if (el) {
+                el.scrollBy({ left: offset, behavior: 'smooth' });
+                setTimeout(updateChipsArrowButtons, 300);
+            }
+        }
+
+        function setupDesktopChipsScroll() {
+            if (chipsListenersAttached) return;
+            const container = document.getElementById('explorer-category-chips');
+            if (!container) return;
+
+            // 1. Convert standard mouse wheel scrolling to horizontal scroll
+            container.addEventListener('wheel', (e) => {
+                if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+                    e.preventDefault();
+                    container.scrollLeft += (e.deltaY * 1.4);
+                    updateChipsArrowButtons();
+                }
+            }, { passive: false });
+
+            // 2. Mouse Drag-to-Scroll (Pan with mouse)
+            container.addEventListener('mousedown', (e) => {
+                if (e.button !== 0) return;
+                isChipsDragging = true;
+                hasChipsDragged = false;
+                chipsStartX = e.pageX - container.offsetLeft;
+                chipsScrollStart = container.scrollLeft;
+                container.style.cursor = 'grabbing';
+            });
+
+            window.addEventListener('mouseup', () => {
+                if (isChipsDragging) {
+                    isChipsDragging = false;
+                    if (container) container.style.cursor = 'grab';
+                }
+            });
+
+            container.addEventListener('mousemove', (e) => {
+                if (!isChipsDragging) return;
+                const x = e.pageX - container.offsetLeft;
+                const dist = (x - chipsStartX) * 1.5;
+                if (Math.abs(dist) > 5) {
+                    hasChipsDragged = true;
+                    e.preventDefault();
+                    container.scrollLeft = chipsScrollStart - dist;
+                    updateChipsArrowButtons();
+                }
+            });
+
+            window.addEventListener('resize', updateChipsArrowButtons);
+            chipsListenersAttached = true;
+        }
+
+        function renderExplorerCategoryChips() {
+            const container = document.getElementById('explorer-category-chips');
+            if (!container) return;
+            setupDesktopChipsScroll();
+
+            // Deduplicate and filter out any "Undefined" or empty items
+            const cleanCats = m3uCategoriesCache.filter(c => c && c.toLowerCase() !== 'undefined' && c.toLowerCase() !== 'null');
+            if (!cleanCats.includes('All')) cleanCats.unshift('All');
+
+            container.innerHTML = cleanCats.map(cat => {
+                const isSel = m3uSelectedCategory.toLowerCase() === cat.toLowerCase();
+                const activeStyle = isSel 
+                    ? 'background: rgba(139, 92, 246, 0.22); border-color: var(--accent-primary); color: #ffffff; font-weight: 700; box-shadow: 0 0 14px rgba(139, 92, 246, 0.35);'
+                    : 'background: rgba(255, 255, 255, 0.04); border-color: var(--border-subtle); color: var(--text-secondary); font-weight: 600;';
+
+                return `
+                    <button type="button" data-cat="${cat}" onclick="onCategoryChipClick('${cat}', event)" style="${activeStyle} border-width: 1px; border-style: solid; border-radius: var(--radius-pill); padding: 5px 14px; font-size: 12px; cursor: pointer; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); white-space: nowrap; flex-shrink: 0; user-select: none;" onmouseenter="if (!${isSel}) { this.style.color='var(--text-primary)'; this.style.borderColor='rgba(255,255,255,0.18)'; }" onmouseleave="if (!${isSel}) { this.style.color='var(--text-secondary)'; this.style.borderColor='var(--border-subtle)'; }">
+                        ${cat}
+                    </button>
+                `;
+            }).join('');
+
+            setTimeout(updateChipsArrowButtons, 50);
+        }
+
+        function onCategoryChipClick(cat, e) {
+            if (hasChipsDragged) {
+                hasChipsDragged = false;
+                return;
+            }
+            selectExplorerCategory(cat);
+        }
+
+        function selectExplorerCategory(cat) {
+            triggerHaptic('light');
+            m3uSelectedCategory = cat;
+            m3uExplorerPage = 1;
+            renderExplorerCategoryChips();
+            onExplorerSearchChanged();
+
+            // Smoothly auto-center active category in view
+            const container = document.getElementById('explorer-category-chips');
+            const activeBtn = container ? container.querySelector(`[data-cat="${cat}"]`) : null;
+            if (activeBtn) {
+                activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            }
+        }
+
+        function onExplorerSearchChanged() {
+            const query = (document.getElementById('explorerSearchInput')?.value || '').toLowerCase().trim();
+            m3uFilteredChannels = m3uChannelsCache.filter(ch => {
+                const matchCat = m3uSelectedCategory === 'All' || (ch.category || '').toLowerCase().includes(m3uSelectedCategory.toLowerCase());
+                const matchQuery = !query || (ch.name || '').toLowerCase().includes(query) || (ch.category || '').toLowerCase().includes(query);
+                return matchCat && matchQuery;
+            });
+            m3uExplorerPage = 1;
+            renderExplorerChannelsList();
+        }
+
+        function loadMoreExplorerChannels() {
+            triggerHaptic('light');
+            m3uExplorerPage++;
+            renderExplorerChannelsList(true);
+        }
+
+        function renderExplorerChannelsList(append = false) {
+            const grid = document.getElementById('explorer-channels-grid');
+            const badge = document.getElementById('explorer-count-badge');
+            const loadMoreBtn = document.getElementById('btn-explorer-load-more');
+            if (!grid) return;
+
+            const visibleCount = m3uExplorerPage * M3U_PAGE_SIZE;
+            const toRender = m3uFilteredChannels.slice(0, visibleCount);
+
+            if (badge) {
+                badge.innerText = `${toRender.length} of ${m3uFilteredChannels.length} Channels`;
+            }
+
+            if (loadMoreBtn) {
+                loadMoreBtn.style.display = visibleCount < m3uFilteredChannels.length ? 'block' : 'none';
+            }
+
+            if (toRender.length === 0) {
+                grid.innerHTML = `
+                    <div style="grid-column: 1 / -1; padding: 32px 16px; text-align: center; color: var(--text-muted); font-size: 13px; background: rgba(255, 255, 255, 0.02); border: 1px dashed var(--border-subtle); border-radius: 14px;">
+                        🔍 No matching channels found for current filter or search.
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = toRender.map(ch => {
+                // Parse resolution quality from name (e.g. 1080p, 720p, 576p, 4K)
+                let cleanName = ch.name || 'Live Channel';
+                let resBadge = '';
+                const resMatch = cleanName.match(/\((1080p|720p|576p|480p|4k|uhd|fhd|hd|sd)\)/i);
+                if (resMatch) {
+                    cleanName = cleanName.replace(resMatch[0], '').trim();
+                    const qTag = resMatch[1].toUpperCase();
+                    const qColor = qTag.includes('1080') || qTag.includes('4K') ? '#38bdf8' : '#a78bfa';
+                    resBadge = `<span class="tag-pill-badge" style="font-size: 9px; padding: 1px 6px; background: rgba(56, 189, 248, 0.12); border-color: rgba(56, 189, 248, 0.25); color: ${qColor};">${qTag}</span>`;
+                }
+
+                // Category tag formatting
+                const catText = (ch.category && ch.category.toLowerCase() !== 'undefined') ? ch.category : 'Live TV';
+
+                // Logo or Aesthetic Gradient Fallback Badge
+                const logoHtml = ch.logo
+                    ? `<img src="${ch.logo}" alt="${cleanName}" style="width: 38px; height: 38px; border-radius: 10px; object-fit: contain; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); padding: 2px; flex-shrink: 0;" onerror="this.onerror=null; this.parentElement.innerHTML='<div style=\'width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.18);\'>📡</div>';">`
+                    : `<div style="width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.18);">📡</div>`;
+
+                return `
+                    <div style="background: rgba(255, 255, 255, 0.025); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; justify-content: space-between; gap: 10px; transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);" onmouseenter="this.style.transform='translateY(-2px)'; this.style.borderColor='rgba(139, 92, 246, 0.4)'; this.style.background='rgba(255, 255, 255, 0.045)'; this.style.boxShadow='0 8px 24px rgba(0,0,0,0.4)';" onmouseleave="this.style.transform='translateY(0)'; this.style.borderColor='var(--border-subtle)'; this.style.background='rgba(255, 255, 255, 0.025)'; this.style.boxShadow='none';">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            ${logoHtml}
+                            <div style="min-width: 0; flex: 1;">
+                                <div style="font-size: 13px; font-weight: 700; color: var(--text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap; margin-bottom: 3px;" title="${cleanName}">${cleanName}</div>
+                                <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+                                    <span class="tag-pill-badge" style="font-size: 9.5px; padding: 1.5px 6px; background: rgba(139, 92, 246, 0.12); border-color: rgba(139, 92, 246, 0.25); color: #c4b5fd;">${catText}</span>
+                                    ${resBadge}
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px; margin-top: 2px;">
+                            <span style="font-size: 11px; color: var(--text-muted); display: inline-flex; align-items: center; gap: 4px;">
+                                <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #10b981;"></span>
+                                24/7 Live
+                            </span>
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <button type="button" class="pill-btn pill-btn-glass" onclick="probeExplorerStream('${ch.url}', this)" style="padding: 3.5px 10px; font-size: 11px; font-weight: 700; line-height: 1;">
+                                    ⚡ Ping
+                                </button>
+                                <button type="button" class="pill-btn pill-btn-glass" onclick="copyStreamLink('${ch.url}')" style="padding: 3.5px 8px; font-size: 11px; line-height: 1;" title="Copy Stream URL to Clipboard">
+                                    📋
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function probeExplorerStream(url, btn) {
+            triggerHaptic('light');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '⏳...';
+            const userAgent = settings.iptvUserAgent || '';
+
+            try {
+                const res = await fetch('/api/iptv/probe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url, userAgent })
+                });
+                const data = await res.json();
+                if (data && data.online) {
+                    const badge = data.latency < 500 ? `🟢 ${data.latency}ms` : `🟡 ${data.latency}ms`;
+                    btn.innerHTML = badge;
+                    btn.style.color = data.latency < 500 ? '#34d399' : '#fbbf24';
+                } else {
+                    btn.innerHTML = '🔴 Offline';
+                    btn.style.color = '#f87171';
+                }
+            } catch (e) {
+                btn.innerHTML = '⚪ Err';
+                btn.style.color = 'var(--text-muted)';
+            }
+        }
+
+        function copyStreamLink(url) {
+            triggerHaptic('light');
+            if (url) {
+                navigator.clipboard.writeText(url);
+                showToast('📋 <b>Stream URL Copied:</b> Ready for VLC / MPV.');
+            }
+        }
+
+        // ============================================================
+        
+async function testXtreamLogin() {
+            triggerHaptic('medium');
+            const server = document.getElementById('xtreamServer')?.value.trim();
+            const user = document.getElementById('xtreamUser')?.value.trim();
+            const pass = document.getElementById('xtreamPassword')?.value.trim();
+            const statusEl = document.getElementById('xtream-test-status');
+
+            if (!server || !user || !pass) {
+                showToast('⚠️ Please enter Xtream Server, Username, and Password.');
+                return;
+            }
+
+            if (statusEl) {
+                statusEl.style.color = '#c4b5fd';
+                statusEl.innerText = '⏳ Connecting to Xtream server...';
+            }
+
+            try {
+                const res = await fetch('/api/iptv/test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ xtreamServer: server, xtreamUser: user, xtreamPassword: pass })
+                });
+                const data = await res.json();
+                if (data && data.success) {
+                    triggerHaptic('success');
+                    if (statusEl) {
+                        statusEl.style.color = '#34d399';
+                        statusEl.innerText = `✅ Connected: ${data.count} Live Streams`;
+                    }
+                    showToast(`✅ Xtream Connected: ${data.count} channels!`);
+                    onSettingChanged();
+                } else {
+                    triggerHaptic('error');
+                    if (statusEl) {
+                        statusEl.style.color = '#f87171';
+                        statusEl.innerText = `❌ ${data.error || 'Authentication failed'}`;
+                    }
+                }
+            } catch (e) {
+                triggerHaptic('error');
+                if (statusEl) {
+                    statusEl.style.color = '#f87171';
+                    statusEl.innerText = `❌ Network Error: ${e.message}`;
+                }
+            }
+        }
+
+        
         // Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
