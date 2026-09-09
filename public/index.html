@@ -1233,6 +1233,201 @@
             color: #0f172a !important;
         }
 
+        /* ==================== CUSTOM GLASS SELECT DROPDOWNS ==================== */
+        .custom-select-wrap {
+            position: relative;
+            width: 100%;
+            user-select: none;
+            box-sizing: border-box;
+        }
+
+        .custom-select-trigger {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            background-color: var(--bg-input, rgba(14, 17, 26, 0.85));
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-subtle, rgba(139, 92, 246, 0.25));
+            color: var(--text-primary, #f8fafc);
+            padding: 12px 14px;
+            border-radius: var(--radius-input, 12px);
+            font-size: 13.5px;
+            font-weight: 600;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-sizing: border-box;
+            gap: 10px;
+            text-align: left;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        .custom-select-trigger:hover {
+            border-color: rgba(139, 92, 246, 0.55);
+            background-color: rgba(255, 255, 255, 0.06);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        }
+
+        .custom-select-wrap.active .custom-select-trigger {
+            border-color: var(--accent-primary, #8b5cf6);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.25), 0 8px 24px rgba(0, 0, 0, 0.45);
+        }
+
+        .custom-select-value {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+            font-size: 13.5px;
+            font-weight: 600;
+            color: var(--text-primary, #f8fafc);
+        }
+
+        .custom-select-arrow {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #a78bfa;
+            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .custom-select-wrap.active .custom-select-arrow {
+            transform: rotate(180deg);
+            color: #c4b5fd;
+        }
+
+        .custom-select-wrap.active {
+            position: relative;
+            z-index: 99999 !important;
+        }
+
+        .custom-select-menu {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            right: 0;
+            z-index: 99999;
+            background: #0d101a !important;
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border: 1px solid rgba(139, 92, 246, 0.45);
+            border-radius: 14px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.95), 0 0 30px rgba(139, 92, 246, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            padding: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transform: translateY(-8px) scale(0.98);
+            transform-origin: top center;
+            transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+            max-height: 280px;
+            overflow-y: auto;
+            box-sizing: border-box;
+        }
+
+        .custom-select-menu::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-select-menu::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-select-menu::-webkit-scrollbar-thumb {
+            background: rgba(139, 92, 246, 0.35);
+            border-radius: 6px;
+        }
+        .custom-select-menu::-webkit-scrollbar-thumb:hover {
+            background: rgba(139, 92, 246, 0.65);
+        }
+
+        .custom-select-wrap.active .custom-select-menu {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+            transform: translateY(0) scale(1);
+        }
+
+        .custom-select-option {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            border-radius: 9px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #cbd5e1;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            gap: 10px;
+            border: 1px solid transparent;
+        }
+
+        .custom-select-option:hover {
+            background: rgba(139, 92, 246, 0.18);
+            color: #ffffff;
+            transform: translateX(3px);
+        }
+
+        .custom-select-option.selected {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.28) 0%, rgba(124, 58, 237, 0.18) 100%);
+            border-color: rgba(139, 92, 246, 0.4);
+            color: #c4b5fd;
+            font-weight: 700;
+        }
+
+        .custom-select-option-check {
+            display: inline-flex;
+            align-items: center;
+            color: #a78bfa;
+            opacity: 0;
+            transform: scale(0.7);
+            transition: all 0.15s ease;
+            flex-shrink: 0;
+        }
+
+        .custom-select-option.selected .custom-select-option-check {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .section-wrap:has(.custom-select-wrap.active),
+        .section-wrap.has-active-dropdown {
+            position: relative !important;
+            z-index: 99999 !important;
+        }
+
+        .section-card:has(.custom-select-wrap.active),
+        .section-card.has-active-dropdown {
+            overflow: visible !important;
+            position: relative !important;
+            z-index: 99999 !important;
+        }
+
+        .has-active-dropdown {
+            position: relative !important;
+            z-index: 99999 !important;
+            overflow: visible !important;
+        }
+
+        body.theme-amoled .custom-select-trigger {
+            background: #050608;
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+        body.theme-amoled .custom-select-menu {
+            background: #040508 !important;
+            border-color: rgba(139, 92, 246, 0.5);
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.98), 0 0 24px rgba(139, 92, 246, 0.25);
+        }
+
         
         /* Global Sleek Dark Scrollbars */
         ::-webkit-scrollbar {
@@ -2400,6 +2595,30 @@
                 <span id="save-btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m13 2-2 2.5V8l-3 3 5 5 3-3h3.5L22 11l-9-9Z"/><path d="m4.5 15.5-1.5 4 4-1.5"/></svg></span>
                 <span class="btn-save-text" id="save-btn-text" style="display: inline-block;">Install</span>
             </button>
+            <script>
+                (function() {
+                    try {
+                        const _p = window.location.pathname.split('/').filter(Boolean);
+                        const _q = new URLSearchParams(window.location.search);
+                        const _r = (document.referrer || '').toLowerCase();
+                        const _u = (navigator.userAgent || '').toLowerCase();
+                        if (localStorage.getItem('cb_is_installed') === 'true' ||
+                            _r.includes('nuvio') || _r.includes('stremio') ||
+                            _u.includes('nuvio') || _u.includes('stremio') ||
+                            _q.has('nuvio') || _q.has('stremio') ||
+                            _q.get('from') === 'nuvio' || _q.get('source') === 'nuvio' ||
+                            _q.get('installed') === 'true' || _q.get('installed') === '1' ||
+                            (_p.length > 0 && (_p[0] === 'c' || (_p.includes('configure') && _p[0] !== 'configure')))) {
+                            const t = document.getElementById('save-btn-text');
+                            const b = document.getElementById('save-btn');
+                            const i = document.getElementById('save-btn-icon');
+                            if (t) t.innerText = 'Save';
+                            if (b) b.title = 'Save & sync changes to cloud';
+                            if (i) i.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>';
+                        }
+                    } catch(e) {}
+                })();
+            </script>
         </div>
     </nav>
 
@@ -4245,6 +4464,183 @@
             onSettingChanged();
         }
 
+        // ==================== CUSTOM GLASS SELECT SYSTEM ====================
+        function setDropdownActiveAncestors(w, isActive) {
+            if (!w) return;
+            let el = w.parentElement;
+            while (el && el !== document.body && !el.classList.contains('tab-content')) {
+                if (el.classList.contains('section-card') || el.classList.contains('section-wrap') || el.classList.contains('setting-item-row') || el.classList.contains('input-bar-group')) {
+                    if (isActive) {
+                        el.classList.add('has-active-dropdown');
+                    } else {
+                        el.classList.remove('has-active-dropdown');
+                    }
+                }
+                el = el.parentElement;
+            }
+        }
+
+        function initCustomSelect(selectEl) {
+            if (!selectEl || selectEl.dataset.customized === 'true') return;
+            selectEl.dataset.customized = 'true';
+            selectEl.style.display = 'none';
+
+            const wrap = document.createElement('div');
+            wrap.className = 'custom-select-wrap';
+            if (selectEl.id) wrap.id = selectEl.id + '-custom-wrap';
+
+            const trigger = document.createElement('button');
+            trigger.type = 'button';
+            trigger.className = 'custom-select-trigger';
+            trigger.setAttribute('aria-haspopup', 'listbox');
+            trigger.setAttribute('aria-expanded', 'false');
+
+            const valSpan = document.createElement('span');
+            valSpan.className = 'custom-select-value';
+
+            const arrow = document.createElement('span');
+            arrow.className = 'custom-select-arrow';
+            arrow.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+
+            trigger.appendChild(valSpan);
+            trigger.appendChild(arrow);
+
+            const menu = document.createElement('div');
+            menu.className = 'custom-select-menu';
+            menu.setAttribute('role', 'listbox');
+
+            function syncOptions() {
+                menu.innerHTML = '';
+                const options = Array.from(selectEl.options);
+                const selectedOpt = selectEl.options[selectEl.selectedIndex] || options[0];
+                if (selectedOpt) {
+                    valSpan.innerHTML = selectedOpt.innerHTML || selectedOpt.text;
+                }
+
+                options.forEach(opt => {
+                    const item = document.createElement('div');
+                    const isSelected = opt.value === selectEl.value;
+                    item.className = 'custom-select-option' + (isSelected ? ' selected' : '');
+                    item.setAttribute('role', 'option');
+                    item.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+                    item.dataset.value = opt.value;
+
+                    const textSpan = document.createElement('span');
+                    textSpan.style.display = 'flex';
+                    textSpan.style.alignItems = 'center';
+                    textSpan.style.gap = '8px';
+                    textSpan.innerHTML = opt.innerHTML || opt.text;
+
+                    const check = document.createElement('span');
+                    check.className = 'custom-select-option-check';
+                    check.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+
+                    item.appendChild(textSpan);
+                    item.appendChild(check);
+
+                    item.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        triggerHaptic('light');
+                        selectEl.value = opt.value;
+                        selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+                        updateDisplay();
+                        closeDropdown();
+                    });
+
+                    menu.appendChild(item);
+                });
+            }
+
+            function updateDisplay() {
+                const selectedOpt = selectEl.options[selectEl.selectedIndex];
+                if (selectedOpt) {
+                    valSpan.innerHTML = selectedOpt.innerHTML || selectedOpt.text;
+                }
+                menu.querySelectorAll('.custom-select-option').forEach(item => {
+                    const isSel = item.dataset.value === selectEl.value;
+                    item.classList.toggle('selected', isSel);
+                    item.setAttribute('aria-selected', isSel ? 'true' : 'false');
+                });
+            }
+
+
+
+            function toggleDropdown(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                triggerHaptic('light');
+                const isOpen = wrap.classList.contains('active');
+                document.querySelectorAll('.custom-select-wrap.active').forEach(w => {
+                    w.classList.remove('active');
+                    w.querySelector('.custom-select-trigger')?.setAttribute('aria-expanded', 'false');
+                    setDropdownActiveAncestors(w, false);
+                });
+                if (!isOpen) {
+                    wrap.classList.add('active');
+                    trigger.setAttribute('aria-expanded', 'true');
+                    setDropdownActiveAncestors(wrap, true);
+                }
+            }
+
+            function closeDropdown() {
+                wrap.classList.remove('active');
+                trigger.setAttribute('aria-expanded', 'false');
+                setDropdownActiveAncestors(wrap, false);
+            }
+
+            trigger.addEventListener('click', toggleDropdown);
+
+            selectEl.addEventListener('change', () => {
+                updateDisplay();
+            });
+
+            selectEl.parentNode.insertBefore(wrap, selectEl.nextSibling);
+            wrap.appendChild(trigger);
+            wrap.appendChild(menu);
+
+            syncOptions();
+            selectEl._syncCustomSelect = updateDisplay;
+            selectEl._rebuildCustomSelect = syncOptions;
+        }
+
+        function initAllCustomSelects() {
+            const targets = ['debridProvider', 'dohProvider', 'iptvLimit'];
+            targets.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) initCustomSelect(el);
+            });
+        }
+
+        function syncCustomSelects() {
+            document.querySelectorAll('select').forEach(sel => {
+                if (typeof sel._syncCustomSelect === 'function') {
+                    sel._syncCustomSelect();
+                }
+            });
+        }
+
+        // Global click to close custom dropdowns
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.custom-select-wrap')) {
+                document.querySelectorAll('.custom-select-wrap.active').forEach(w => {
+                    w.classList.remove('active');
+                    w.querySelector('.custom-select-trigger')?.setAttribute('aria-expanded', 'false');
+                    setDropdownActiveAncestors(w, false);
+                });
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.custom-select-wrap.active').forEach(w => {
+                    w.classList.remove('active');
+                    w.querySelector('.custom-select-trigger')?.setAttribute('aria-expanded', 'false');
+                    setDropdownActiveAncestors(w, false);
+                });
+            }
+        });
+
         function toggleDohProviderVisibility() {
             const enableDohEl = document.getElementById('enableDoh');
             const dohProviderWrapEl = document.getElementById('doh-provider-wrap');
@@ -4276,20 +4672,50 @@
 
         let isInstalled = localStorage.getItem('cb_is_installed') === 'true';
 
+        // Detect if opened from Nuvio / Stremio
+        try {
+            const _p = window.location.pathname.split('/').filter(Boolean);
+            const _q = new URLSearchParams(window.location.search);
+            const _r = (document.referrer || '').toLowerCase();
+            const _u = (navigator.userAgent || '').toLowerCase();
+            if (_r.includes('nuvio') || _r.includes('stremio') ||
+                _u.includes('nuvio') || _u.includes('stremio') ||
+                _q.has('nuvio') || _q.has('stremio') ||
+                _q.get('from') === 'nuvio' || _q.get('source') === 'nuvio' ||
+                _q.get('installed') === 'true' || _q.get('installed') === '1' ||
+                (_p.length > 0 && (_p[0] === 'c' || (_p.includes('configure') && _p[0] !== 'configure')))) {
+                isInstalled = true;
+                localStorage.setItem('cb_is_installed', 'true');
+            }
+        } catch (e) {}
+
         function updateActionBtnUI() {
             const btn = document.getElementById('save-btn');
             const icon = document.getElementById('save-btn-icon');
             const text = document.getElementById('save-btn-text');
             if (!btn) return;
-            if (icon) icon.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m13 2-2 2.5V8l-3 3 5 5 3-3h3.5L22 11l-9-9Z"/><path d="m4.5 15.5-1.5 4 4-1.5"/></svg>';
-            if (text) text.innerText = 'Install';
-            btn.title = 'Install Addon to Stremio / Nuvio';
+
+            if (!isInstalled) {
+                if (icon) icon.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m13 2-2 2.5V8l-3 3 5 5 3-3h3.5L22 11l-9-9Z"/><path d="m4.5 15.5-1.5 4 4-1.5"/></svg>';
+                if (text) text.innerText = 'Install';
+                btn.title = 'Install Addon to Stremio / Nuvio';
+                btn.classList.remove('unsaved');
+            } else {
+                if (icon) icon.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>';
+                if (text) text.innerText = 'Save';
+                btn.title = 'Save & sync changes to cloud';
+            }
         }
+        updateActionBtnUI();
 
         async function handleTopAction() {
             triggerHaptic('success');
-            await saveConfigurationToServer(false);
-            installAddon();
+            if (!isInstalled) {
+                await saveConfigurationToServer(false);
+                installAddon();
+            } else {
+                await saveConfigurationToServer(true);
+            }
         }
 
         function onSettingChanged() {
@@ -4467,6 +4893,15 @@
                     
                     if (showToastMsg) {
                         showToast("✨ <b>Settings Saved & Cloud Synced!</b>");
+                        const text = document.getElementById('save-btn-text');
+                        const icon = document.getElementById('save-btn-icon');
+                        if (text && icon && isInstalled) {
+                            text.innerText = 'Saved!';
+                            icon.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+                            setTimeout(() => {
+                                updateActionBtnUI();
+                            }, 1800);
+                        }
                     }
                 }
             } catch (err) {
@@ -5433,6 +5868,8 @@
 
             toggleDebridApiKeyVisibility();
             toggleDohProviderVisibility();
+            initAllCustomSelects();
+            syncCustomSelects();
             
             updateSortModeUI(settings.sortBy || 'speed');
             renderLanguageChips();
@@ -5533,6 +5970,8 @@
             showSyncBadge(`ID: ${configId}`);
             updateActionBtnUI();
             fetchRepos();
+            initAllCustomSelects();
+            syncCustomSelects();
 
             // Secret Admin Tab Visibility Init
             try {
@@ -6834,6 +7273,8 @@
             syncHealthData();
             handleNavScroll();
             setupHeroSlideInteractions();
+            initAllCustomSelects();
+            syncCustomSelects();
             updateAdminView();
             // Initial telemetry warmup for Vercel metrics
             fetch('/api/telemetry/stats', { headers: { 'x-diagnostic-token': 'guest' } })

@@ -1042,7 +1042,7 @@ function createAddon(config) {
         logo: addonLogo,
         catalogs: enabledCatalogs,
         resources: resources,
-        types: ['movie', 'series', 'anime', 'tv', 'other'],
+        types: ['movie', 'series', 'anime', 'tv', 'channel', 'other'],
         idPrefixes: ['tt', 'tmdb:', 'kitsu:', 'iptv:'],
         behaviorHints: { configurable: true, configurationRequired: true }
     });
@@ -1481,7 +1481,7 @@ function createAddon(config) {
     if (enabledCatalogs.length > 0) {
         builder.defineCatalogHandler(async ({ type, id, extra }) => {
             console.log(`[Catalog] Request for ${type} catalog: ${id} (genre: ${extra?.genre || 'All'})`);
-            if (type === 'tv' && id === 'cb_live_tv') {
+            if ((type === 'tv' || type === 'channel') && id === 'cb_live_tv') {
                 const metas = await iptvManager.getChannelsCatalog({
                     genre: extra?.genre || 'All',
                     search: extra?.search || '',
