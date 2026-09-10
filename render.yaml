@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: chole-bhature
+    env: node
+    plan: free
+    region: oregon
+    buildCommand: npm install
+    startCommand: node index.js
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: RENDER_ECO_MODE
+        value: "true"
+      - key: RENDER_KEEP_ALIVE
+        value: "true"

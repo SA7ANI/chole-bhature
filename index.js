@@ -304,12 +304,18 @@ const telemetryMetrics = {
     servedBandwidthBytes: 0
 };
 
+// Cloud Platform Auto-Detection (Render Web Service vs Vercel Serverless vs Local Node)
+const isRender = Boolean(process.env.RENDER || process.env.RENDER_SERVICE_ID);
+const isVercel = Boolean(process.env.VERCEL);
+
 // Global Server-Side Configuration (Admin Managed & Enforced)
 const ADMIN_SETTINGS_FILE = path.join(__dirname, 'admin_settings.json');
 let globalServerSettings = {
     adminPasswordHash: null,
-    globalEcoMode: true, // Default to true to protect serverless free tier for all users
+    globalEcoMode: true, // Protects both Render (0.1 CPU / 512MB RAM) and Vercel (Fluid CPU / 10s timeout)
     allowClientEcoOverride: true,
+    renderKeepAlive: true,
+    renderApiKey: process.env.RENDER_API_KEY || null,
     vercelApiToken: process.env.VERCEL_API_TOKEN || null
 };
 
@@ -319,6 +325,9 @@ function loadAdminSettings() {
             const raw = fs.readFileSync(ADMIN_SETTINGS_FILE, 'utf8');
             const data = JSON.parse(raw);
             globalServerSettings = { ...globalServerSettings, ...data };
+            if (process.env.RENDER_API_KEY) {
+                globalServerSettings.renderApiKey = process.env.RENDER_API_KEY;
+            }
             if (process.env.VERCEL_API_TOKEN) {
                 globalServerSettings.vercelApiToken = process.env.VERCEL_API_TOKEN;
             }
@@ -344,7 +353,133 @@ function saveAdminSettings() {
 }
 loadAdminSettings();
 
-// Vercel Official API Usage Cache (5-min memoization to avoid API spam)
+// Render Free-Tier 512MB RAM Memory Guard
+function enforceRenderMemoryGuard() {
+    try {
+        const mem = process.memoryUsage();
+        const rssMB = Math.round(mem.rss / 1024 / 1024);
+        // Render free tier has a strict 512MB limit. If RSS > 360MB or cache is huge, prune streamCache
+        if (rssMB > 360 || streamCache.size > 250) {
+            const beforeSize = streamCache.size;
+            streamCache.clear();
+            if (global.gc) {
+                try { global.gc(); } catch (e) {}
+            }
+            console.log(`[Render Memory Guard] Relieved RAM pressure: flushed ${beforeSize} cache entries (${rssMB}MB RSS).`);
+        }
+    } catch (e) {}
+}
+setInterval(enforceRenderMemoryGuard, 60000).unref();
+
+// Render Anti-Sleep Keep-Alive Heartbeat (Beats 15-Minute Inactivity Spin-Down)
+let renderKeepAliveTimer = null;
+let lastKeepAlivePing = 0;
+let keepAliveStatus = 'idle';
+
+function startRenderKeepAlive() {
+    if (renderKeepAliveTimer) clearInterval(renderKeepAliveTimer);
+    // Ping every 13 minutes (780,000 ms) to prevent 15-minute inactivity spin-down on Render Free Tier
+    renderKeepAliveTimer = setInterval(async () => {
+        if (globalServerSettings.renderKeepAlive === false) return;
+        try {
+            const localPort = process.env.PORT || 7000;
+            const targetUrl = process.env.RENDER_EXTERNAL_URL 
+                ? `${process.env.RENDER_EXTERNAL_URL}/health`
+                : `http://127.0.0.1:${localPort}/health`;
+            keepAliveStatus = 'pinging';
+            const res = await axios.get(targetUrl, { timeout: 8000 });
+            lastKeepAlivePing = Date.now();
+            keepAliveStatus = `active (200 OK @ ${new Date().toLocaleTimeString()})`;
+            console.log(`[Render Keep-Alive] Heartbeat ping successful to ${targetUrl}`);
+        } catch (e) {
+            keepAliveStatus = `error (${e.message})`;
+        }
+    }, 13 * 60 * 1000);
+    renderKeepAliveTimer.unref();
+}
+
+if (!process.env.VERCEL) {
+    startRenderKeepAlive();
+}
+
+// Render Official REST API Cache
+let renderApiUsageCache = {
+    timestamp: 0,
+    data: null
+};
+
+async function fetchOfficialRenderUsage(apiKey, forceFresh = false) {
+    if (!apiKey) return null;
+    if (!forceFresh && (Date.now() - renderApiUsageCache.timestamp < 120000) && renderApiUsageCache.data) {
+        return renderApiUsageCache.data;
+    }
+    try {
+        const headers = { Authorization: `Bearer ${apiKey}`, Accept: 'application/json' };
+        const [servicesRes, ownersRes] = await Promise.allSettled([
+            axios.get('https://api.render.com/v1/services?limit=10', { headers, timeout: 6000 }),
+            axios.get('https://api.render.com/v1/owners', { headers, timeout: 5000 })
+        ]);
+
+        let serviceName = process.env.RENDER_SERVICE_NAME || 'chole-bhature';
+        let serviceId = process.env.RENDER_SERVICE_ID || null;
+        let serviceStatus = 'live';
+        let plan = 'free';
+        let region = process.env.RENDER_REGION || 'oregon';
+        let repo = null;
+        let updatedAt = null;
+
+        if (servicesRes.status === 'fulfilled' && Array.isArray(servicesRes.value.data)) {
+            const services = servicesRes.value.data;
+            let currentService = null;
+            if (serviceId) {
+                currentService = services.find(s => s.service?.id === serviceId)?.service || services[0]?.service;
+            } else {
+                currentService = services[0]?.service;
+            }
+            if (currentService) {
+                serviceName = currentService.name || serviceName;
+                serviceId = currentService.id || serviceId;
+                serviceStatus = currentService.suspended === 'suspended' ? 'suspended' : (currentService.status || 'live');
+                plan = currentService.plan || 'free';
+                region = currentService.region || region;
+                repo = currentService.repo || null;
+                updatedAt = currentService.updatedAt || null;
+            }
+        }
+
+        let ownerName = null;
+        if (ownersRes.status === 'fulfilled' && Array.isArray(ownersRes.value.data) && ownersRes.value.data.length > 0) {
+            ownerName = ownersRes.value.data[0]?.owner?.name || ownersRes.value.data[0]?.owner?.email || ownersRes.value.data[0]?.name;
+        }
+
+        const result = {
+            connected: true,
+            ownerName: ownerName || 'Render User',
+            serviceName,
+            serviceId,
+            serviceStatus,
+            plan,
+            region,
+            repo,
+            updatedAt,
+            lastSynced: Date.now()
+        };
+        renderApiUsageCache = {
+            timestamp: Date.now(),
+            data: result
+        };
+        return result;
+    } catch (e) {
+        console.warn('[Render API] Failed to fetch services:', e.message);
+        return {
+            connected: false,
+            error: e.response?.data?.message || e.message || 'Unauthorized / Invalid Render Key',
+            lastSynced: Date.now()
+        };
+    }
+}
+
+// Vercel Official API Usage Cache (2-min memoization to avoid API spam)
 let vercelApiUsageCache = {
     timestamp: 0,
     data: null
@@ -408,6 +543,36 @@ async function fetchOfficialVercelUsage(apiToken, forceFresh = false) {
         };
     }
 }
+
+// Render & Cloud Dedicated Health Check Endpoints
+app.get(['/health', '/healthz', '/ping'], (req, res) => {
+    const mem = process.memoryUsage();
+    const rssMB = Math.round((mem.rss / 1024 / 1024) * 100) / 100;
+    const heapMB = Math.round((mem.heapUsed / 1024 / 1024) * 100) / 100;
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.json({
+        status: 'healthy',
+        uptimeSeconds: Math.floor(process.uptime()),
+        timestamp: Date.now(),
+        platform: isRender ? 'render' : (isVercel ? 'vercel' : 'node'),
+        service: process.env.RENDER_SERVICE_NAME || 'chole-bhature',
+        region: process.env.RENDER_REGION || process.env.VERCEL_REGION || 'local',
+        memory: {
+            rssMB: rssMB,
+            heapUsedMB: heapMB,
+            limitMB: 512,
+            headroomMB: Math.max(0, 512 - rssMB),
+            percentUsed: Math.min(100, Math.round((rssMB / 512) * 100))
+        },
+        ecoMode: globalServerSettings.globalEcoMode !== false,
+        keepAlive: {
+            enabled: globalServerSettings.renderKeepAlive !== false,
+            status: keepAliveStatus,
+            lastPing: lastKeepAlivePing
+        }
+    });
+});
 
 // Analytics tracker (already declared at top)
 
@@ -536,32 +701,64 @@ const handleGetDiagnosticsStats = async (req, res) => {
     const fluidCpuHours = Math.round(((totalReqs * (lastSort / 1000) + (telemetryMetrics.cacheMisses * 0.05)) / 3600) * 10000) / 10000;
     const bandwidthGB = Math.round((telemetryMetrics.servedBandwidthBytes / (1024 * 1024 * 1024)) * 1000) / 1000;
 
+    const forceFresh = req.query.fresh === '1' || req.query.refresh === 'true';
+
     // Fetch official live Vercel API stats if token is available
     const vercelToken = req.headers['x-vercel-token'] || globalServerSettings.vercelApiToken || process.env.VERCEL_API_TOKEN || null;
-    const forceFresh = req.query.fresh === '1' || req.query.refresh === 'true';
     let officialVercel = null;
     if (vercelToken) {
         officialVercel = await fetchOfficialVercelUsage(vercelToken, forceFresh);
     }
 
+    // Fetch official live Render API stats if token is available
+    const renderKey = req.headers['x-render-key'] || globalServerSettings.renderApiKey || process.env.RENDER_API_KEY || null;
+    let officialRender = null;
+    if (renderKey) {
+        officialRender = await fetchOfficialRenderUsage(renderKey, forceFresh);
+    }
+
+    const rssMB = Math.round((memUsage.rss / 1024 / 1024) * 100) / 100;
+    const heapMB = Math.round((memUsage.heapUsed / 1024 / 1024) * 100) / 100;
+
     res.json({
         status: 'online',
         uptime: uptimeSec,
+        platform: isRender ? 'render' : (isVercel ? 'vercel' : 'node'),
         totalConfigs: Math.max(userConfigs.size, activeConfigsTracker.size, 1),
         cacheSize: streamCache.size,
         quarantinedProviders: quarantinedProviders,
         analyticsCount: providerAnalytics.size,
-        vercelEcoSafe: true,
         globalEcoMode: globalServerSettings.globalEcoMode,
+        renderEcoSafe: true,
+        vercelEcoSafe: true,
         globalSettings: {
             ...globalServerSettings,
+            hasRenderKey: Boolean(globalServerSettings.renderApiKey || process.env.RENDER_API_KEY),
             hasVercelToken: Boolean(globalServerSettings.vercelApiToken || process.env.VERCEL_API_TOKEN)
         },
-        officialVercel: officialVercel,
-        memoryMB: Math.round((memUsage.heapUsed / 1024 / 1024) * 100) / 100,
+        memoryMB: heapMB,
+        // Live Render Telemetry & Memory Safeguards
+        isRender: isRender,
+        renderRegion: process.env.RENDER_REGION || (isRender ? 'oregon' : 'local-node'),
+        renderMemory: {
+            rssMB: rssMB,
+            heapMB: heapMB,
+            limitMB: 512,
+            headroomMB: Math.max(0, 512 - rssMB),
+            percentUsed: Math.min(100, Math.round((rssMB / 512) * 100))
+        },
+        renderKeepAlive: {
+            enabled: globalServerSettings.renderKeepAlive !== false,
+            status: keepAliveStatus,
+            lastPing: lastKeepAlivePing
+        },
+        officialRender: officialRender,
+        hasRenderKey: Boolean(globalServerSettings.renderApiKey || process.env.RENDER_API_KEY),
         // Live Vercel & Edge Telemetry Metrics
-        isVercel: Boolean(process.env.VERCEL),
-        vercelRegion: process.env.VERCEL_REGION || (process.env.VERCEL ? 'iad1 (Edge)' : 'local-node (Express)'),
+        isVercel: isVercel,
+        vercelRegion: process.env.VERCEL_REGION || (isVercel ? 'iad1 (Edge)' : 'local-node (Express)'),
+        officialVercel: officialVercel,
+        hasVercelToken: Boolean(globalServerSettings.vercelApiToken || process.env.VERCEL_API_TOKEN),
         totalRequests: totalReqs,
         cacheHits: cacheHits,
         cacheMisses: telemetryMetrics.cacheMisses || 0,
@@ -585,12 +782,22 @@ const handleUpdateAdminSettings = (req, res) => {
     if (!checkDiagnosticsAuth(req)) {
         return res.status(401).json({ success: false, error: 'Unauthorized' });
     }
-    const { globalEcoMode, allowClientEcoOverride, vercelApiToken } = req.body || {};
+    const { globalEcoMode, allowClientEcoOverride, renderKeepAlive, renderApiKey, vercelApiToken } = req.body || {};
     if (typeof globalEcoMode === 'boolean') {
         globalServerSettings.globalEcoMode = globalEcoMode;
     }
     if (typeof allowClientEcoOverride === 'boolean') {
         globalServerSettings.allowClientEcoOverride = allowClientEcoOverride;
+    }
+    if (typeof renderKeepAlive === 'boolean') {
+        globalServerSettings.renderKeepAlive = renderKeepAlive;
+        if (renderKeepAlive && !renderKeepAliveTimer && !process.env.VERCEL) {
+            startRenderKeepAlive();
+        }
+    }
+    if (typeof renderApiKey === 'string') {
+        globalServerSettings.renderApiKey = renderApiKey.trim() || null;
+        renderApiUsageCache = { timestamp: 0, data: null };
     }
     if (typeof vercelApiToken === 'string') {
         globalServerSettings.vercelApiToken = vercelApiToken.trim() || null;
@@ -602,6 +809,7 @@ const handleUpdateAdminSettings = (req, res) => {
         success: true, 
         settings: {
             ...globalServerSettings,
+            hasRenderKey: Boolean(globalServerSettings.renderApiKey || process.env.RENDER_API_KEY),
             hasVercelToken: Boolean(globalServerSettings.vercelApiToken || process.env.VERCEL_API_TOKEN)
         }
     });
@@ -1238,10 +1446,11 @@ function createAddon(config) {
 
             let allStreams = [];
             // High-speed parallel scraper execution timeout to ensure streams return within client limits
+            const isClientEco = config.renderEcoMode !== undefined ? config.renderEcoMode : config.vercelEcoMode;
             const isEcoMode = globalServerSettings.globalEcoMode === true 
-                ? (globalServerSettings.allowClientEcoOverride ? (config.vercelEcoMode !== false) : true)
-                : Boolean(config.vercelEcoMode === true);
-            const PROVIDER_TIMEOUT_MS = isEcoMode || (typeof process !== 'undefined' && process.env.VERCEL) ? 8000 : 15000;
+                ? (globalServerSettings.allowClientEcoOverride ? (isClientEco !== false) : true)
+                : Boolean(isClientEco === true);
+            const PROVIDER_TIMEOUT_MS = isEcoMode || (typeof process !== 'undefined' && (process.env.RENDER || process.env.VERCEL)) ? 8000 : 15000;
 
             const scrapeStartTime = Date.now();
             await Promise.all(allProviders.map(async (provider) => {
@@ -1320,6 +1529,7 @@ function createAddon(config) {
                 cleanTitles: config.cleanTitles !== false,
                 showFileSize: config.showFileSize !== false,
                 showReleaseGroup: config.showReleaseGroup !== false,
+                renderEcoMode: isEcoMode,
                 vercelEcoMode: isEcoMode,
                 debridProvider: config.debridProvider,
                 debridApiKey: config.debridApiKey,
@@ -1914,15 +2124,17 @@ try {
 
 const PORT = process.env.PORT || 7000;
 if (!process.env.VERCEL) {
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
         console.log(`
 ========================================================================
-  🌶️  CHOLE BHATURE • Meta-Sorter & Priority Engine v4.1.0
+  🌶️  CHOLE BHATURE • Meta-Sorter & Priority Engine v4.3.0
   ⚡  Created by SA7ANI | https://github.com/SA7ANI/chole-bhature
   🛡️  Licensed under GNU AGPL-3.0 • Attribution Required
 ========================================================================
-  🚀 Local Sorter Server: http://localhost:${PORT}
-  ⚙️  Configuration UI:    http://localhost:${PORT}/configure
+  🚀 Server Running:     http://localhost:${PORT} (0.0.0.0:${PORT})
+  🌐 Platform Active:    ${isRender ? 'Render Cloud Web Service' : 'Local / VPS Node Server'}
+  ⚙️  Configuration UI:  http://localhost:${PORT}/configure
+  🩺 Health Endpoint:   http://localhost:${PORT}/health
 ========================================================================
         `);
     });
