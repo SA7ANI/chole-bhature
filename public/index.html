@@ -4316,21 +4316,32 @@
 
         function decodeConfigToken(token) {
             if (!token || typeof token !== 'string') return null;
+            token = token.trim();
+            // 1. URL encoded JSON or raw JSON
             try {
-                // 1. URL encoded JSON
                 if (token.startsWith('{') || token.startsWith('%7B')) {
                     const parsed = JSON.parse(decodeURIComponent(token));
                     if (parsed && typeof parsed === 'object') return parsed;
                 }
             } catch (e) {}
 
+            // 2. URL-Safe Base64 / Standard Base64
             try {
-                // 2. URL-Safe Base64 / Standard Base64
                 let b64 = token.replace(/-/g, '+').replace(/_/g, '/');
                 while (b64.length % 4) b64 += '=';
-                const str = decodeURIComponent(escape(atob(b64)));
-                if (str.startsWith('{')) {
-                    const parsed = JSON.parse(str);
+                const binaryStr = atob(b64);
+                let jsonStr = null;
+                try {
+                    const bytes = new Uint8Array(binaryStr.length);
+                    for (let i = 0; i < binaryStr.length; i++) {
+                        bytes[i] = binaryStr.charCodeAt(i);
+                    }
+                    jsonStr = new TextDecoder('utf-8').decode(bytes);
+                } catch (utfErr) {
+                    jsonStr = decodeURIComponent(escape(binaryStr));
+                }
+                if (jsonStr && jsonStr.startsWith('{')) {
+                    const parsed = JSON.parse(jsonStr);
                     if (parsed && typeof parsed === 'object') return parsed;
                 }
             } catch (e) {}
@@ -4873,12 +4884,14 @@
         async function saveConfigurationToServer(showToastMsg = false) {
             saveSettingsLocal();
             const configObj = buildConfigObject();
+            const activeToken = encodeConfigToken(configObj);
+            const targetId = configId || activeToken;
             
             try {
                 const res = await fetch('/api/config/save', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ configId: configId, config: configObj })
+                    body: JSON.stringify({ configId: targetId, token: activeToken, config: configObj })
                 });
                 const data = await res.json();
                 if (data.success) {
@@ -5727,89 +5740,60 @@
             if (cfg.urls && Array.isArray(cfg.urls)) {
                 repos = cfg.urls;
                 localStorage.setItem('nuvio_repos', JSON.stringify(repos));
+            } else if (cfg.repos && Array.isArray(cfg.repos)) {
+                repos = cfg.repos;
+                localStorage.setItem('nuvio_repos', JSON.stringify(repos));
             } else if (cfg.repoUrl) {
                 if (!repos.includes(cfg.repoUrl)) repos.push(cfg.repoUrl);
                 localStorage.setItem('nuvio_repos', JSON.stringify(repos));
             }
             
-            if (cfg.hideDead !== undefined) settings.hideDead = cfg.hideDead;
-            if (cfg.hideSlow !== undefined) settings.hideSlow = cfg.hideSlow;
-            if (cfg.hideCam !== undefined) settings.hideCam = cfg.hideCam;
-            if (cfg.enableQuarantine !== undefined) settings.enableQuarantine = cfg.enableQuarantine;
-            if (cfg.showSeeders !== undefined) settings.showSeeders = cfg.showSeeders;
-            if (cfg.deduplicateStreams !== undefined) settings.deduplicateStreams = cfg.deduplicateStreams;
-            if (cfg.cleanTitles !== undefined) settings.cleanTitles = cfg.cleanTitles;
-            if (cfg.showFileSize !== undefined) settings.showFileSize = cfg.showFileSize;
-            if (cfg.showReleaseGroup !== undefined) settings.showReleaseGroup = cfg.showReleaseGroup;
+            if (cfg.hideDead !== undefined) settings.hideDead = Boolean(cfg.hideDead);
+            if (cfg.hideSlow !== undefined) settings.hideSlow = Boolean(cfg.hideSlow);
+            if (cfg.hideCam !== undefined) settings.hideCam = Boolean(cfg.hideCam);
+            if (cfg.enableQuarantine !== undefined) settings.enableQuarantine = Boolean(cfg.enableQuarantine);
+            if (cfg.showSeeders !== undefined) settings.showSeeders = Boolean(cfg.showSeeders);
+            if (cfg.deduplicateStreams !== undefined) settings.deduplicateStreams = Boolean(cfg.deduplicateStreams);
+            if (cfg.cleanTitles !== undefined) settings.cleanTitles = Boolean(cfg.cleanTitles);
+            if (cfg.showFileSize !== undefined) settings.showFileSize = Boolean(cfg.showFileSize);
+            if (cfg.showReleaseGroup !== undefined) settings.showReleaseGroup = Boolean(cfg.showReleaseGroup);
             if (cfg.vercelEcoMode !== undefined) settings.vercelEcoMode = Boolean(cfg.vercelEcoMode);
-            else settings.vercelEcoMode = true;
-            if (cfg.enableDoh !== undefined) settings.enableDoh = cfg.enableDoh;
+            if (cfg.enableDoh !== undefined) settings.enableDoh = Boolean(cfg.enableDoh);
             if (cfg.dohProvider) settings.dohProvider = cfg.dohProvider;
             if (cfg.debridProvider) settings.debridProvider = cfg.debridProvider;
             if (cfg.debridApiKey !== undefined) settings.debridApiKey = cfg.debridApiKey;
-            if (cfg.enableCatalogs !== undefined) settings.enableCatalogs = cfg.enableCatalogs;
-            if (cfg.catalogPopular !== undefined) settings.catalogPopular = cfg.catalogPopular;
-            if (cfg.catalogTrending !== undefined) settings.catalogTrending = cfg.catalogTrending;
-            if (cfg.catalogIndian !== undefined) settings.catalogIndian = cfg.catalogIndian;
-            if (cfg.catalogAnime !== undefined) settings.catalogAnime = cfg.catalogAnime;
+            if (cfg.enableCatalogs !== undefined) settings.enableCatalogs = Boolean(cfg.enableCatalogs);
+            if (cfg.catalogPopular !== undefined) settings.catalogPopular = Boolean(cfg.catalogPopular);
+            if (cfg.catalogTrending !== undefined) settings.catalogTrending = Boolean(cfg.catalogTrending);
+            if (cfg.catalogIndian !== undefined) settings.catalogIndian = Boolean(cfg.catalogIndian);
+            if (cfg.catalogAnime !== undefined) settings.catalogAnime = Boolean(cfg.catalogAnime);
+
             if (cfg.sortBy) settings.sortBy = cfg.sortBy;
+            else if (cfg.sortMode) settings.sortBy = cfg.sortMode;
             else if (cfg.prioritizeQuality !== undefined) settings.sortBy = cfg.prioritizeQuality ? 'quality' : 'speed';
+
             if (cfg.preferredLanguages && Array.isArray(cfg.preferredLanguages)) {
                 settings.preferredLanguages = cfg.preferredLanguages;
             }
             if (cfg.prioritizeHindi !== undefined) {
-                settings.prioritizeHindi = cfg.prioritizeHindi;
+                settings.prioritizeHindi = Boolean(cfg.prioritizeHindi);
                 if (cfg.prioritizeHindi && (!settings.preferredLanguages || !settings.preferredLanguages.includes('Hindi'))) {
                     settings.preferredLanguages = settings.preferredLanguages || [];
                     settings.preferredLanguages.push('Hindi');
                 }
             }
             if (cfg.disabled && Array.isArray(cfg.disabled)) settings.disabledProviders = cfg.disabled;
+            else if (cfg.disabledProviders && Array.isArray(cfg.disabledProviders)) settings.disabledProviders = cfg.disabledProviders;
+
             if (cfg.scraperOverrides && typeof cfg.scraperOverrides === 'object') {
                 settings.scraperOverrides = cfg.scraperOverrides;
             }
-            
-            localStorage.setItem('nuvio_settings', JSON.stringify(settings));
-            
-            document.getElementById('hideDead').checked = settings.hideDead || false;
-            document.getElementById('hideSlow').checked = settings.hideSlow || false;
-            const hideCamEl = document.getElementById('hideCam');
-            if (hideCamEl) hideCamEl.checked = settings.hideCam !== false;
-            const quarantineEl = document.getElementById('enableQuarantine');
-            if (quarantineEl) quarantineEl.checked = settings.enableQuarantine !== false;
-            document.getElementById('showSeeders').checked = settings.showSeeders !== false;
-            const dedupeEl = document.getElementById('deduplicateStreams');
-            if (dedupeEl) dedupeEl.checked = settings.deduplicateStreams !== false;
-            const cleanEl = document.getElementById('cleanTitles');
-            if (cleanEl) cleanEl.checked = settings.cleanTitles !== false;
-            const sizeEl = document.getElementById('showFileSize');
-            if (sizeEl) sizeEl.checked = settings.showFileSize !== false;
-            const groupEl = document.getElementById('showReleaseGroup');
-            if (groupEl) groupEl.checked = settings.showReleaseGroup !== false;
-            const vercelEcoEl = document.getElementById('vercelEcoMode');
-            if (vercelEcoEl) vercelEcoEl.checked = Boolean(settings.vercelEcoMode);
-            const enableDohEl = document.getElementById('enableDoh');
-            if (enableDohEl) enableDohEl.checked = settings.enableDoh !== false;
-            const dohProviderEl = document.getElementById('dohProvider');
-            if (dohProviderEl) dohProviderEl.value = settings.dohProvider || 'cloudflare';
-            const debridProviderEl = document.getElementById('debridProvider');
-            if (debridProviderEl) debridProviderEl.value = settings.debridProvider || 'none';
-            const debridApiKeyEl = document.getElementById('debridApiKey');
-            if (debridApiKeyEl) debridApiKeyEl.value = settings.debridApiKey || '';
-            const enableCatalogsEl = document.getElementById('enableCatalogs');
-            if (enableCatalogsEl) enableCatalogsEl.checked = settings.enableCatalogs !== false;
-            const catalogPopularEl = document.getElementById('catalogPopular');
-            if (catalogPopularEl) catalogPopularEl.checked = settings.catalogPopular !== false;
-            const catalogTrendingEl = document.getElementById('catalogTrending');
-            if (catalogTrendingEl) catalogTrendingEl.checked = settings.catalogTrending !== false;
-            const catalogIndianEl = document.getElementById('catalogIndian');
-            if (catalogIndianEl) catalogIndianEl.checked = settings.catalogIndian !== false;
-            const catalogAnimeEl = document.getElementById('catalogAnime');
-            if (catalogAnimeEl) catalogAnimeEl.checked = settings.catalogAnime !== false;
 
-            if (cfg.enableIptv !== undefined) settings.enableIptv = cfg.enableIptv;
-            if (cfg.enableCuratedIptv !== undefined) settings.enableCuratedIptv = cfg.enableCuratedIptv;
+            if (cfg.enableIptv !== undefined) settings.enableIptv = Boolean(cfg.enableIptv);
+            else if (cfg.enableLiveTv !== undefined) settings.enableIptv = Boolean(cfg.enableLiveTv);
+            if (cfg.enableCuratedIptv !== undefined) settings.enableCuratedIptv = Boolean(cfg.enableCuratedIptv);
             if (cfg.customIptvUrl !== undefined) settings.customIptvUrl = cfg.customIptvUrl;
+            else if (cfg.customM3uUrl !== undefined) settings.customIptvUrl = cfg.customM3uUrl;
             if (cfg.iptvUserAgent !== undefined) settings.iptvUserAgent = cfg.iptvUserAgent;
             if (cfg.iptvEpgUrl !== undefined) settings.iptvEpgUrl = cfg.iptvEpgUrl;
             if (cfg.iptvLimit !== undefined) settings.iptvLimit = cfg.iptvLimit;
@@ -5817,24 +5801,41 @@
             if (cfg.xtreamUser !== undefined) settings.xtreamUser = cfg.xtreamUser;
             if (cfg.xtreamPassword !== undefined) settings.xtreamPassword = cfg.xtreamPassword;
             
-            const enableIptvEl = document.getElementById('enableIptv');
-            if (enableIptvEl) enableIptvEl.checked = settings.enableIptv !== false;
-            const enableCuratedIptvEl = document.getElementById('enableCuratedIptv');
-            if (enableCuratedIptvEl) enableCuratedIptvEl.checked = settings.enableCuratedIptv !== false;
-            const customIptvUrlEl = document.getElementById('customIptvUrl');
-            if (customIptvUrlEl) customIptvUrlEl.value = settings.customIptvUrl || '';
-            const iptvUserAgentEl = document.getElementById('iptvUserAgent');
-            if (iptvUserAgentEl) iptvUserAgentEl.value = settings.iptvUserAgent || '';
-            const iptvEpgUrlEl = document.getElementById('iptvEpgUrl');
-            if (iptvEpgUrlEl) iptvEpgUrlEl.value = settings.iptvEpgUrl || '';
-            const iptvLimitEl = document.getElementById('iptvLimit');
-            if (iptvLimitEl) iptvLimitEl.value = settings.iptvLimit || '0';
-            const xtreamServerEl = document.getElementById('xtreamServer');
-            if (xtreamServerEl) xtreamServerEl.value = settings.xtreamServer || '';
-            const xtreamUserEl = document.getElementById('xtreamUser');
-            if (xtreamUserEl) xtreamUserEl.value = settings.xtreamUser || '';
-            const xtreamPasswordEl = document.getElementById('xtreamPassword');
-            if (xtreamPasswordEl) xtreamPasswordEl.value = settings.xtreamPassword || '';
+            localStorage.setItem('nuvio_settings', JSON.stringify(settings));
+            
+            const setCheck = (id, val) => { const el = document.getElementById(id); if (el) el.checked = Boolean(val); };
+            const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val !== undefined && val !== null ? val : ''; };
+
+            setCheck('hideDead', settings.hideDead);
+            setCheck('hideSlow', settings.hideSlow);
+            setCheck('hideCam', settings.hideCam !== false);
+            setCheck('enableQuarantine', settings.enableQuarantine !== false);
+            setCheck('showSeeders', settings.showSeeders !== false);
+            setCheck('deduplicateStreams', settings.deduplicateStreams !== false);
+            setCheck('cleanTitles', settings.cleanTitles !== false);
+            setCheck('showFileSize', settings.showFileSize !== false);
+            setCheck('showReleaseGroup', settings.showReleaseGroup !== false);
+            setCheck('vercelEcoMode', Boolean(settings.vercelEcoMode));
+            setCheck('enableDoh', settings.enableDoh !== false);
+            setVal('dohProvider', settings.dohProvider || 'cloudflare');
+            setVal('debridProvider', settings.debridProvider || 'none');
+            setVal('debridApiKey', settings.debridApiKey || '');
+            setCheck('enableCatalogs', settings.enableCatalogs !== false);
+            setCheck('catalogPopular', settings.catalogPopular !== false);
+            setCheck('catalogTrending', settings.catalogTrending !== false);
+            setCheck('catalogIndian', settings.catalogIndian !== false);
+            setCheck('catalogAnime', settings.catalogAnime !== false);
+
+            setCheck('enableIptv', settings.enableIptv !== false);
+            setCheck('enableCuratedIptv', settings.enableCuratedIptv !== false);
+            setVal('customIptvUrl', settings.customIptvUrl || '');
+            setVal('iptvUserAgent', settings.iptvUserAgent || '');
+            setVal('iptvEpgUrl', settings.iptvEpgUrl || '');
+            setVal('iptvLimit', settings.iptvLimit || '0');
+            setVal('xtreamServer', settings.xtreamServer || '');
+            setVal('xtreamUser', settings.xtreamUser || '');
+            setVal('xtreamPassword', settings.xtreamPassword || '');
+
             toggleIptvSubsections();
             renderCuratedChannels();
 
@@ -5842,29 +5843,19 @@
                 const connectedCard = document.getElementById('m3u-connected-card');
                 if (connectedCard) {
                     connectedCard.style.display = 'block';
-                    document.getElementById('stat-m3u-channels').innerText = 'Connected';
-                    document.getElementById('stat-m3u-cats').innerText = 'Auto';
-                    document.getElementById('stat-m3u-status').innerText = 'Active';
-                    document.getElementById('m3u-category-tags').innerText = 'Custom M3U Stream Feed';
-                    document.getElementById('m3u-active-url-display').innerText = settings.customIptvUrl;
+                    const statCh = document.getElementById('stat-m3u-channels');
+                    if (statCh) statCh.innerText = 'Connected';
+                    const statCat = document.getElementById('stat-m3u-cats');
+                    if (statCat) statCat.innerText = 'Auto';
+                    const statSt = document.getElementById('stat-m3u-status');
+                    if (statSt) statSt.innerText = 'Active';
+                    const catTags = document.getElementById('m3u-category-tags');
+                    if (catTags) catTags.innerText = 'Custom M3U Stream Feed';
+                    const urlDisp = document.getElementById('m3u-active-url-display');
+                    if (urlDisp) urlDisp.innerText = settings.customIptvUrl;
                 }
-                checkM3uInputChange();
+                if (typeof checkM3uInputChange === 'function') checkM3uInputChange();
             }
-
-            const initEnableIptv = document.getElementById('enableIptv');
-            if (initEnableIptv) initEnableIptv.checked = settings.enableIptv !== false;
-            const initEnableCuratedIptv = document.getElementById('enableCuratedIptv');
-            if (initEnableCuratedIptv) initEnableCuratedIptv.checked = settings.enableCuratedIptv !== false;
-            const initCustomIptvUrl = document.getElementById('customIptvUrl');
-            if (initCustomIptvUrl) initCustomIptvUrl.value = settings.customIptvUrl || '';
-            const initXtreamServer = document.getElementById('xtreamServer');
-            if (initXtreamServer) initXtreamServer.value = settings.xtreamServer || '';
-            const initXtreamUser = document.getElementById('xtreamUser');
-            if (initXtreamUser) initXtreamUser.value = settings.xtreamUser || '';
-            const initXtreamPassword = document.getElementById('xtreamPassword');
-            if (initXtreamPassword) initXtreamPassword.value = settings.xtreamPassword || '';
-            toggleIptvSubsections();
-            renderCuratedChannels();
 
             toggleDebridApiKeyVisibility();
             toggleDohProviderVisibility();
@@ -5875,105 +5866,12 @@
             renderLanguageChips();
             updateCardPreview();
             updateAdminView();
-            
+            updateStatsBar();
+            updateActionBtnUI();
             fetchRepos();
         }
 
-        async function initConfig() {
-            const pathParts = window.location.pathname.split('/').filter(Boolean);
-            
-            // 1. If URL path is /c/:configId (or /c/:configToken)
-            if (pathParts[0] === 'c' && pathParts[1]) {
-                const tokenOrId = pathParts[1];
-                configId = tokenOrId;
-                localStorage.setItem('cb_config_id', configId);
-                isInstalled = true;
-                localStorage.setItem('cb_is_installed', 'true');
-                
-                // First try instant client-side token decode (0ms latency, works across all devices & Vercel cold states)
-                const clientDecoded = decodeConfigToken(tokenOrId);
-                if (clientDecoded) {
-                    loadConfigIntoUI(clientDecoded);
-                    showSyncBadge(`ID: ${configId}`);
-                    saveConfigurationToServer(false);
-                    updateActionBtnUI();
-                    return;
-                }
-                
-                // Fallback to server API fetch
-                try {
-                    const res = await fetch(`/api/config/${tokenOrId}`);
-                    const data = await res.json();
-                    if (data && data.config) {
-                        loadConfigIntoUI(data.config);
-                        showSyncBadge(`ID: ${configId}`);
-                        updateActionBtnUI();
-                        return;
-                    }
-                } catch (e) {}
-            }
-            
-            // 2. If URL path is /:base64JSON/configure or /:base64JSON
-            if (pathParts[0] && pathParts[0] !== 'configure' && pathParts[0] !== 'api' && pathParts[0] !== 'c') {
-                const rawParam = pathParts[0];
-                const clientDecoded = decodeConfigToken(rawParam);
-                if (clientDecoded) {
-                    configId = rawParam;
-                    isInstalled = true;
-                    localStorage.setItem('cb_is_installed', 'true');
-                    localStorage.setItem('cb_config_id', configId);
-                    loadConfigIntoUI(clientDecoded);
-                    showSyncBadge(`ID: ${configId}`);
-                    saveConfigurationToServer(false);
-                    updateActionBtnUI();
-                    return;
-                }
-            }
-            
-            // 3. Fallback to localStorage or new ID
-            configId = getOrCreateConfigId();
-            
-            // Load Settings UI
-            document.getElementById('hideDead').checked = settings.hideDead || false;
-            document.getElementById('hideSlow').checked = settings.hideSlow || false;
-            const hideCamEl = document.getElementById('hideCam');
-            if (hideCamEl) hideCamEl.checked = settings.hideCam !== false;
-            const quarantineInitEl = document.getElementById('enableQuarantine');
-            if (quarantineInitEl) quarantineInitEl.checked = settings.enableQuarantine !== false;
-            document.getElementById('showSeeders').checked = settings.showSeeders !== false;
-            const dedupeEl = document.getElementById('deduplicateStreams');
-            if (dedupeEl) dedupeEl.checked = settings.deduplicateStreams !== false;
-            const cleanInitEl = document.getElementById('cleanTitles');
-            if (cleanInitEl) cleanInitEl.checked = settings.cleanTitles !== false;
-            const sizeInitEl = document.getElementById('showFileSize');
-            if (sizeInitEl) sizeInitEl.checked = settings.showFileSize !== false;
-            const groupInitEl = document.getElementById('showReleaseGroup');
-            if (groupInitEl) groupInitEl.checked = settings.showReleaseGroup !== false;
-            const initVercelEcoEl = document.getElementById('vercelEcoMode');
-            if (initVercelEcoEl) initVercelEcoEl.checked = Boolean(settings.vercelEcoMode === true);
-            const initDohEl = document.getElementById('enableDoh');
-            if (initDohEl) initDohEl.checked = settings.enableDoh !== false;
-            const initDohProviderEl = document.getElementById('dohProvider');
-            if (initDohProviderEl) initDohProviderEl.value = settings.dohProvider || 'cloudflare';
-            const initDebridProviderEl = document.getElementById('debridProvider');
-            if (initDebridProviderEl) initDebridProviderEl.value = settings.debridProvider || 'none';
-            const initDebridApiKeyEl = document.getElementById('debridApiKey');
-            if (initDebridApiKeyEl) initDebridApiKeyEl.value = settings.debridApiKey || '';
-            toggleDebridApiKeyVisibility();
-            toggleDohProviderVisibility();
-            
-            updateSortModeUI(settings.sortBy || 'speed');
-            renderLanguageChips();
-            updateCardPreview();
-            updateAdminView();
-            
-            showSyncBadge(`ID: ${configId}`);
-            updateActionBtnUI();
-            fetchRepos();
-            initAllCustomSelects();
-            syncCustomSelects();
-
-            // Secret Admin Tab Visibility Init
+        function initAdminVisibility() {
             try {
                 const urlParams = new URLSearchParams(window.location.search);
                 const secretParam = urlParams.get('secret') || urlParams.get('admin');
@@ -5996,6 +5894,161 @@
                     }
                 });
             }
+        }
+
+        async function initConfig() {
+            let extractedIdOrToken = null;
+            const pathParts = window.location.pathname.split('/').filter(Boolean);
+            const searchParams = new URLSearchParams(window.location.search);
+
+            // 1. Path-based identification:
+            // /c/:tokenOrId or /c/:tokenOrId/configure
+            if (pathParts[0] === 'c' && pathParts[1]) {
+                extractedIdOrToken = pathParts[1];
+            }
+            // /configure/:tokenOrId
+            else if (pathParts[0] === 'configure' && pathParts[1]) {
+                extractedIdOrToken = pathParts[1];
+            }
+            // /:tokenOrId/configure or /:tokenOrId (excluding static or api routes)
+            else if (pathParts[0] && !['configure', 'api', 'c', 'index.html', 'manifest.json', 'favicon.ico', 'sw.js'].includes(pathParts[0])) {
+                extractedIdOrToken = pathParts[0];
+            }
+
+            // 2. Query parameters identification:
+            if (!extractedIdOrToken) {
+                if (searchParams.get('config')) {
+                    extractedIdOrToken = searchParams.get('config');
+                } else if (searchParams.get('token')) {
+                    extractedIdOrToken = searchParams.get('token');
+                } else if (searchParams.get('id') || searchParams.get('configId')) {
+                    extractedIdOrToken = searchParams.get('id') || searchParams.get('configId');
+                } else if (searchParams.get('manifest') || searchParams.get('url') || searchParams.get('addon')) {
+                    const rawUrl = searchParams.get('manifest') || searchParams.get('url') || searchParams.get('addon');
+                    try {
+                        const parsedUrl = new URL(rawUrl, window.location.origin);
+                        const pParts = parsedUrl.pathname.split('/').filter(Boolean);
+                        if (pParts[0] === 'c' && pParts[1]) {
+                            extractedIdOrToken = pParts[1];
+                        } else if (pParts[0] && pParts[0] !== 'manifest.json') {
+                            extractedIdOrToken = pParts[0];
+                        }
+                    } catch (e) {}
+                }
+            }
+
+            // 3. Hash parameters identification (e.g. #c/:token or #config=...)
+            if (!extractedIdOrToken && window.location.hash) {
+                const hash = window.location.hash.replace(/^#\/?/, '');
+                if (hash.startsWith('c/')) {
+                    extractedIdOrToken = hash.split('/')[1];
+                } else if (hash.includes('=')) {
+                    const hParams = new URLSearchParams(hash);
+                    extractedIdOrToken = hParams.get('config') || hParams.get('id') || hParams.get('token');
+                } else if (hash && !hash.includes('/')) {
+                    extractedIdOrToken = hash;
+                }
+            }
+
+            // 4. Referrer header identification
+            if (!extractedIdOrToken && document.referrer) {
+                try {
+                    const refUrl = new URL(document.referrer);
+                    const refParts = refUrl.pathname.split('/').filter(Boolean);
+                    if (refParts[0] === 'c' && refParts[1]) {
+                        extractedIdOrToken = refParts[1];
+                    }
+                } catch (e) {}
+            }
+
+            // If an identifier or token was discovered:
+            if (extractedIdOrToken) {
+                extractedIdOrToken = extractedIdOrToken.replace(/\/configure\/?$/, '').replace(/\.json$/, '').trim();
+                
+                // 1) Instant client-side decode (0ms latency, handles base64url JSON)
+                const clientDecoded = decodeConfigToken(extractedIdOrToken);
+                if (clientDecoded) {
+                    configId = extractedIdOrToken;
+                    isInstalled = true;
+                    localStorage.setItem('cb_config_id', configId);
+                    localStorage.setItem('cb_is_installed', 'true');
+                    loadConfigIntoUI(clientDecoded);
+                    showSyncBadge(`ID: ${configId}`);
+                    saveConfigurationToServer(false);
+                    updateActionBtnUI();
+                    initAdminVisibility();
+                    return;
+                }
+
+                // 2) Server API lookup
+                try {
+                    const res = await fetch(`/api/config/${encodeURIComponent(extractedIdOrToken)}`);
+                    const data = await res.json();
+                    if (data && data.config) {
+                        configId = extractedIdOrToken;
+                        isInstalled = true;
+                        localStorage.setItem('cb_config_id', configId);
+                        localStorage.setItem('cb_is_installed', 'true');
+                        loadConfigIntoUI(data.config);
+                        showSyncBadge(`ID: ${configId}`);
+                        updateActionBtnUI();
+                        initAdminVisibility();
+                        return;
+                    }
+                } catch (e) {
+                    console.warn('[Config] Failed to fetch config by ID from server:', e);
+                }
+            }
+
+            // 5. Check localStorage stored configId
+            const storedConfigId = localStorage.getItem('cb_config_id');
+            if (storedConfigId) {
+                const localDecoded = decodeConfigToken(storedConfigId);
+                if (localDecoded) {
+                    configId = storedConfigId;
+                    loadConfigIntoUI(localDecoded);
+                    showSyncBadge(`ID: ${configId}`);
+                    updateActionBtnUI();
+                    initAdminVisibility();
+                    return;
+                }
+                try {
+                    const res = await fetch(`/api/config/${encodeURIComponent(storedConfigId)}`);
+                    const data = await res.json();
+                    if (data && data.config) {
+                        configId = storedConfigId;
+                        loadConfigIntoUI(data.config);
+                        showSyncBadge(`ID: ${configId}`);
+                        updateActionBtnUI();
+                        initAdminVisibility();
+                        return;
+                    }
+                } catch (e) {}
+            }
+
+            // 6. Query server for latest saved configuration on this instance
+            try {
+                const res = await fetch('/api/config/latest');
+                const data = await res.json();
+                if (data && data.success && data.config) {
+                    configId = data.configId || getOrCreateConfigId();
+                    isInstalled = true;
+                    localStorage.setItem('cb_config_id', configId);
+                    localStorage.setItem('cb_is_installed', 'true');
+                    loadConfigIntoUI(data.config);
+                    showSyncBadge(`ID: ${configId}`);
+                    updateActionBtnUI();
+                    initAdminVisibility();
+                    return;
+                }
+            } catch (e) {}
+
+            // 7. Fallback to local settings
+            configId = getOrCreateConfigId();
+            loadConfigIntoUI(buildConfigObject());
+            showSyncBadge(`ID: ${configId}`);
+            updateActionBtnUI();
+            initAdminVisibility();
         }
 
         function setRepoPreset(url) {
@@ -6589,8 +6642,8 @@
             localStorage.setItem('cb_is_installed', 'true');
             updateActionBtnUI();
 
-            await saveConfigurationToServer(false);
             const urls = buildAddonUrls();
+            await saveConfigurationToServer(false);
             showFallback(urls.httpUrl);
             window.location.href = urls.stremioUrl;
         }

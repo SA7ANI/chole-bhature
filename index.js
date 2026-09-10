@@ -35,6 +35,8 @@ app.use((req, res, next) => {
 // Persistent User Configuration Store
 const CONFIGS_FILE = path.join(__dirname, 'user_configs.json');
 const userConfigs = new Map();
+let lastSavedConfig = null;
+let lastSavedConfigId = null;
 
 function loadUserConfigs() {
     try {
@@ -43,6 +45,8 @@ function loadUserConfigs() {
             const data = JSON.parse(raw);
             for (const [k, v] of Object.entries(data)) {
                 userConfigs.set(k, v);
+                lastSavedConfig = v;
+                lastSavedConfigId = k;
             }
             console.log(`[Config] Loaded ${userConfigs.size} user configurations.`);
         }
@@ -53,6 +57,8 @@ function loadUserConfigs() {
 
 function saveUserConfig(configId, configData) {
     userConfigs.set(configId, configData);
+    lastSavedConfig = configData;
+    lastSavedConfigId = configId;
     try {
         const obj = {};
         for (const [k, v] of userConfigs.entries()) {
@@ -65,11 +71,31 @@ function saveUserConfig(configId, configData) {
 }
 loadUserConfigs();
 
+function encodeConfigParam(cfg) {
+    try {
+        if (!cfg || typeof cfg !== 'object') return '';
+        const clean = { ...cfg };
+        delete clean.addonHost;
+        delete clean.addonProtocol;
+        if (Object.keys(clean).length === 0) return '';
+        return Buffer.from(JSON.stringify(clean), 'utf8').toString('base64url');
+    } catch (e) {
+        return '';
+    }
+}
+
 // Multi-Device Stateless & Persistent Configuration Resolver
 const activeConfigsTracker = new Set();
 
 function resolveConfig(param) {
     if (!param) return null;
+    if (typeof param !== 'string') return null;
+    param = param.replace(/\/configure\/?$/, '').replace(/\.json$/, '').trim();
+    if (!param) return null;
+
+    if (param === 'latest' && lastSavedConfig) {
+        return lastSavedConfig;
+    }
     
     // 1. Try URL-decoded JSON
     try {
@@ -110,6 +136,10 @@ function resolveConfig(param) {
     if (stored) {
         activeConfigsTracker.add(param);
         return stored;
+    }
+
+    if (lastSavedConfigId === param && lastSavedConfig) {
+        return lastSavedConfig;
     }
 
     return null;
@@ -177,26 +207,30 @@ app.get(['/', '/configure', '/index.html'], (req, res) => {
 });
 
 // Serve configure page on configId routes
-app.get('/c/:configId', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-app.get('/c/:configId/configure', (req, res) => {
+app.get(['/c/:configId', '/c/:configId/configure', '/configure/:configId'], (req, res) => {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // API to save configuration (Instant Sync)
 app.post('/api/config/save', (req, res) => {
     try {
-        let { configId, config } = req.body;
+        let { configId, token, config } = req.body;
+        if (!configId && token) {
+            configId = token;
+        }
         if (!configId) {
             configId = crypto.randomBytes(4).toString('hex');
         }
         
         saveUserConfig(configId, config);
+        if (token && token !== configId) {
+            saveUserConfig(token, config);
+        }
         
         // Invalidate stream cache for this configuration
         for (const key of streamCache.keys()) {
-            if (key.includes(configId)) {
+            if (key.includes(configId) || (token && key.includes(token))) {
                 streamCache.delete(key);
             }
         }
@@ -209,14 +243,48 @@ app.post('/api/config/save', (req, res) => {
     }
 });
 
-// API to get configuration
+// API to get latest saved configuration on this instance
+app.get('/api/config/latest', (req, res) => {
+    if (lastSavedConfig) {
+        return res.json({ success: true, configId: lastSavedConfigId, config: lastSavedConfig });
+    }
+    if (userConfigs.size > 0) {
+        const lastEntry = Array.from(userConfigs.entries()).pop();
+        return res.json({ success: true, configId: lastEntry[0], config: lastEntry[1] });
+    }
+    res.json({ success: false, config: null });
+});
+
+// API to get configuration by query param or latest
+app.all('/api/config', (req, res) => {
+    const targetId = req.query.id || req.query.configId || req.query.token;
+    if (targetId) {
+        const config = resolveConfig(targetId) || null;
+        return res.json({ success: Boolean(config), configId: targetId, config });
+    }
+    if (lastSavedConfig) {
+        return res.json({ success: true, configId: lastSavedConfigId, config: lastSavedConfig });
+    }
+    if (userConfigs.size > 0) {
+        const lastEntry = Array.from(userConfigs.entries()).pop();
+        return res.json({ success: true, configId: lastEntry[0], config: lastEntry[1] });
+    }
+    res.json({ success: false, config: null });
+});
+
+// API to get configuration by configId or token
 app.get('/api/config/:configId', (req, res) => {
-    const config = resolveConfig(req.params.configId) || null;
-    res.json({ config });
+    let rawId = req.params.configId;
+    if (rawId) {
+        rawId = rawId.replace(/\/configure\/?$/, '').replace(/\.json$/, '').trim();
+    }
+    const config = resolveConfig(rawId) || null;
+    res.json({ success: Boolean(config), configId: rawId, config });
 });
 
 // Handle Nuvio/Stremio gear icon clicks which append /configure or / to the addon base URL
 app.get('/:configJSON/configure', (req, res) => {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
@@ -1034,6 +1102,42 @@ function createAddon(config) {
         resources.push('meta');
     }
 
+    const isConfigured = Boolean(
+        config && (
+            config.configId || 
+            config.repoUrl || 
+            (Array.isArray(config.urls) && config.urls.length > 0) || 
+            (Array.isArray(config.repos) && config.repos.length > 0) || 
+            config.customIptvUrl || 
+            config.xtreamServer || 
+            config.rdKey || 
+            config.adKey || 
+            config.tbKey ||
+            config.speedMode ||
+            config.qualityPriority
+        )
+    );
+
+    let configurationUrl = null;
+    if (config && config.addonHost) {
+        const protocol = config.addonProtocol || 'https';
+        const host = config.addonHost;
+        const configIdentifier = config.configId || encodeConfigParam(config);
+        if (configIdentifier) {
+            configurationUrl = `${protocol}://${host}/c/${configIdentifier}/configure`;
+        } else {
+            configurationUrl = `${protocol}://${host}/configure`;
+        }
+    }
+
+    const behaviorHints = {
+        configurable: true,
+        configurationRequired: !isConfigured
+    };
+    if (configurationUrl) {
+        behaviorHints.configurationURL = configurationUrl;
+    }
+
     const builder = new addonBuilder({
         id: addonId,
         version: '4.3.0',
@@ -1044,7 +1148,7 @@ function createAddon(config) {
         resources: resources,
         types: ['movie', 'series', 'anime', 'tv', 'channel', 'other'],
         idPrefixes: ['tt', 'tmdb:', 'kitsu:', 'iptv:'],
-        behaviorHints: { configurable: true, configurationRequired: true }
+        behaviorHints: behaviorHints
     });
 
     builder.defineStreamHandler(async ({ type, id }) => {
@@ -1782,6 +1886,7 @@ app.use('/:configJSON', (req, res, next) => {
                 config = { repoUrl: 'https://raw.githubusercontent.com/D3adlyRocket/All-in-One-Nuvio/refs/heads/main/manifest.json' };
             }
             config = JSON.parse(JSON.stringify(config));
+            config.configId = req.params.configJSON;
             config.addonHost = req.headers.host;
             const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
             config.addonProtocol = protocol.split(',')[0].trim();
