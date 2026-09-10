@@ -1353,6 +1353,7 @@ function createAddon(config) {
             type: 'tv',
             id: 'cb_live_tv',
             name: 'Live TV',
+            posterShape: 'square',
             genres: liveTvGenres,
             extra: [
                 { 

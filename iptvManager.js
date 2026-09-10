@@ -596,20 +596,46 @@ async function getChannelsCatalog({ genre = 'All', search = '', skip = 0, limit 
         );
     }
 
+/**
+ * Formats channel logo into a contain-fitted 1:1 square to prevent
+ * Nuvio and Stremio from horizontally cropping rectangular channel logos.
+ */
+function formatChannelLogo(url) {
+    if (!url || typeof url !== 'string' || !url.trim()) {
+        return 'https://raw.githubusercontent.com/yoruix/nuvio-providers/main/public/icon-512.png';
+    }
+    const cleanUrl = url.trim();
+    if (cleanUrl.startsWith('data:') || cleanUrl.includes('wsrv.nl')) {
+        return cleanUrl;
+    }
+    // Don't proxy localhost or private IP addresses through public image proxy
+    if (/(localhost|127\.0\.0\.1|192\.168\.|10\.\d+\.|172\.(1[6-9]|2\d|3[01])\.)/i.test(cleanUrl)) {
+        return cleanUrl;
+    }
+    // Remote HTTP/HTTPS images: Pad rectangular logos into a 1:1 square canvas with matching dark background
+    if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
+        return `https://wsrv.nl/?url=${encodeURIComponent(cleanUrl)}&w=512&h=512&fit=contain&cbg=0c101d&output=png`;
+    }
+    return cleanUrl;
+}
+
     // Pagination
     const pageItems = filtered.slice(skip, skip + limit);
 
-    return pageItems.map(ch => ({
-        id: ch.id,
-        type: 'tv',
-        name: ch.name,
-        poster: ch.logo || 'https://raw.githubusercontent.com/yoruix/nuvio-providers/main/public/icon-512.png',
-        posterShape: 'square',
-        background: 'https://images.unsplash.com/photo-1593784991095-a205069470b6?w=1280&q=80',
-        logo: ch.logo,
-        genres: [ch.category || 'Live TV', ch.country || 'Global'].filter(Boolean),
-        description: ch.description || `${ch.name} - 24/7 Live Stream`
-    }));
+    return pageItems.map(ch => {
+        const formattedLogo = formatChannelLogo(ch.logo);
+        return {
+            id: ch.id,
+            type: 'tv',
+            name: ch.name,
+            poster: formattedLogo,
+            posterShape: 'square',
+            background: 'https://images.unsplash.com/photo-1593784991095-a205069470b6?w=1280&q=80',
+            logo: formattedLogo,
+            genres: [ch.category || 'Live TV', ch.country || 'Global'].filter(Boolean),
+            description: ch.description || `${ch.name} - 24/7 Live Stream`
+        };
+    });
 }
 
 /**
@@ -625,14 +651,16 @@ async function getChannelMeta(channelId, config = {}) {
 
     if (!channel) return null;
 
+    const formattedLogo = formatChannelLogo(channel.logo);
+
     return {
         id: channel.id,
         type: 'tv',
         name: channel.name,
-        poster: channel.logo || 'https://raw.githubusercontent.com/yoruix/nuvio-providers/main/public/icon-512.png',
+        poster: formattedLogo,
         posterShape: 'square',
         background: 'https://images.unsplash.com/photo-1593784991095-a205069470b6?w=1280&q=80',
-        logo: channel.logo,
+        logo: formattedLogo,
         genres: [channel.category || 'Live TV', channel.country || 'Global'].filter(Boolean),
         description: channel.description || `${channel.name} - Live Broadcast`,
         behaviorHints: {
