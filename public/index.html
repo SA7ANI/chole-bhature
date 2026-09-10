@@ -6553,6 +6553,7 @@
             }
 
             // 5. If no explicit URL token, prioritize user's local settings (0ms latency, never overwritten)
+            const storedConfigId = localStorage.getItem('cb_config_id');
             configId = storedConfigId || getOrCreateConfigId();
             localStorage.setItem('cb_config_id', configId);
 
