@@ -514,16 +514,27 @@ async function probeLiveStream(url, customUserAgent = null) {
             'Accept': '*/*'
         };
         
-        // Quick HEAD probe with small 2.5s timeout
-        const res = await axios.get(url, {
-            timeout: 2500,
-            httpsAgent: dohHttpsAgent,
-            headers: {
-                ...headers,
-                'Range': 'bytes=0-1024' // Lightweight chunk probe
-            },
-            validateStatus: (status) => status >= 200 && status < 400
-        });
+        let res;
+        try {
+            // Quick Range chunk probe with 2.5s timeout
+            res = await axios.get(url, {
+                timeout: 2500,
+                httpsAgent: dohHttpsAgent,
+                headers: {
+                    ...headers,
+                    'Range': 'bytes=0-1024'
+                },
+                validateStatus: (status) => status >= 200 && status < 400
+            });
+        } catch (rangeErr) {
+            // If Range request rejected (e.g. 416 or strict server), fallback to quick HEAD probe
+            res = await axios.head(url, {
+                timeout: 2000,
+                httpsAgent: dohHttpsAgent,
+                headers,
+                validateStatus: (status) => status >= 200 && status < 400
+            });
+        }
 
         const latency = Date.now() - start;
         return {
@@ -642,20 +653,19 @@ async function getChannelStreams(channelId, config = {}) {
 
     if (!channel || !channel.url) return [];
 
-    // Probe stream latency in parallel
+    // Probe stream latency concurrently
     const urlsToTest = [
         { url: channel.url, name: 'Primary HLS' },
         ...(channel.fallbackUrl ? [{ url: channel.fallbackUrl, name: 'Backup Feed' }] : [])
     ];
 
-    const streams = [];
-    for (const item of urlsToTest) {
+    const streams = await Promise.all(urlsToTest.map(async (item) => {
         const probe = await probeLiveStream(item.url, channel.userAgent);
         const pingBadge = probe.online 
             ? (probe.latency < 500 ? `🟢 FAST (${probe.latency}ms)` : `🟡 STABLE (${probe.latency}ms)`)
             : '⚪ DIRECT STREAM';
 
-        streams.push({
+        return {
             name: '⚡ CHOLE BHATURE [LIVE]',
             title: `📡 ${channel.name} • ${item.name} • ${pingBadge}\n🌐 Live 24/7 Broadcast (HLS)`,
             url: item.url,
@@ -664,8 +674,8 @@ async function getChannelStreams(channelId, config = {}) {
                 bingeGroup: 'chole-iptv-live',
                 headers: channel.userAgent ? { 'User-Agent': channel.userAgent } : undefined
             }
-        });
-    }
+        };
+    }));
 
     return streams;
 }

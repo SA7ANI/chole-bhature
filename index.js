@@ -175,11 +175,21 @@ app.get('/sw.js', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'sw.js'));
 });
 
-app.get('/manifest.json', (req, res) => {
+app.get(['/app.webmanifest', '/manifest.webmanifest'], (req, res) => {
     res.setHeader('Content-Type', 'application/manifest+json; charset=utf-8');
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Cache-Control', 'public, max-age=3600');
-    res.sendFile(path.join(__dirname, 'public', 'manifest.json'));
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.sendFile(path.join(__dirname, 'public', 'app.webmanifest'));
+});
+
+app.get('/manifest.json', (req, res, next) => {
+    if (req.query.v || req.query.pwa) {
+        res.setHeader('Content-Type', 'application/manifest+json; charset=utf-8');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+        return res.sendFile(path.join(__dirname, 'public', 'app.webmanifest'));
+    }
+    next();
 });
 
 app.get(['/favicon.ico', '/favicon.png'], (req, res) => {
@@ -196,6 +206,19 @@ app.get(['/favicon.ico', '/favicon.png'], (req, res) => {
         res.setHeader('Cache-Control', 'public, max-age=86400');
         res.sendFile(path.join(__dirname, 'public', iconFile));
     });
+});
+
+// Auto-detect public URL for Render Keep-Alive from incoming requests
+app.use((req, res, next) => {
+    if (!process.env.VERCEL && !autoDetectedPublicUrl && req.headers.host) {
+        const host = req.headers.host;
+        if (!host.includes('localhost') && !host.includes('127.0.0.1')) {
+            const proto = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+            autoDetectedPublicUrl = `${proto.split(',')[0].trim()}://${host}/health`;
+            console.log(`[Render Keep-Alive] Inferred public health ping endpoint: ${autoDetectedPublicUrl}`);
+        }
+    }
+    next();
 });
 
 // Serve static assets
@@ -315,6 +338,7 @@ let globalServerSettings = {
     globalEcoMode: true, // Protects both Render (0.1 CPU / 512MB RAM) and Vercel (Fluid CPU / 10s timeout)
     allowClientEcoOverride: true,
     renderKeepAlive: true,
+    renderPingUrl: process.env.RENDER_PING_URL || null,
     renderApiKey: process.env.RENDER_API_KEY || null,
     vercelApiToken: process.env.VERCEL_API_TOKEN || null
 };
@@ -375,27 +399,56 @@ setInterval(enforceRenderMemoryGuard, 60000).unref();
 let renderKeepAliveTimer = null;
 let lastKeepAlivePing = 0;
 let keepAliveStatus = 'idle';
+let autoDetectedPublicUrl = null;
+
+function getRenderPingTarget() {
+    if (globalServerSettings.renderPingUrl && globalServerSettings.renderPingUrl.trim()) {
+        const custom = globalServerSettings.renderPingUrl.trim();
+        return custom.endsWith('/health') || custom.endsWith('/ping') ? custom : `${custom.replace(/\/+$/, '')}/health`;
+    }
+    if (process.env.RENDER_EXTERNAL_URL) {
+        return `${process.env.RENDER_EXTERNAL_URL.replace(/\/+$/, '')}/health`;
+    }
+    if (process.env.RENDER_EXTERNAL_HOSTNAME) {
+        return `https://${process.env.RENDER_EXTERNAL_HOSTNAME}/health`;
+    }
+    if (process.env.APP_URL) {
+        return `${process.env.APP_URL.replace(/\/+$/, '')}/health`;
+    }
+    if (autoDetectedPublicUrl) {
+        return autoDetectedPublicUrl;
+    }
+    const localPort = process.env.PORT || 7000;
+    return `http://127.0.0.1:${localPort}/health`;
+}
+
+async function performRenderKeepAlivePing() {
+    if (globalServerSettings.renderKeepAlive === false) return;
+    const targetUrl = getRenderPingTarget();
+    try {
+        keepAliveStatus = 'pinging';
+        const res = await axios.get(targetUrl, { 
+            timeout: 8000,
+            proxy: false,
+            headers: { 'User-Agent': 'CholeBhature-KeepAlive/4.3' }
+        });
+        lastKeepAlivePing = Date.now();
+        keepAliveStatus = `active (${res.status} OK @ ${new Date().toLocaleTimeString()})`;
+        console.log(`[Render Keep-Alive] Heartbeat ping successful to ${targetUrl}`);
+    } catch (e) {
+        keepAliveStatus = `warning (${e.message})`;
+        console.warn(`[Render Keep-Alive] Ping notice to ${targetUrl}: ${e.message}`);
+    }
+}
 
 function startRenderKeepAlive() {
     if (renderKeepAliveTimer) clearInterval(renderKeepAliveTimer);
     // Ping every 13 minutes (780,000 ms) to prevent 15-minute inactivity spin-down on Render Free Tier
-    renderKeepAliveTimer = setInterval(async () => {
-        if (globalServerSettings.renderKeepAlive === false) return;
-        try {
-            const localPort = process.env.PORT || 7000;
-            const targetUrl = process.env.RENDER_EXTERNAL_URL 
-                ? `${process.env.RENDER_EXTERNAL_URL}/health`
-                : `http://127.0.0.1:${localPort}/health`;
-            keepAliveStatus = 'pinging';
-            const res = await axios.get(targetUrl, { timeout: 8000 });
-            lastKeepAlivePing = Date.now();
-            keepAliveStatus = `active (200 OK @ ${new Date().toLocaleTimeString()})`;
-            console.log(`[Render Keep-Alive] Heartbeat ping successful to ${targetUrl}`);
-        } catch (e) {
-            keepAliveStatus = `error (${e.message})`;
-        }
-    }, 13 * 60 * 1000);
+    renderKeepAliveTimer = setInterval(performRenderKeepAlivePing, 13 * 60 * 1000);
     renderKeepAliveTimer.unref();
+
+    // Initial warm-up ping 12s after startup to test connection and report status
+    setTimeout(performRenderKeepAlivePing, 12000).unref();
 }
 
 if (!process.env.VERCEL) {
@@ -553,6 +606,7 @@ app.get(['/health', '/healthz', '/ping'], (req, res) => {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.json({
         status: 'healthy',
+        ping: 'pong',
         uptimeSeconds: Math.floor(process.uptime()),
         timestamp: Date.now(),
         platform: isRender ? 'render' : (isVercel ? 'vercel' : 'node'),
@@ -750,7 +804,8 @@ const handleGetDiagnosticsStats = async (req, res) => {
         renderKeepAlive: {
             enabled: globalServerSettings.renderKeepAlive !== false,
             status: keepAliveStatus,
-            lastPing: lastKeepAlivePing
+            lastPing: lastKeepAlivePing,
+            targetUrl: getRenderPingTarget()
         },
         officialRender: officialRender,
         hasRenderKey: Boolean(globalServerSettings.renderApiKey || process.env.RENDER_API_KEY),
@@ -782,7 +837,7 @@ const handleUpdateAdminSettings = (req, res) => {
     if (!checkDiagnosticsAuth(req)) {
         return res.status(401).json({ success: false, error: 'Unauthorized' });
     }
-    const { globalEcoMode, allowClientEcoOverride, renderKeepAlive, renderApiKey, vercelApiToken } = req.body || {};
+    const { globalEcoMode, allowClientEcoOverride, renderKeepAlive, renderPingUrl, renderApiKey, vercelApiToken } = req.body || {};
     if (typeof globalEcoMode === 'boolean') {
         globalServerSettings.globalEcoMode = globalEcoMode;
     }
@@ -794,6 +849,9 @@ const handleUpdateAdminSettings = (req, res) => {
         if (renderKeepAlive && !renderKeepAliveTimer && !process.env.VERCEL) {
             startRenderKeepAlive();
         }
+    }
+    if (typeof renderPingUrl === 'string') {
+        globalServerSettings.renderPingUrl = renderPingUrl.trim() || null;
     }
     if (typeof renderApiKey === 'string') {
         globalServerSettings.renderApiKey = renderApiKey.trim() || null;

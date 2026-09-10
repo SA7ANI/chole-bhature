@@ -1,8 +1,8 @@
-const CACHE_NAME = 'chole-bhature-v12';
+const CACHE_NAME = 'chole-bhature-v13';
 const STATIC_ASSETS = [
   '/',
   '/configure',
-  '/manifest.json',
+  '/app.webmanifest',
   '/icon-192.png',
   '/icon-512.png',
   '/icon-maskable-192.png',
@@ -43,7 +43,8 @@ self.addEventListener('fetch', (event) => {
   if (
     url.pathname.startsWith('/api/') ||
     url.pathname.startsWith('/c/') ||
-    (url.pathname.endsWith('.json') && url.pathname !== '/manifest.json')
+    url.pathname.endsWith('.json') ||
+    url.pathname === '/manifest.json'
   ) {
     return;
   }
