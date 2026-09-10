@@ -8111,6 +8111,8 @@
                 input.value = preset.url;
                 checkM3uInputChange();
             }
+            settings.customIptvUrl = preset.url;
+            onSettingChanged();
             initM3uPresets();
             showToast(`⚡ Selected ${preset.flag} <b>${preset.name}</b>. Testing...`);
             testCustomM3u();

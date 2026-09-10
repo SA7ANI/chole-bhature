@@ -97,7 +97,19 @@ function resolveConfig(param) {
         return lastSavedConfig;
     }
     
-    // 1. Try URL-decoded JSON
+    // 1. Priority 1: Check in-memory & persistent userConfigs map FIRST
+    // This ensures any changes saved via the Web UI immediately update the catalog in Nuvio/Stremio
+    const stored = userConfigs.get(param);
+    if (stored) {
+        activeConfigsTracker.add(param);
+        return stored;
+    }
+
+    if (lastSavedConfigId === param && lastSavedConfig) {
+        return lastSavedConfig;
+    }
+
+    // 2. Try URL-decoded JSON
     try {
         if (param.startsWith('{') || param.startsWith('%7B')) {
             const parsed = JSON.parse(decodeURIComponent(param));
@@ -108,7 +120,7 @@ function resolveConfig(param) {
         }
     } catch (e) {}
 
-    // 2. Try Base64URL / Base64 decoded JSON
+    // 3. Try Base64URL / Base64 decoded JSON (stateless token fallback)
     try {
         const fromB64Url = Buffer.from(param, 'base64url').toString('utf8');
         if (fromB64Url.startsWith('{')) {
@@ -131,14 +143,8 @@ function resolveConfig(param) {
         }
     } catch (e) {}
 
-    // 3. Try in-memory / persistent userConfigs map
-    const stored = userConfigs.get(param);
-    if (stored) {
-        activeConfigsTracker.add(param);
-        return stored;
-    }
-
-    if (lastSavedConfigId === param && lastSavedConfig) {
+    // 4. Fallback to lastSavedConfig if available on single-user instances
+    if (lastSavedConfig) {
         return lastSavedConfig;
     }
 
@@ -2111,8 +2117,8 @@ app.use('/c/:configId', (req, res, next) => {
     // Only intercept Stremio API routes
     if (req.path === '/manifest.json' || req.path.startsWith('/stream/') || req.path.startsWith('/catalog/') || req.path.startsWith('/meta/')) {
         try {
-            if (req.path === '/manifest.json') {
-                res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400');
+            if (req.path === '/manifest.json' || req.path.startsWith('/catalog/')) {
+                res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
             } else if (req.path.startsWith('/stream/')) {
                 res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
             }
@@ -2143,8 +2149,8 @@ app.use('/:configJSON', (req, res, next) => {
     // Only intercept Stremio API routes
     if (req.path === '/manifest.json' || req.path.startsWith('/stream/') || req.path.startsWith('/catalog/') || req.path.startsWith('/meta/')) {
         try {
-            if (req.path === '/manifest.json') {
-                res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400');
+            if (req.path === '/manifest.json' || req.path.startsWith('/catalog/')) {
+                res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
             } else if (req.path.startsWith('/stream/')) {
                 res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
             }
@@ -2173,12 +2179,25 @@ app.use('/:configJSON', (req, res, next) => {
 });
 
 // Mount default Stremio Addon router at root (for /manifest.json, /stream/..., /catalog/...)
-try {
-    const defaultAddon = createAddon({});
-    app.use(getRouter(defaultAddon));
-} catch (err) {
-    console.error('[Default Addon Mount Error]', err);
-}
+app.use((req, res, next) => {
+    if (req.path === '/manifest.json' || req.path.startsWith('/stream/') || req.path.startsWith('/catalog/') || req.path.startsWith('/meta/')) {
+        try {
+            if (req.path === '/manifest.json' || req.path.startsWith('/catalog/')) {
+                res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+            } else if (req.path.startsWith('/stream/')) {
+                res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+            }
+
+            const activeConfig = lastSavedConfig || {};
+            const defaultAddon = createAddon(activeConfig);
+            const router = getRouter(defaultAddon);
+            return router(req, res, next);
+        } catch (err) {
+            console.error('[Default Addon Mount Error]', err);
+        }
+    }
+    next();
+});
 
 const PORT = process.env.PORT || 7000;
 if (!process.env.VERCEL) {

@@ -477,21 +477,21 @@ async function fetchXtreamChannels(server, username, password) {
 async function getAllConfiguredChannels(config = {}) {
     let allChannels = [];
 
-    // 1. Curated Channels (Enabled by default unless disabled)
-    if (config.enableCuratedIptv !== false) {
-        allChannels = allChannels.concat(CURATED_CHANNELS);
-        for (const ch of CURATED_CHANNELS) {
-            channelMetadataCache.set(ch.id, ch);
-        }
-    }
-
-    // 2. Custom M3U / M3U8 Playlist
+    // 1. Custom M3U / M3U8 Playlist (Prioritized first so user-selected presets show immediately at top of catalog)
     if (config.customIptvUrl) {
         let customChannels = await fetchRemoteM3u(config.customIptvUrl, config.iptvUserAgent);
         if (config.iptvLimit && Number(config.iptvLimit) > 0) {
             customChannels = customChannels.slice(0, Number(config.iptvLimit));
         }
         allChannels = allChannels.concat(customChannels);
+    }
+
+    // 2. Curated Channels (Enabled by default unless disabled)
+    if (config.enableCuratedIptv !== false) {
+        allChannels = allChannels.concat(CURATED_CHANNELS);
+        for (const ch of CURATED_CHANNELS) {
+            channelMetadataCache.set(ch.id, ch);
+        }
     }
 
     // 3. Xtream Codes Integration
