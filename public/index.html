@@ -6035,10 +6035,15 @@
             let serverReachable = false;
             try {
                 const authRes = await fetch('/api/admin/auth-state');
+                if (!authRes.ok) {
+                    throw new Error(`Admin auth endpoint returned HTTP ${authRes.status}`);
+                }
                 const authData = await authRes.json();
                 hasAdminOnServer = Boolean(authData.hasAdminPassword);
                 serverReachable = true;
-            } catch (e) {}
+            } catch (e) {
+                console.error('[Admin] Auth-state request failed:', e);
+            }
 
             // If server is unreachable, fall back to local hash verification
             if (!serverReachable) {
@@ -6080,6 +6085,9 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ key, hash })
                     });
+                    if (!setupRes.ok) {
+                        throw new Error(`Admin setup endpoint returned HTTP ${setupRes.status}`);
+                    }
                     const sData = await setupRes.json();
                     if (sData.success) {
                         localStorage.setItem('cb_admin_master_hash', hash);

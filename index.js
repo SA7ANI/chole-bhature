@@ -151,7 +151,9 @@ function resolveConfig(param) {
     return null;
 }
 
-// Background pre-warming: pre-load all provider repositories on startup to eliminate cold-start delay
+// Background pre-warming: pre-load all provider repositories on startup to eliminate cold-start delay.
+// Do not do this during a Vercel function cold start: it starts several outbound
+// requests before the first API request can be served and can exhaust its time budget.
 async function prewarmProviders() {
     try {
         const reposToWarm = new Set([
@@ -170,7 +172,11 @@ async function prewarmProviders() {
         }
     } catch (e) {}
 }
-prewarmProviders();
+if (!process.env.VERCEL) {
+    prewarmProviders();
+} else {
+    console.log('[PreWarm] Skipped on Vercel serverless runtime.');
+}
 
 // PWA Core Endpoints with explicit headers & CORS for WebAPK minting
 app.get('/sw.js', (req, res) => {
