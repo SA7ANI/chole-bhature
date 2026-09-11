@@ -555,7 +555,7 @@ async function probeLiveStream(url, customUserAgent = null) {
  * Formats channel logo into a contain-fitted 1:1 square to prevent
  * Nuvio and Stremio from horizontally cropping rectangular channel logos.
  */
-function formatChannelLogo(url) {
+function formatChannelLogo(url, config = {}, label = 'Live TV') {
     if (!url || typeof url !== 'string' || !url.trim()) {
         return 'https://raw.githubusercontent.com/yoruix/nuvio-providers/main/public/icon-512.png';
     }
@@ -567,8 +567,14 @@ function formatChannelLogo(url) {
     if (/(localhost|127\.0\.0\.1|192\.168\.|10\.\d+\.|172\.(1[6-9]|2\d|3[01])\.)/i.test(cleanUrl)) {
         return cleanUrl;
     }
-    // Remote HTTP/HTTPS images: Pad rectangular logos into a 1:1 square canvas with matching dark background
+    // On hosted deployments, proxy through this addon so an unavailable playlist
+    // logo becomes a generated badge instead of a blank catalog poster.
     if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
+        if (config.addonHost) {
+            const protocol = config.addonProtocol || 'https';
+            return `${protocol}://${config.addonHost}/api/catalog-logo?url=${encodeURIComponent(cleanUrl)}&label=${encodeURIComponent(label)}`;
+        }
+        // Local fallback keeps catalog posters square when no public addon host exists.
         return `https://wsrv.nl/?url=${encodeURIComponent(cleanUrl)}&w=512&h=512&fit=contain&cbg=0c101d&output=png`;
     }
     return cleanUrl;
@@ -623,7 +629,7 @@ async function getChannelsCatalog({ genre = 'All', search = '', skip = 0, limit 
     const pageItems = filtered.slice(skip, skip + limit);
 
     return pageItems.map(ch => {
-        const formattedLogo = formatChannelLogo(ch.logo);
+        const formattedLogo = formatChannelLogo(ch.logo, config, ch.name);
         return {
             id: ch.id,
             type: 'tv',
@@ -664,7 +670,7 @@ async function getChannelMeta(channelId, config = {}, type = 'tv') {
             };
         }
 
-        const formattedLogo = formatChannelLogo(channel.logo);
+        const formattedLogo = formatChannelLogo(channel.logo, config, channel.name);
         const resolvedType = type || 'tv';
 
         return {

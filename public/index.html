@@ -2051,6 +2051,7 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            gap: 8px;
             margin-top: auto;
             padding-top: 6px;
         }
@@ -2058,7 +2059,10 @@
         .tag-list {
             display: flex;
             gap: 6px;
-            flex-wrap: wrap;
+            flex: 1 1 auto;
+            min-width: 0;
+            flex-wrap: nowrap;
+            overflow: hidden;
         }
 
         .format-tag {
@@ -2069,6 +2073,9 @@
             background: rgba(255, 255, 255, 0.04);
             border: 1px solid var(--border-subtle);
             color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .provider-switch-pos {
@@ -2090,6 +2097,8 @@
             display: inline-flex;
             align-items: center;
             gap: 4px;
+            flex: 0 0 auto;
+            white-space: nowrap;
         }
 
         .btn-config-scraper:hover {
@@ -6757,6 +6766,21 @@
             updateStatsBar();
         }
 
+        function getProviderLogoUrl(logo) {
+            if (!logo || typeof logo !== 'string') return '';
+            try {
+                const url = new URL(logo, window.location.href);
+                // Postimages blocks or drops some browser hotlink requests. Route
+                // only that known host through our cached same-origin endpoint.
+                if (url.protocol === 'https:' && url.hostname === 'i.postimg.cc') {
+                    return `/api/image-proxy?url=${encodeURIComponent(url.href)}`;
+                }
+                return url.href;
+            } catch (e) {
+                return '';
+            }
+        }
+
         function renderProviders() {
             const providersContainer = document.getElementById('providers-list');
             const providerCountBadge = document.getElementById('provider-count-badge');
@@ -6775,7 +6799,8 @@
 
             let html = '';
             allProvidersData.forEach((p) => {
-                const iconHtml = p.logo ? `<img src="${p.logo}" alt="logo" onerror="this.outerHTML='🧩'">` : '🧩';
+                const logoUrl = getProviderLogoUrl(p.logo);
+                const iconHtml = logoUrl ? `<img src="${logoUrl}" alt="" onerror="this.onerror=null; this.parentElement.textContent='🧩';">` : '🧩';
                 const typesStr = p.supportedTypes.map(t => t === 'movie' ? '🎬 Movie' : t === 'tv' ? '📺 TV' : t).join(' • ');
                 const isDisabled = settings.disabledProviders && settings.disabledProviders.includes(p.name);
                 const override = settings.scraperOverrides[p.name];

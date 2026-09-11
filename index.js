@@ -8,6 +8,8 @@ const iptvManager = require('./iptvManager');
 const axios = require('axios');
 const fs = require('fs');
 const crypto = require('crypto');
+const dns = require('dns').promises;
+const net = require('net');
 
 // Live Analytics and Quarantine Registries
 const providerAnalytics = new Map();
@@ -1085,6 +1087,79 @@ app.get('/api/proxy', async (req, res) => {
     } catch (err) {
         console.error('[Proxy Error]', err.message);
         res.status(500).json({ error: 'Failed to fetch: ' + err.message });
+    }
+});
+
+// Provider logos in community manifests are commonly hosted on Postimages.
+// Some browsers/networks reject those hotlinked images when the app is served
+// from a Vercel domain, so fetch this known image host server-side instead.
+app.get('/api/image-proxy', async (req, res) => {
+    try {
+        const imageUrl = new URL(String(req.query.url || ''));
+        if (imageUrl.protocol !== 'https:' || imageUrl.hostname !== 'i.postimg.cc') {
+            return res.status(400).json({ error: 'Unsupported image host' });
+        }
+
+        const response = await axios.get(imageUrl.href, {
+            responseType: 'arraybuffer',
+            timeout: 8000,
+            maxContentLength: 2 * 1024 * 1024,
+            headers: { 'User-Agent': 'CholeBhature-ProviderLogo/1.0' }
+        });
+        const contentType = String(response.headers['content-type'] || '');
+        if (!contentType.startsWith('image/')) {
+            return res.status(502).json({ error: 'Image host returned non-image content' });
+        }
+
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400');
+        res.send(Buffer.from(response.data));
+    } catch (err) {
+        console.warn('[Image Proxy] Failed to load provider logo:', err.message);
+        res.status(502).json({ error: 'Failed to load provider logo' });
+    }
+});
+
+function sendCatalogLogoFallback(res, label) {
+    const text = String(label || 'TV').trim().slice(0, 3).toUpperCase().replace(/[^A-Z0-9]/g, '') || 'TV';
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><rect width="512" height="512" rx="56" fill="#111827"/><rect x="18" y="18" width="476" height="476" rx="42" fill="#1f2937" stroke="#374151" stroke-width="8"/><text x="256" y="290" text-anchor="middle" font-family="Arial,sans-serif" font-size="150" font-weight="700" fill="#a78bfa">${text}</text></svg>`;
+    res.status(200).setHeader('Content-Type', 'image/svg+xml; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=86400');
+    res.send(svg);
+}
+
+function isPrivateAddress(address) {
+    if (net.isIP(address) === 4) {
+        return /^(0\.|10\.|127\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.)/.test(address);
+    }
+    return address === '::1' || address.startsWith('fc') || address.startsWith('fd') || address.startsWith('fe80:');
+}
+
+// Catalog clients cannot provide an onerror fallback for poster URLs. Serve a
+// safe, cached image and generate an initials badge when a playlist logo dies.
+app.get('/api/catalog-logo', async (req, res) => {
+    const label = req.query.label;
+    try {
+        const imageUrl = new URL(String(req.query.url || ''));
+        if (!['http:', 'https:'].includes(imageUrl.protocol) || imageUrl.hostname === 'localhost') {
+            return sendCatalogLogoFallback(res, label);
+        }
+        const addresses = await dns.lookup(imageUrl.hostname, { all: true });
+        if (!addresses.length || addresses.some(({ address }) => isPrivateAddress(address))) {
+            return sendCatalogLogoFallback(res, label);
+        }
+        const response = await axios.get(imageUrl.href, {
+            responseType: 'arraybuffer', timeout: 8000, maxContentLength: 2 * 1024 * 1024,
+            maxRedirects: 0, validateStatus: status => status >= 200 && status < 300,
+            headers: { 'User-Agent': 'CholeBhature-CatalogLogo/1.0' }
+        });
+        const contentType = String(response.headers['content-type'] || '');
+        if (!contentType.startsWith('image/')) return sendCatalogLogoFallback(res, label);
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400');
+        return res.send(Buffer.from(response.data));
+    } catch (err) {
+        return sendCatalogLogoFallback(res, label);
     }
 });
 
