@@ -21,6 +21,27 @@ if (!fs.existsSync(path.join(__dirname, '.secret')) && !process.env.VERCEL && !p
 }
 
 const app = express();
+
+// Vercel rewrites a request to the serverless function pathname
+// (/api/index.js). Preserve the original route in vercel.json and restore it
+// before Express routes the request, otherwise every endpoint becomes
+// "Cannot GET /api/index.js".
+app.use((req, res, next) => {
+    if (process.env.VERCEL) {
+        try {
+            const rewrittenUrl = new URL(req.url, 'http://localhost');
+            const originalPath = rewrittenUrl.searchParams.get('__cb_path');
+            if (originalPath && originalPath.startsWith('/')) {
+                rewrittenUrl.searchParams.delete('__cb_path');
+                const query = rewrittenUrl.searchParams.toString();
+                req.url = `${originalPath}${query ? `?${query}` : ''}`;
+            }
+        } catch (e) {
+            console.warn('[Vercel] Could not restore rewritten request path:', e.message);
+        }
+    }
+    next();
+});
 app.use(express.json());
 
 // Anti-Leech & Author Attribution Headers (GNU AGPL-3.0)

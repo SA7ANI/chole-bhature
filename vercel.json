@@ -29,7 +29,7 @@
   "rewrites": [
     {
       "source": "/(.*)",
-      "destination": "/api/index.js"
+      "destination": "/api/index.js?__cb_path=/$1"
     }
   ]
 }
