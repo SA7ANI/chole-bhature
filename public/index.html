@@ -2487,10 +2487,10 @@
                 align-items: flex-start;
                 gap: 12px;
             }
-            .dual-filter-group {
+            .setting-item-row .dual-filter-group {
                 width: 100%;
             }
-            .filter-capsule {
+            .setting-item-row .filter-capsule {
                 flex: 1 1 calc(50% - 6px);
                 justify-content: space-between;
             }
@@ -2529,6 +2529,27 @@
             .admin-telemetry-grid {
                 grid-template-columns: repeat(2, 1fr) !important;
                 gap: 8px !important;
+            }
+            .sub-catalogs-grid {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 8px !important;
+                width: 100% !important;
+            }
+            .sub-catalogs-grid .filter-capsule {
+                width: 100% !important;
+                display: flex !important;
+                justify-content: space-between !important;
+                box-sizing: border-box !important;
+            }
+            .render-keepalive-toggle-wrap {
+                width: 100% !important;
+            }
+            .render-keepalive-capsule {
+                width: 100% !important;
+                display: flex !important;
+                justify-content: space-between !important;
+                box-sizing: border-box !important;
             }
         }
 
@@ -3040,7 +3061,7 @@
                     </div>
 
                     <div id="catalogs-sub-options" style="border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 14px; margin-top: 8px;">
-                        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
+                        <div class="sub-catalogs-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; margin-bottom: 12px;">
                             <label class="filter-capsule" title="Flagship Popular Right Now Feed with Popular Movies & Popular Series sub-categories">
                                 <span class="filter-capsule-text">⭐ Popular Right Now</span>
                                 <div class="switch-toggle">
@@ -3691,19 +3712,25 @@
                     </div>
                 </div>
 
-                <!-- Dual-Cloud Platform Switcher -->
-                <div style="display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 12px; flex-wrap: wrap; align-items: center; justify-content: space-between;">
-                    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                        <span style="font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; margin-right: 4px;">HOST PLATFORM:</span>
-                        <button type="button" id="btn-cloud-render" class="pill-btn" onclick="switchAdminCloudTab('render')" style="padding: 6px 14px; font-size: 12px; font-weight: 700; background: rgba(168, 85, 247, 0.2); border: 1px solid #a855f7; color: #f3e8ff;">
-                            <span>🟣</span> Render Web Service <span id="badge-detected-render" class="tag-pill-badge" style="display: none; font-size: 9px; padding: 1px 6px; background: #a855f7; color: #fff; margin-left: 4px;">Active Host</span>
-                        </button>
-                        <button type="button" id="btn-cloud-vercel" class="pill-btn" onclick="switchAdminCloudTab('vercel')" style="padding: 6px 14px; font-size: 12px; font-weight: 700; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.15); color: var(--text-muted);">
-                            <span>▲</span> Vercel Serverless <span id="badge-detected-vercel" class="tag-pill-badge" style="display: none; font-size: 9px; padding: 1px 6px; background: #38bdf8; color: #000; margin-left: 4px;">Active Host</span>
-                        </button>
+                <!-- Dynamic Host Platform Indicator -->
+                <div id="cloud-platform-bar" class="section-wrap" style="margin-bottom: 0;">
+                    <div class="section-label-bar">
+                        <span class="section-label">☁️ Cloud Host Platform</span>
+                        <span id="cloud-host-active-pill" class="tag-pill-badge" style="display: none; background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.35); color: #34d399;">🟢 Connected</span>
                     </div>
-                    <div id="cloud-host-badge" class="tag-pill-badge" style="background: rgba(168, 85, 247, 0.12); border-color: rgba(168, 85, 247, 0.3); color: #d8b4fe;">
-                        🟣 Host: Render Web Service
+                    <div class="section-card" style="padding: 16px 18px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+                            <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+                                <div id="cloud-host-icon" style="width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.3); flex-shrink: 0;">🟣</div>
+                                <div style="min-width: 0;">
+                                    <div id="cloud-host-title" style="font-size: 13px; font-weight: 700; color: #f8fafc; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Detecting Host...</div>
+                                    <div id="cloud-host-subtitle" style="font-size: 11px; color: var(--text-muted); line-height: 1.3; margin-top: 1px;">Auto-detecting deployment platform</div>
+                                </div>
+                            </div>
+                            <div id="cloud-host-badge" class="tag-pill-badge" style="background: rgba(168, 85, 247, 0.12); border-color: rgba(168, 85, 247, 0.3); color: #d8b4fe; font-size: 10.5px; padding: 4px 10px; white-space: nowrap; flex-shrink: 0;">
+                                ⏳ Detecting...
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -3795,14 +3822,14 @@
                         </div>
                         <div class="section-card">
                             <div style="display: flex; flex-direction: column; gap: 12px;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.06); padding-bottom: 10px; gap: 8px;">
-                                    <div style="min-width: 0; flex: 1;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.06); padding-bottom: 10px; gap: 12px; flex-wrap: wrap;">
+                                    <div style="flex: 1 1 200px; min-width: 0;">
                                         <div style="font-weight: 700; font-size: 13px; color: #f8fafc; line-height: 1.3;">15-Min Inactivity Keep-Alive Heartbeat</div>
                                         <div id="render-keepalive-sub" style="font-size: 11.5px; color: var(--text-muted); line-height: 1.35; margin-top: 2px;">Self-pings /health every 13 minutes to prevent sleep and avoid 50-second cold starts</div>
                                         <div id="render-keepalive-target" style="font-size: 11px; color: #a78bfa; margin-top: 3px; word-break: break-all;">🎯 Ping Target: Auto-Detecting...</div>
                                     </div>
-                                    <div class="dual-filter-group" style="flex-shrink: 0;">
-                                        <label class="filter-capsule">
+                                    <div class="render-keepalive-toggle-wrap" style="flex-shrink: 0;">
+                                        <label class="filter-capsule render-keepalive-capsule" style="margin: 0; white-space: nowrap;">
                                             <span class="filter-capsule-text" id="render-keepalive-txt">💓 Keep-Alive</span>
                                             <div class="switch-toggle">
                                                 <input type="checkbox" id="renderKeepAliveToggle" checked onchange="handleRenderKeepAliveToggle(this.checked)">
@@ -3812,8 +3839,8 @@
                                     </div>
                                 </div>
 
-                                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.06); padding-bottom: 10px; gap: 8px;">
-                                    <div style="min-width: 0; flex: 1;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.06); padding-bottom: 10px; gap: 12px; flex-wrap: wrap;">
+                                    <div style="flex: 1 1 200px; min-width: 0;">
                                         <div style="font-weight: 700; font-size: 13px; color: #f8fafc; line-height: 1.3;">Monthly Free Instance Hours</div>
                                         <div id="budget-render-hours-sub" style="font-size: 11.5px; color: var(--text-muted); line-height: 1.35; margin-top: 2px;">750 free hours per month (Runs 24/7 all 31 days of the month for 1 web service)</div>
                                     </div>
@@ -3822,8 +3849,8 @@
                                     </div>
                                 </div>
 
-                                <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
-                                    <div style="min-width: 0; flex: 1;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+                                    <div style="flex: 1 1 200px; min-width: 0;">
                                         <div style="font-weight: 700; font-size: 13px; color: #f8fafc; line-height: 1.3;">Dedicated Health Check Endpoints</div>
                                         <div style="font-size: 11.5px; color: var(--text-muted); line-height: 1.35; margin-top: 2px;"><code>/health</code> and <code>/healthz</code> provide status, memory RSS, and uptime telemetry</div>
                                     </div>
@@ -5186,40 +5213,16 @@
         window._hasUserSwitchedCloudTab = false;
 
         function switchAdminCloudTab(platform) {
-            triggerHaptic('light');
-            window._hasUserSwitchedCloudTab = true;
             activeAdminCloudPlatform = platform;
             const renderPanel = document.getElementById('admin-cloud-render-panel');
             const vercelPanel = document.getElementById('admin-cloud-vercel-panel');
-            const btnRender = document.getElementById('btn-cloud-render');
-            const btnVercel = document.getElementById('btn-cloud-vercel');
 
             if (platform === 'render') {
                 if (renderPanel) renderPanel.style.display = 'flex';
                 if (vercelPanel) vercelPanel.style.display = 'none';
-                if (btnRender) {
-                    btnRender.style.background = 'rgba(168, 85, 247, 0.2)';
-                    btnRender.style.borderColor = '#a855f7';
-                    btnRender.style.color = '#f3e8ff';
-                }
-                if (btnVercel) {
-                    btnVercel.style.background = 'rgba(255, 255, 255, 0.05)';
-                    btnVercel.style.borderColor = 'rgba(255, 255, 255, 0.15)';
-                    btnVercel.style.color = 'var(--text-muted)';
-                }
             } else {
                 if (renderPanel) renderPanel.style.display = 'none';
                 if (vercelPanel) vercelPanel.style.display = 'flex';
-                if (btnVercel) {
-                    btnVercel.style.background = 'rgba(56, 189, 248, 0.2)';
-                    btnVercel.style.borderColor = '#38bdf8';
-                    btnVercel.style.color = '#e0f2fe';
-                }
-                if (btnRender) {
-                    btnRender.style.background = 'rgba(255, 255, 255, 0.05)';
-                    btnRender.style.borderColor = 'rgba(255, 255, 255, 0.15)';
-                    btnRender.style.color = 'var(--text-muted)';
-                }
             }
         }
 
@@ -5234,36 +5237,62 @@
             if (rEcoEl) rEcoEl.checked = isEco;
             if (vEcoEl) vEcoEl.checked = isEco;
 
-            // Host Platform Detection & Auto-Switch
+            // Host Platform Detection & Auto-Switch (Dynamic — show only detected platform)
             const detectedPlatform = d.platform || (d.isRender ? 'render' : (d.isVercel ? 'vercel' : 'render'));
             const hostBadge = document.getElementById('cloud-host-badge');
-            const badgeRender = document.getElementById('badge-detected-render');
-            const badgeVercel = document.getElementById('badge-detected-vercel');
+            const hostIcon = document.getElementById('cloud-host-icon');
+            const hostTitle = document.getElementById('cloud-host-title');
+            const hostSub = document.getElementById('cloud-host-subtitle');
+            const activePill = document.getElementById('cloud-host-active-pill');
+            const renderPanel = document.getElementById('admin-cloud-render-panel');
+            const vercelPanel = document.getElementById('admin-cloud-vercel-panel');
 
             if (detectedPlatform === 'render') {
-                if (badgeRender) badgeRender.style.display = 'inline-block';
-                if (badgeVercel) badgeVercel.style.display = 'none';
+                const region = d.renderRegion || 'oregon';
+                if (hostIcon) { hostIcon.innerText = '🟣'; hostIcon.style.background = 'rgba(168, 85, 247, 0.15)'; hostIcon.style.borderColor = 'rgba(168, 85, 247, 0.3)'; }
+                if (hostTitle) hostTitle.innerText = 'Render Web Service';
+                if (hostSub) hostSub.innerText = `Region: ${region} · Free Tier · Always-On`;
                 if (hostBadge) {
-                    hostBadge.innerText = `🟣 Host: Render Web Service (${d.renderRegion || 'oregon'})`;
+                    hostBadge.innerText = `🟣 ${region}`;
                     hostBadge.style.background = 'rgba(168, 85, 247, 0.15)';
                     hostBadge.style.borderColor = 'rgba(168, 85, 247, 0.35)';
                     hostBadge.style.color = '#d8b4fe';
                 }
-                if (!window._hasUserSwitchedCloudTab) switchAdminCloudTab('render');
+                if (activePill) activePill.style.display = 'inline-block';
+                if (renderPanel) renderPanel.style.display = 'flex';
+                if (vercelPanel) vercelPanel.style.display = 'none';
+                activeAdminCloudPlatform = 'render';
             } else if (detectedPlatform === 'vercel') {
-                if (badgeVercel) badgeVercel.style.display = 'inline-block';
-                if (badgeRender) badgeRender.style.display = 'none';
+                const region = d.vercelRegion || 'iad1';
+                if (hostIcon) { hostIcon.innerText = '▲'; hostIcon.style.background = 'rgba(56, 189, 248, 0.15)'; hostIcon.style.borderColor = 'rgba(56, 189, 248, 0.3)'; }
+                if (hostTitle) hostTitle.innerText = 'Vercel Serverless';
+                if (hostSub) hostSub.innerText = `Region: ${region} · Edge Network · Serverless Functions`;
                 if (hostBadge) {
-                    hostBadge.innerText = `▲ Host: Vercel Serverless (${d.vercelRegion || 'iad1'})`;
+                    hostBadge.innerText = `▲ ${region}`;
                     hostBadge.style.background = 'rgba(56, 189, 248, 0.15)';
                     hostBadge.style.borderColor = 'rgba(56, 189, 248, 0.35)';
                     hostBadge.style.color = '#38bdf8';
                 }
-                if (!window._hasUserSwitchedCloudTab) switchAdminCloudTab('vercel');
+                if (activePill) activePill.style.display = 'inline-block';
+                if (renderPanel) renderPanel.style.display = 'none';
+                if (vercelPanel) vercelPanel.style.display = 'flex';
+                activeAdminCloudPlatform = 'vercel';
             } else {
+                const nodeVer = d.nodeVersion || 'v18+';
+                if (hostIcon) { hostIcon.innerText = '💻'; hostIcon.style.background = 'rgba(148, 163, 184, 0.12)'; hostIcon.style.borderColor = 'rgba(148, 163, 184, 0.25)'; }
+                if (hostTitle) hostTitle.innerText = 'Node.js Local';
+                if (hostSub) hostSub.innerText = `Runtime: ${nodeVer} · Development Mode`;
                 if (hostBadge) {
-                    hostBadge.innerText = `💻 Host: Node.js (${d.nodeVersion || 'v18+'})`;
+                    hostBadge.innerText = `💻 ${nodeVer}`;
+                    hostBadge.style.background = 'rgba(148, 163, 184, 0.12)';
+                    hostBadge.style.borderColor = 'rgba(148, 163, 184, 0.25)';
+                    hostBadge.style.color = 'var(--text-muted)';
                 }
+                if (activePill) activePill.style.display = 'inline-block';
+                // Fallback: show render panel for local/node
+                if (renderPanel) renderPanel.style.display = 'flex';
+                if (vercelPanel) vercelPanel.style.display = 'none';
+                activeAdminCloudPlatform = 'render';
             }
 
             // ==================== RENDER PANEL METRICS ====================
@@ -5857,12 +5886,7 @@
                             showToast('❌ Failed to save password: ' + (sData.error || 'Server error'));
                         }
                     } catch (e) {
-                        localStorage.setItem('cb_admin_master_hash', hash);
-                        sessionStorage.setItem('cb_admin_key', cleanKey);
-                        showAdminTabs(true);
-                        switchTab('tab-admin');
-                        showToast('✨ <b>Admin Key Created!</b> Console Unlocked.');
-                        fetchAdminStats();
+                        showToast('❌ Cannot create admin password — server unreachable.');
                     }
                 } else if (newKey) {
                     showToast('⚠️ Password must be at least 3 characters.');
@@ -6008,11 +6032,44 @@
             }
 
             let hasAdminOnServer = false;
+            let serverReachable = false;
             try {
                 const authRes = await fetch('/api/admin/auth-state');
                 const authData = await authRes.json();
                 hasAdminOnServer = Boolean(authData.hasAdminPassword);
+                serverReachable = true;
             } catch (e) {}
+
+            // If server is unreachable, fall back to local hash verification
+            if (!serverReachable) {
+                const storedHash = localStorage.getItem('cb_admin_master_hash');
+                if (!storedHash) {
+                    if (errEl) {
+                        errEl.style.display = 'block';
+                        errEl.innerText = '❌ Server unreachable & no local password set. Start the server first.';
+                    }
+                    return;
+                }
+                const inputHash = await hashStringSHA256(key);
+                if (inputHash === storedHash) {
+                    sessionStorage.setItem('cb_admin_key', key);
+                    if (errEl) errEl.style.display = 'none';
+                    showAdminTabs(true);
+                    const gate = document.getElementById('admin-auth-gate');
+                    const view = document.getElementById('admin-dashboard-view');
+                    if (gate) gate.style.display = 'none';
+                    if (view) view.style.display = 'flex';
+                    showToast('🔓 <b>Admin Console Unlocked (Offline Mode)</b>');
+                    fetchAdminStats();
+                } else {
+                    if (errEl) {
+                        errEl.style.display = 'block';
+                        errEl.innerText = '❌ Incorrect Admin Password. Access denied.';
+                    }
+                    triggerHaptic('error');
+                }
+                return;
+            }
 
             if (!hasAdminOnServer) {
                 // First-time setup on server
@@ -6037,7 +6094,13 @@
                         fetchAdminStats();
                         return;
                     }
-                } catch (e) {}
+                } catch (e) {
+                    if (errEl) {
+                        errEl.style.display = 'block';
+                        errEl.innerText = '❌ Failed to setup password on server.';
+                    }
+                    return;
+                }
             }
 
             // Verify against server

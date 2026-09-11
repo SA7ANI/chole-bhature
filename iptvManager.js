@@ -552,6 +552,29 @@ async function probeLiveStream(url, customUserAgent = null) {
 }
 
 /**
+ * Formats channel logo into a contain-fitted 1:1 square to prevent
+ * Nuvio and Stremio from horizontally cropping rectangular channel logos.
+ */
+function formatChannelLogo(url) {
+    if (!url || typeof url !== 'string' || !url.trim()) {
+        return 'https://raw.githubusercontent.com/yoruix/nuvio-providers/main/public/icon-512.png';
+    }
+    const cleanUrl = url.trim();
+    if (cleanUrl.startsWith('data:') || cleanUrl.includes('wsrv.nl')) {
+        return cleanUrl;
+    }
+    // Don't proxy localhost or private IP addresses through public image proxy
+    if (/(localhost|127\.0\.0\.1|192\.168\.|10\.\d+\.|172\.(1[6-9]|2\d|3[01])\.)/i.test(cleanUrl)) {
+        return cleanUrl;
+    }
+    // Remote HTTP/HTTPS images: Pad rectangular logos into a 1:1 square canvas with matching dark background
+    if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
+        return `https://wsrv.nl/?url=${encodeURIComponent(cleanUrl)}&w=512&h=512&fit=contain&cbg=0c101d&output=png`;
+    }
+    return cleanUrl;
+}
+
+/**
  * Retrieves catalog items for Stremio/Nuvio catalog handler.
  */
 async function getChannelsCatalog({ genre = 'All', search = '', skip = 0, limit = 40, config = {} }) {
@@ -596,29 +619,6 @@ async function getChannelsCatalog({ genre = 'All', search = '', skip = 0, limit 
         );
     }
 
-/**
- * Formats channel logo into a contain-fitted 1:1 square to prevent
- * Nuvio and Stremio from horizontally cropping rectangular channel logos.
- */
-function formatChannelLogo(url) {
-    if (!url || typeof url !== 'string' || !url.trim()) {
-        return 'https://raw.githubusercontent.com/yoruix/nuvio-providers/main/public/icon-512.png';
-    }
-    const cleanUrl = url.trim();
-    if (cleanUrl.startsWith('data:') || cleanUrl.includes('wsrv.nl')) {
-        return cleanUrl;
-    }
-    // Don't proxy localhost or private IP addresses through public image proxy
-    if (/(localhost|127\.0\.0\.1|192\.168\.|10\.\d+\.|172\.(1[6-9]|2\d|3[01])\.)/i.test(cleanUrl)) {
-        return cleanUrl;
-    }
-    // Remote HTTP/HTTPS images: Pad rectangular logos into a 1:1 square canvas with matching dark background
-    if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
-        return `https://wsrv.nl/?url=${encodeURIComponent(cleanUrl)}&w=512&h=512&fit=contain&cbg=0c101d&output=png`;
-    }
-    return cleanUrl;
-}
-
     // Pagination
     const pageItems = filtered.slice(skip, skip + limit);
 
@@ -641,32 +641,81 @@ function formatChannelLogo(url) {
 /**
  * Retrieves metadata for a specific channel when clicked in Stremio.
  */
-async function getChannelMeta(channelId, config = {}) {
-    let channel = channelMetadataCache.get(channelId);
-    if (!channel) {
-        // Re-scan channels to find match
-        const channels = await getAllConfiguredChannels(config);
-        channel = channels.find(c => c.id === channelId);
-    }
-
-    if (!channel) return null;
-
-    const formattedLogo = formatChannelLogo(channel.logo);
-
-    return {
-        id: channel.id,
-        type: 'tv',
-        name: channel.name,
-        poster: formattedLogo,
-        posterShape: 'square',
-        background: 'https://images.unsplash.com/photo-1593784991095-a205069470b6?w=1280&q=80',
-        logo: formattedLogo,
-        genres: [channel.category || 'Live TV', channel.country || 'Global'].filter(Boolean),
-        description: channel.description || `${channel.name} - Live Broadcast`,
-        behaviorHints: {
-            isLive: true
+async function getChannelMeta(channelId, config = {}, type = 'tv') {
+    try {
+        let channel = channelMetadataCache.get(channelId);
+        if (!channel) {
+            // Re-scan channels to find match
+            const channels = await getAllConfiguredChannels(config);
+            channel = channels.find(c => c.id === channelId);
         }
-    };
+
+        if (!channel) {
+            // Fallback: Synthesize metadata so Nuvio/Stremio never fails to load the details page
+            const parts = (channelId || '').split(':');
+            const fallbackName = parts.slice(2).join(' ').replace(/[_-]/g, ' ') || 'Live Channel';
+            channel = {
+                id: channelId,
+                name: fallbackName.charAt(0).toUpperCase() + fallbackName.slice(1),
+                logo: 'https://raw.githubusercontent.com/yoruix/nuvio-providers/main/public/icon-512.png',
+                category: 'Live TV',
+                country: 'Global',
+                description: 'Live Broadcast Stream'
+            };
+        }
+
+        const formattedLogo = formatChannelLogo(channel.logo);
+        const resolvedType = type || 'tv';
+
+        return {
+            id: channel.id,
+            type: resolvedType,
+            name: channel.name,
+            poster: formattedLogo,
+            posterShape: 'square',
+            background: 'https://images.unsplash.com/photo-1593784991095-a205069470b6?w=1280&q=80',
+            logo: formattedLogo,
+            genres: [channel.category || 'Live TV', channel.country || 'Global'].filter(Boolean),
+            description: channel.description || `${channel.name} - Live Broadcast`,
+            releaseInfo: 'LIVE',
+            behaviorHints: {
+                isLive: true,
+                defaultVideoId: channel.id
+            },
+            videos: [
+                {
+                    id: channel.id,
+                    title: channel.name || 'Live Stream',
+                    released: new Date().toISOString()
+                }
+            ]
+        };
+    } catch (err) {
+        console.error(`[IPTV] Error getting channel meta for ${channelId}:`, err);
+        return {
+            id: channelId,
+            type: type || 'tv',
+            name: 'Live Stream',
+            poster: 'https://raw.githubusercontent.com/yoruix/nuvio-providers/main/public/icon-512.png',
+            posterShape: 'square',
+            background: 'https://images.unsplash.com/photo-1593784991095-a205069470b6?w=1280&q=80',
+            logo: 'https://raw.githubusercontent.com/yoruix/nuvio-providers/main/public/icon-512.png',
+            genres: ['Live TV'],
+            description: '24/7 Live Stream Broadcast',
+            releaseInfo: 'LIVE',
+            behaviorHints: {
+                isLive: true,
+                defaultVideoId: channelId
+            },
+            videos: [
+                {
+                    id: channelId,
+                    title: 'Live Stream',
+                    released: new Date().toISOString()
+                }
+            ]
+        };
+    }
 }
 
 /**

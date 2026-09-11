@@ -1882,7 +1882,7 @@ function createAddon(config) {
     if (config.enableIptv !== false) {
         builder.defineMetaHandler(async ({ type, id }) => {
             if (id && id.startsWith('iptv:')) {
-                const meta = await iptvManager.getChannelMeta(id, config);
+                const meta = await iptvManager.getChannelMeta(id, config, type);
                 return { meta };
             }
             return { meta: null };
