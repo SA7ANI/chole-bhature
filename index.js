@@ -1364,199 +1364,171 @@ function createAddon(config) {
     // Build Curated Catalogs list if enabled
     const enabledCatalogs = [];
     if (config.enableCatalogs !== false) {
-        // 1. Flagship "Popular Right Now" (Sub-categories: All, Popular Movies, Popular Series)
+        // 1. Flagship "Popular Right Now" Sub-Catalogs
         if (config.catalogPopular !== false) {
-            const popularGenres = ['All', 'Popular Movies', 'Popular Series'];
             enabledCatalogs.push({
                 type: 'movie',
-                id: 'cb_popular_now',
-                name: 'Popular Right Now',
-                genres: popularGenres,
-                extra: [
-                    { 
-                        name: 'genre', 
-                        isRequired: false, 
-                        options: popularGenres 
-                    },
-                    { name: 'skip', isRequired: false }
-                ],
-                extraSupported: ['genre', 'skip']
+                id: 'cb_pop_movies',
+                name: 'Popular Movies (Movies)',
+                extra: [{ name: 'skip', isRequired: false }],
+                extraSupported: ['skip']
             });
             enabledCatalogs.push({
                 type: 'series',
-                id: 'cb_popular_now',
-                name: 'Popular Right Now',
-                genres: popularGenres,
-                extra: [
-                    { 
-                        name: 'genre', 
-                        isRequired: false, 
-                        options: popularGenres 
-                    },
-                    { name: 'skip', isRequired: false }
-                ],
-                extraSupported: ['genre', 'skip']
+                id: 'cb_pop_series',
+                name: 'Popular Series (Series)',
+                extra: [{ name: 'skip', isRequired: false }],
+                extraSupported: ['skip']
             });
         }
 
-        // 2. Curated Trending Feeds by Specific Genre
+        // 2. Curated Trending Feeds by Specific Genre (Matching Image 2)
         if (config.catalogTrending !== false) {
-            const movieGenres = ['All', 'Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Documentary', 'Drama', 'Family', 'Fantasy', 'Horror', 'Mystery', 'Romance', 'Sci-Fi', 'Thriller', 'War', 'Western'];
-            enabledCatalogs.push({
-                type: 'movie',
-                id: 'cb_trending_movies',
-                name: 'Trending Movies',
-                genres: movieGenres,
-                extra: [
-                    { 
-                        name: 'genre', 
-                        isRequired: false, 
-                        options: movieGenres 
-                    },
-                    { name: 'skip', isRequired: false }
-                ],
-                extraSupported: ['genre', 'skip']
-            });
-
-            const tvGenres = ['All', 'Action & Adventure', 'Animation', 'Comedy', 'Crime', 'Documentary', 'Drama', 'Family', 'Kids', 'Mystery', 'News', 'Reality', 'Sci-Fi & Fantasy', 'War & Politics', 'Western'];
             enabledCatalogs.push({
                 type: 'series',
-                id: 'cb_trending_series',
-                name: 'Trending Series',
-                genres: tvGenres,
-                extra: [
-                    { 
-                        name: 'genre', 
-                        isRequired: false, 
-                        options: tvGenres 
-                    },
-                    { name: 'skip', isRequired: false }
-                ],
-                extraSupported: ['genre', 'skip']
+                id: 'cb_action_shows',
+                name: 'Popular Action Shows (Series)',
+                extra: [{ name: 'skip', isRequired: false }],
+                extraSupported: ['skip']
+            });
+            enabledCatalogs.push({
+                type: 'movie',
+                id: 'cb_action_movies',
+                name: 'Popular Action Movies (Movies)',
+                extra: [{ name: 'skip', isRequired: false }],
+                extraSupported: ['skip']
+            });
+            enabledCatalogs.push({
+                type: 'series',
+                id: 'cb_comedy_shows',
+                name: 'Popular Comedy Shows (Series)',
+                extra: [{ name: 'skip', isRequired: false }],
+                extraSupported: ['skip']
+            });
+            enabledCatalogs.push({
+                type: 'movie',
+                id: 'cb_comedy_movies',
+                name: 'Popular Comedy Movies (Movies)',
+                extra: [{ name: 'skip', isRequired: false }],
+                extraSupported: ['skip']
+            });
+            enabledCatalogs.push({
+                type: 'series',
+                id: 'cb_scifi_shows',
+                name: 'Popular Sci-Fi Shows (Series)',
+                extra: [{ name: 'skip', isRequired: false }],
+                extraSupported: ['skip']
+            });
+            enabledCatalogs.push({
+                type: 'movie',
+                id: 'cb_scifi_movies',
+                name: 'Popular Sci-Fi Movies (Movies)',
+                extra: [{ name: 'skip', isRequired: false }],
+                extraSupported: ['skip']
+            });
+            enabledCatalogs.push({
+                type: 'movie',
+                id: 'cb_horror_movies',
+                name: 'Popular Horror & Thriller (Movies)',
+                extra: [{ name: 'skip', isRequired: false }],
+                extraSupported: ['skip']
             });
         }
 
-        // 3. Indian Cinema with Regional Languages & Genres
+        // 3. Indian Cinema Regional Sub-Catalogs
         if (config.catalogIndian !== false) {
-            const indianGenres = [
-                'All Indian',
-                'Bollywood (Hindi)',
-                'Tollywood (Telugu)',
-                'Kollywood (Tamil)',
-                'Malayalam',
-                'Kannada',
-                'Punjabi',
-                'Bengali',
-                'Action',
-                'Comedy',
-                'Drama',
-                'Thriller',
-                'Romance'
-            ];
             enabledCatalogs.push({
                 type: 'movie',
-                id: 'cb_indian_cinema',
-                name: 'Trending Indian Cinema',
-                genres: indianGenres,
-                extra: [
-                    { 
-                        name: 'genre', 
-                        isRequired: false, 
-                        options: indianGenres 
-                    },
-                    { name: 'skip', isRequired: false }
-                ],
-                extraSupported: ['genre', 'skip']
+                id: 'cb_indian_bollywood',
+                name: 'Bollywood Hindi Cinema (Movies)',
+                extra: [{ name: 'skip', isRequired: false }],
+                extraSupported: ['skip']
+            });
+            enabledCatalogs.push({
+                type: 'movie',
+                id: 'cb_indian_tollywood',
+                name: 'Tollywood Telugu Cinema (Movies)',
+                extra: [{ name: 'skip', isRequired: false }],
+                extraSupported: ['skip']
+            });
+            enabledCatalogs.push({
+                type: 'movie',
+                id: 'cb_indian_kollywood',
+                name: 'Kollywood Tamil Cinema (Movies)',
+                extra: [{ name: 'skip', isRequired: false }],
+                extraSupported: ['skip']
+            });
+            enabledCatalogs.push({
+                type: 'movie',
+                id: 'cb_indian_malayalam',
+                name: 'Malayalam Cinema (Movies)',
+                extra: [{ name: 'skip', isRequired: false }],
+                extraSupported: ['skip']
             });
             enabledCatalogs.push({
                 type: 'series',
-                id: 'cb_indian_cinema',
-                name: 'Trending Indian Series',
-                genres: indianGenres,
-                extra: [
-                    { 
-                        name: 'genre', 
-                        isRequired: false, 
-                        options: indianGenres 
-                    },
-                    { name: 'skip', isRequired: false }
-                ],
-                extraSupported: ['genre', 'skip']
+                id: 'cb_indian_series',
+                name: 'Trending Indian Series (Series)',
+                extra: [{ name: 'skip', isRequired: false }],
+                extraSupported: ['skip']
             });
         }
 
-        // 4. Anime with Sub-Genres
+        // 4. Anime Sub-Catalogs
         if (config.catalogAnime !== false) {
-            const animeGenres = ['All Anime', 'Action', 'Adventure', 'Comedy', 'Drama', 'Fantasy', 'Sci-Fi', 'Mystery'];
             enabledCatalogs.push({
                 type: 'series',
-                id: 'cb_anime_trending',
-                name: 'Trending Anime',
-                genres: animeGenres,
-                extra: [
-                    { 
-                        name: 'genre', 
-                        isRequired: false, 
-                        options: animeGenres 
-                    },
-                    { name: 'skip', isRequired: false }
-                ],
-                extraSupported: ['genre', 'skip']
+                id: 'cb_anime_shows',
+                name: 'Trending Anime Shows (Series)',
+                extra: [{ name: 'skip', isRequired: false }],
+                extraSupported: ['skip']
             });
             enabledCatalogs.push({
                 type: 'movie',
-                id: 'cb_anime_trending',
-                name: 'Trending Anime Movies',
-                genres: animeGenres,
-                extra: [
-                    { 
-                        name: 'genre', 
-                        isRequired: false, 
-                        options: animeGenres 
-                    },
-                    { name: 'skip', isRequired: false }
-                ],
-                extraSupported: ['genre', 'skip']
+                id: 'cb_anime_movies',
+                name: 'Trending Anime Movies (Movies)',
+                extra: [{ name: 'skip', isRequired: false }],
+                extraSupported: ['skip']
             });
         }
     }
 
-    // 5. Add Live TV / IPTV Catalog if enabled (with Nuvio sub-category pill bar support)
+    // 5. Live TV / IPTV Sub-Catalogs by Category
     if (config.enableIptv !== false) {
-        const liveTvGenres = ['All', 'News', 'Music', 'Movies', 'Religious', 'Entertainment', 'Culture', 'Animation', 'Lifestyle', 'Business', 'Sports', 'India', 'Documentary'];
-        enabledCatalogs.push({
-            type: 'channel',
-            id: 'cb_live_tv',
-            name: 'Live TV',
-            posterShape: 'square',
-            genres: liveTvGenres,
-            extra: [
-                { 
-                    name: 'genre', 
-                    isRequired: false, 
-                    options: liveTvGenres 
-                },
-                { name: 'search', isRequired: false },
-                { name: 'skip', isRequired: false }
-            ],
-            extraSupported: ['genre', 'search', 'skip']
-        });
-        enabledCatalogs.push({
-            type: 'tv',
-            id: 'cb_live_tv',
-            name: 'Live TV',
-            posterShape: 'square',
-            genres: liveTvGenres,
-            extra: [
-                { 
-                    name: 'genre', 
-                    isRequired: false, 
-                    options: liveTvGenres 
-                },
-                { name: 'search', isRequired: false },
-                { name: 'skip', isRequired: false }
-            ],
-            extraSupported: ['genre', 'search', 'skip']
+        const liveTvCatalogs = [
+            { id: 'cb_live_tv', name: 'Live TV - All Channels' },
+            { id: 'cb_live_tv_news', name: 'Live TV - News' },
+            { id: 'cb_live_tv_sports', name: 'Live TV - Sports' },
+            { id: 'cb_live_tv_movies', name: 'Live TV - Movies' },
+            { id: 'cb_live_tv_india', name: 'Live TV - India' },
+            { id: 'cb_live_tv_entertainment', name: 'Live TV - Entertainment' },
+            { id: 'cb_live_tv_music', name: 'Live TV - Music' },
+            { id: 'cb_live_tv_kids', name: 'Live TV - Kids & Animation' }
+        ];
+
+        liveTvCatalogs.forEach(cat => {
+            enabledCatalogs.push({
+                type: 'channel',
+                id: cat.id,
+                name: cat.name,
+                posterShape: 'square',
+                extra: [
+                    { name: 'search', isRequired: false },
+                    { name: 'skip', isRequired: false }
+                ],
+                extraSupported: ['search', 'skip']
+            });
+            enabledCatalogs.push({
+                type: 'tv',
+                id: cat.id,
+                name: cat.name,
+                posterShape: 'square',
+                extra: [
+                    { name: 'search', isRequired: false },
+                    { name: 'skip', isRequired: false }
+                ],
+                extraSupported: ['search', 'skip']
+            });
         });
     }
 
@@ -1863,108 +1835,63 @@ function createAddon(config) {
 
         const urlsToTry = [];
 
-        // 0. Flagship "Popular Right Now" with Movies & Series Sub-Categories
-        if (catalogId === 'cb_popular_now') {
-            if (genre === 'Popular Movies') {
-                urlsToTry.push(`https://api.themoviedb.org/3/trending/movie/day?page=${page}`);
-                urlsToTry.push(`https://api.themoviedb.org/3/movie/popular?page=${page}`);
-            } else if (genre === 'Popular Series') {
-                urlsToTry.push(`https://api.themoviedb.org/3/trending/tv/day?page=${page}`);
-                urlsToTry.push(`https://api.themoviedb.org/3/tv/popular?page=${page}`);
-            } else {
-                // 'All' - prioritize matching type or fallback to mix
-                if (type === 'series') {
-                    urlsToTry.push(`https://api.themoviedb.org/3/trending/tv/day?page=${page}`);
-                    urlsToTry.push(`https://api.themoviedb.org/3/trending/all/day?page=${page}`);
-                } else {
-                    urlsToTry.push(`https://api.themoviedb.org/3/trending/movie/day?page=${page}`);
-                    urlsToTry.push(`https://api.themoviedb.org/3/trending/all/day?page=${page}`);
-                }
-            }
+        // 0. Flagship "Popular Right Now" Sub-Categories
+        if (catalogId === 'cb_pop_movies' || (catalogId === 'cb_popular_now' && (genre === 'Popular Movies' || type === 'movie'))) {
+            urlsToTry.push(`https://api.themoviedb.org/3/trending/movie/day?page=${page}`);
+            urlsToTry.push(`https://api.themoviedb.org/3/movie/popular?page=${page}`);
+        } else if (catalogId === 'cb_pop_series' || (catalogId === 'cb_popular_now' && (genre === 'Popular Series' || type === 'series'))) {
+            urlsToTry.push(`https://api.themoviedb.org/3/trending/tv/day?page=${page}`);
+            urlsToTry.push(`https://api.themoviedb.org/3/tv/popular?page=${page}`);
         }
-        // 1. Trending Movies with Genre Sub-Categories
+        // 1. Curated Action Feeds (Matching Image 2)
+        else if (catalogId === 'cb_action_shows') {
+            urlsToTry.push(`https://api.themoviedb.org/3/discover/tv?with_genres=10759&sort_by=popularity.desc&page=${page}`);
+            urlsToTry.push(`https://api.themoviedb.org/3/trending/tv/day?page=${page}`);
+        } else if (catalogId === 'cb_action_movies') {
+            urlsToTry.push(`https://api.themoviedb.org/3/discover/movie?with_genres=28&sort_by=popularity.desc&page=${page}`);
+            urlsToTry.push(`https://api.themoviedb.org/3/trending/movie/day?page=${page}`);
+        }
+        // 2. Curated Comedy Feeds
+        else if (catalogId === 'cb_comedy_shows') {
+            urlsToTry.push(`https://api.themoviedb.org/3/discover/tv?with_genres=35&sort_by=popularity.desc&page=${page}`);
+        } else if (catalogId === 'cb_comedy_movies') {
+            urlsToTry.push(`https://api.themoviedb.org/3/discover/movie?with_genres=35&sort_by=popularity.desc&page=${page}`);
+        }
+        // 3. Curated Sci-Fi Feeds
+        else if (catalogId === 'cb_scifi_shows') {
+            urlsToTry.push(`https://api.themoviedb.org/3/discover/tv?with_genres=10765&sort_by=popularity.desc&page=${page}`);
+        } else if (catalogId === 'cb_scifi_movies') {
+            urlsToTry.push(`https://api.themoviedb.org/3/discover/movie?with_genres=878&sort_by=popularity.desc&page=${page}`);
+        }
+        // 4. Curated Horror & Thriller
+        else if (catalogId === 'cb_horror_movies') {
+            urlsToTry.push(`https://api.themoviedb.org/3/discover/movie?with_genres=27,53&sort_by=popularity.desc&page=${page}`);
+        }
+        // 5. Indian Regional Cinema Sub-Categories
+        else if (catalogId === 'cb_indian_bollywood') {
+            urlsToTry.push(`https://api.themoviedb.org/3/discover/movie?with_original_language=hi&sort_by=popularity.desc&page=${page}`);
+        } else if (catalogId === 'cb_indian_tollywood') {
+            urlsToTry.push(`https://api.themoviedb.org/3/discover/movie?with_original_language=te&sort_by=popularity.desc&page=${page}`);
+        } else if (catalogId === 'cb_indian_kollywood') {
+            urlsToTry.push(`https://api.themoviedb.org/3/discover/movie?with_original_language=ta&sort_by=popularity.desc&page=${page}`);
+        } else if (catalogId === 'cb_indian_malayalam') {
+            urlsToTry.push(`https://api.themoviedb.org/3/discover/movie?with_original_language=ml&sort_by=popularity.desc&page=${page}`);
+        } else if (catalogId === 'cb_indian_series') {
+            urlsToTry.push(`https://api.themoviedb.org/3/discover/tv?with_original_language=hi|te|ta|ml|kn&sort_by=popularity.desc&page=${page}`);
+        }
+        // 6. Anime Sub-Categories
+        else if (catalogId === 'cb_anime_shows' || (catalogId === 'cb_anime_trending' && type === 'series')) {
+            urlsToTry.push(`https://api.themoviedb.org/3/discover/tv?with_genres=16&with_original_language=ja&sort_by=popularity.desc&page=${page}`);
+        } else if (catalogId === 'cb_anime_movies' || (catalogId === 'cb_anime_trending' && type === 'movie')) {
+            urlsToTry.push(`https://api.themoviedb.org/3/discover/movie?with_genres=16&with_original_language=ja&sort_by=popularity.desc&page=${page}`);
+        }
+        // Legacy fallbacks
         else if (catalogId === 'cb_trending_movies') {
-            const MOVIE_GENRES = {
-                'Action': 28, 'Adventure': 12, 'Animation': 16, 'Comedy': 35,
-                'Crime': 80, 'Documentary': 99, 'Drama': 18, 'Family': 10751,
-                'Fantasy': 14, 'Horror': 27, 'Mystery': 9648, 'Romance': 10749,
-                'Sci-Fi': 878, 'Thriller': 53, 'War': 10752, 'Western': 37
-            };
-            if (!genre || genre === 'All') {
-                urlsToTry.push(`https://api.themoviedb.org/3/trending/movie/day?page=${page}`);
-                urlsToTry.push(`https://api.themoviedb.org/3/discover/movie?sort_by=popularity.desc&page=${page}`);
-            } else if (MOVIE_GENRES[genre]) {
-                urlsToTry.push(`https://api.themoviedb.org/3/discover/movie?with_genres=${MOVIE_GENRES[genre]}&sort_by=popularity.desc&page=${page}`);
-            } else {
-                urlsToTry.push(`https://api.themoviedb.org/3/discover/movie?sort_by=popularity.desc&page=${page}`);
-            }
-        } 
-        // 2. Trending TV Series with Genre Sub-Categories
-        else if (catalogId === 'cb_trending_series') {
-            const TV_GENRES = {
-                'Action & Adventure': 10759, 'Animation': 16, 'Comedy': 35,
-                'Crime': 80, 'Documentary': 99, 'Drama': 18, 'Family': 10751,
-                'Kids': 10762, 'Mystery': 9648, 'News': 10763, 'Reality': 10764,
-                'Sci-Fi & Fantasy': 10765, 'War & Politics': 10768, 'Western': 37
-            };
-            if (!genre || genre === 'All') {
-                urlsToTry.push(`https://api.themoviedb.org/3/trending/tv/day?page=${page}`);
-                urlsToTry.push(`https://api.themoviedb.org/3/discover/tv?sort_by=popularity.desc&page=${page}`);
-            } else if (TV_GENRES[genre]) {
-                urlsToTry.push(`https://api.themoviedb.org/3/discover/tv?with_genres=${TV_GENRES[genre]}&sort_by=popularity.desc&page=${page}`);
-            } else {
-                urlsToTry.push(`https://api.themoviedb.org/3/discover/tv?sort_by=popularity.desc&page=${page}`);
-            }
-        } 
-        // 3. Indian Cinema with Language & Genre Sub-Categories
-        else if (catalogId === 'cb_indian_cinema') {
-            const INDIAN_LANGS = {
-                'Bollywood (Hindi)': 'hi',
-                'Hindi (Bollywood)': 'hi',
-                'Hindi': 'hi',
-                'Tollywood (Telugu)': 'te',
-                'Telugu (Tollywood)': 'te',
-                'Telugu': 'te',
-                'Kollywood (Tamil)': 'ta',
-                'Tamil (Kollywood)': 'ta',
-                'Tamil': 'ta',
-                'Malayalam': 'ml',
-                'Malayalam (Mollywood)': 'ml',
-                'Kannada': 'kn',
-                'Kannada (Sandalwood)': 'kn',
-                'Punjabi': 'pa',
-                'Bengali': 'bn'
-            };
-            const INDIAN_GENRES = {
-                'Action': 28, 'Comedy': 35, 'Drama': 18, 'Thriller': 53, 'Romance': 10749
-            };
-            const mediaType = (type === 'series') ? 'tv' : 'movie';
-            const defaultLangs = 'hi|te|ta|ml|kn';
-
-            if (!genre || genre === 'All Indian' || genre === 'All') {
-                urlsToTry.push(`https://api.themoviedb.org/3/discover/${mediaType}?with_original_language=${defaultLangs}&sort_by=popularity.desc&page=${page}`);
-            } else if (INDIAN_LANGS[genre]) {
-                urlsToTry.push(`https://api.themoviedb.org/3/discover/${mediaType}?with_original_language=${INDIAN_LANGS[genre]}&sort_by=popularity.desc&page=${page}`);
-            } else if (INDIAN_GENRES[genre]) {
-                urlsToTry.push(`https://api.themoviedb.org/3/discover/${mediaType}?with_original_language=${defaultLangs}&with_genres=${INDIAN_GENRES[genre]}&sort_by=popularity.desc&page=${page}`);
-            } else {
-                urlsToTry.push(`https://api.themoviedb.org/3/discover/${mediaType}?with_original_language=${defaultLangs}&sort_by=popularity.desc&page=${page}`);
-            }
-        } 
-        // 4. Anime with Sub-Genres
-        else if (catalogId === 'cb_anime_trending') {
-            const ANIME_GENRES = {
-                'Action': 10759, 'Adventure': 10759, 'Comedy': 35, 'Drama': 18,
-                'Fantasy': 10765, 'Sci-Fi': 10765, 'Mystery': 9648
-            };
-            const mediaType = (type === 'movie') ? 'movie' : 'tv';
-            if (!genre || genre === 'All Anime' || genre === 'All') {
-                urlsToTry.push(`https://api.themoviedb.org/3/discover/${mediaType}?with_genres=16&with_original_language=ja&sort_by=popularity.desc&page=${page}`);
-            } else if (ANIME_GENRES[genre]) {
-                urlsToTry.push(`https://api.themoviedb.org/3/discover/${mediaType}?with_genres=16,${ANIME_GENRES[genre]}&with_original_language=ja&sort_by=popularity.desc&page=${page}`);
-            } else {
-                urlsToTry.push(`https://api.themoviedb.org/3/discover/${mediaType}?with_genres=16&with_original_language=ja&sort_by=popularity.desc&page=${page}`);
-            }
+            urlsToTry.push(`https://api.themoviedb.org/3/trending/movie/day?page=${page}`);
+        } else if (catalogId === 'cb_trending_series') {
+            urlsToTry.push(`https://api.themoviedb.org/3/trending/tv/day?page=${page}`);
+        } else if (catalogId === 'cb_indian_cinema') {
+            urlsToTry.push(`https://api.themoviedb.org/3/discover/movie?with_original_language=hi|te|ta|ml|kn&sort_by=popularity.desc&page=${page}`);
         }
 
         if (urlsToTry.length === 0) return [];
@@ -2004,57 +1931,65 @@ function createAddon(config) {
                 } catch (err) {}
             }
         }
-        // 5. High-Reliability Cinemeta Fallback if TMDB is unreachable
+        // Cinemeta Fallback if TMDB is unreachable
         try {
-            if (catalogId === 'cb_popular_now') {
-                if (genre === 'Popular Series' || type === 'series') {
-                    const cinemetaUrl = `https://v3-cinemeta.strem.io/catalog/series/top.json`;
-                    const cRes = await axios.get(cinemetaUrl, { timeout: 4000 });
-                    if (cRes.data && Array.isArray(cRes.data.metas) && cRes.data.metas.length > 0) {
-                        catalogCache.set(cacheKey, { timestamp: Date.now(), metas: cRes.data.metas });
-                        return cRes.data.metas;
-                    }
-                } else if (genre === 'Popular Movies' || type === 'movie') {
-                    const cinemetaUrl = `https://v3-cinemeta.strem.io/catalog/movie/top.json`;
-                    const cRes = await axios.get(cinemetaUrl, { timeout: 4000 });
-                    if (cRes.data && Array.isArray(cRes.data.metas) && cRes.data.metas.length > 0) {
-                        catalogCache.set(cacheKey, { timestamp: Date.now(), metas: cRes.data.metas });
-                        return cRes.data.metas;
-                    }
-                } else {
-                    // All: Interleave top movies and series
-                    const [mRes, sRes] = await Promise.allSettled([
-                        axios.get(`https://v3-cinemeta.strem.io/catalog/movie/top.json`, { timeout: 4000 }),
-                        axios.get(`https://v3-cinemeta.strem.io/catalog/series/top.json`, { timeout: 4000 })
-                    ]);
-                    const mMetas = mRes.status === 'fulfilled' && Array.isArray(mRes.value?.data?.metas) ? mRes.value.data.metas : [];
-                    const sMetas = sRes.status === 'fulfilled' && Array.isArray(sRes.value?.data?.metas) ? sRes.value.data.metas : [];
-                    const merged = [];
-                    const maxLen = Math.max(mMetas.length, sMetas.length);
-                    for (let i = 0; i < maxLen; i++) {
-                        if (i < mMetas.length) merged.push(mMetas[i]);
-                        if (i < sMetas.length) merged.push(sMetas[i]);
-                    }
-                    if (merged.length > 0) {
-                        catalogCache.set(cacheKey, { timestamp: Date.now(), metas: merged });
-                        return merged;
-                    }
-                }
-            } else if (catalogId === 'cb_trending_movies') {
-                const cinemetaUrl = `https://v3-cinemeta.strem.io/catalog/movie/top${genre && genre !== 'All' ? `/genre=${encodeURIComponent(genre)}` : ''}.json`;
+            if (catalogId === 'cb_pop_movies' || catalogId === 'cb_popular_now') {
+                const cinemetaUrl = `https://v3-cinemeta.strem.io/catalog/movie/top.json`;
                 const cRes = await axios.get(cinemetaUrl, { timeout: 4000 });
                 if (cRes.data && Array.isArray(cRes.data.metas) && cRes.data.metas.length > 0) {
                     catalogCache.set(cacheKey, { timestamp: Date.now(), metas: cRes.data.metas });
                     return cRes.data.metas;
                 }
-            } else if (catalogId === 'cb_trending_series') {
-                const cinemetaUrl = `https://v3-cinemeta.strem.io/catalog/series/top${genre && genre !== 'All' ? `/genre=${encodeURIComponent(genre)}` : ''}.json`;
+            } else if (catalogId === 'cb_pop_series') {
+                const cinemetaUrl = `https://v3-cinemeta.strem.io/catalog/series/top.json`;
                 const cRes = await axios.get(cinemetaUrl, { timeout: 4000 });
                 if (cRes.data && Array.isArray(cRes.data.metas) && cRes.data.metas.length > 0) {
                     catalogCache.set(cacheKey, { timestamp: Date.now(), metas: cRes.data.metas });
                     return cRes.data.metas;
                 }
-            } else if (catalogId === 'cb_anime_trending') {
+            } else if (catalogId === 'cb_action_shows') {
+                const cinemetaUrl = `https://v3-cinemeta.strem.io/catalog/series/top/genre=Action.json`;
+                const cRes = await axios.get(cinemetaUrl, { timeout: 4000 });
+                if (cRes.data && Array.isArray(cRes.data.metas) && cRes.data.metas.length > 0) {
+                    catalogCache.set(cacheKey, { timestamp: Date.now(), metas: cRes.data.metas });
+                    return cRes.data.metas;
+                }
+            } else if (catalogId === 'cb_action_movies') {
+                const cinemetaUrl = `https://v3-cinemeta.strem.io/catalog/movie/top/genre=Action.json`;
+                const cRes = await axios.get(cinemetaUrl, { timeout: 4000 });
+                if (cRes.data && Array.isArray(cRes.data.metas) && cRes.data.metas.length > 0) {
+                    catalogCache.set(cacheKey, { timestamp: Date.now(), metas: cRes.data.metas });
+                    return cRes.data.metas;
+                }
+            } else if (catalogId === 'cb_comedy_shows') {
+                const cinemetaUrl = `https://v3-cinemeta.strem.io/catalog/series/top/genre=Comedy.json`;
+                const cRes = await axios.get(cinemetaUrl, { timeout: 4000 });
+                if (cRes.data && Array.isArray(cRes.data.metas) && cRes.data.metas.length > 0) {
+                    catalogCache.set(cacheKey, { timestamp: Date.now(), metas: cRes.data.metas });
+                    return cRes.data.metas;
+                }
+            } else if (catalogId === 'cb_comedy_movies') {
+                const cinemetaUrl = `https://v3-cinemeta.strem.io/catalog/movie/top/genre=Comedy.json`;
+                const cRes = await axios.get(cinemetaUrl, { timeout: 4000 });
+                if (cRes.data && Array.isArray(cRes.data.metas) && cRes.data.metas.length > 0) {
+                    catalogCache.set(cacheKey, { timestamp: Date.now(), metas: cRes.data.metas });
+                    return cRes.data.metas;
+                }
+            } else if (catalogId === 'cb_scifi_shows') {
+                const cinemetaUrl = `https://v3-cinemeta.strem.io/catalog/series/top/genre=Sci-Fi.json`;
+                const cRes = await axios.get(cinemetaUrl, { timeout: 4000 });
+                if (cRes.data && Array.isArray(cRes.data.metas) && cRes.data.metas.length > 0) {
+                    catalogCache.set(cacheKey, { timestamp: Date.now(), metas: cRes.data.metas });
+                    return cRes.data.metas;
+                }
+            } else if (catalogId === 'cb_scifi_movies') {
+                const cinemetaUrl = `https://v3-cinemeta.strem.io/catalog/movie/top/genre=Sci-Fi.json`;
+                const cRes = await axios.get(cinemetaUrl, { timeout: 4000 });
+                if (cRes.data && Array.isArray(cRes.data.metas) && cRes.data.metas.length > 0) {
+                    catalogCache.set(cacheKey, { timestamp: Date.now(), metas: cRes.data.metas });
+                    return cRes.data.metas;
+                }
+            } else if (catalogId === 'cb_anime_shows' || catalogId === 'cb_anime_movies') {
                 const cinemetaType = (type === 'movie') ? 'movie' : 'series';
                 const cinemetaUrl = `https://v3-cinemeta.strem.io/catalog/${cinemetaType}/top/genre=Animation.json`;
                 const cRes = await axios.get(cinemetaUrl, { timeout: 4000 });
@@ -2071,10 +2006,19 @@ function createAddon(config) {
     if (enabledCatalogs.length > 0) {
         builder.defineCatalogHandler(async ({ type, id, extra }) => {
             console.log(`[Catalog] Request for ${type} catalog: ${id} (genre: ${extra?.genre || 'All'})`);
-            if ((type === 'tv' || type === 'channel') && id === 'cb_live_tv') {
+            if ((type === 'tv' || type === 'channel') && id.startsWith('cb_live_tv')) {
+                let iptvGenre = extra?.genre || 'All';
+                if (id === 'cb_live_tv_news') iptvGenre = 'News';
+                else if (id === 'cb_live_tv_sports') iptvGenre = 'Sports';
+                else if (id === 'cb_live_tv_movies') iptvGenre = 'Movies';
+                else if (id === 'cb_live_tv_india') iptvGenre = 'India';
+                else if (id === 'cb_live_tv_entertainment') iptvGenre = 'Entertainment';
+                else if (id === 'cb_live_tv_music') iptvGenre = 'Music';
+                else if (id === 'cb_live_tv_kids') iptvGenre = 'Animation';
+
                 const metas = await iptvManager.getChannelsCatalog({
                     type,
-                    genre: extra?.genre || 'All',
+                    genre: iptvGenre,
                     search: extra?.search || '',
                     skip: extra?.skip ? parseInt(extra.skip, 10) : 0,
                     limit: 40,
