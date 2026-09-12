@@ -2018,22 +2018,6 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            border-radius: 10px;
-        }
-
-        .provider-logo-fallback {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 13px;
-            font-weight: 800;
-            letter-spacing: 0.5px;
-            color: #c4b5fd;
-            background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(59, 130, 246, 0.2));
-            user-select: none;
-            border-radius: inherit;
         }
 
         .provider-repo-badge {
@@ -6841,50 +6825,6 @@
             updateStatsBar();
         }
 
-        const KNOWN_SCRAPER_LOGOS = {
-            'moviesmod': 'https://www.google.com/s2/favicons?domain=moviesmod.cc&sz=128',
-            '4khdhub': 'https://www.google.com/s2/favicons?domain=4khd.in&sz=128',
-            'animepahe': 'https://www.google.com/s2/favicons?domain=animepahe.com&sz=128',
-            'uhdmovies': 'https://www.google.com/s2/favicons?domain=uhdmovies.site&sz=128',
-            'vegamovies': 'https://www.google.com/s2/favicons?domain=vegamovies.im&sz=128',
-            'hdhub4u': 'https://www.google.com/s2/favicons?domain=hdhub4u.af&sz=128',
-            'moviesdrive': 'https://www.google.com/s2/favicons?domain=moviesdrive.fit&sz=128',
-            'netmirror': 'https://www.google.com/s2/favicons?domain=netmirror.app&sz=128',
-            'dvdplay': 'https://www.google.com/s2/favicons?domain=dvdplay.top&sz=128',
-            'vixsrc': 'https://www.google.com/s2/favicons?domain=vidsrc.to&sz=128',
-            'yflix': 'https://www.google.com/s2/favicons?domain=yflix.to&sz=128',
-            'moviebox': 'https://www.google.com/s2/favicons?domain=moviebox.pro&sz=128',
-            'castle': 'https://www.google.com/s2/favicons?domain=castletv.in&sz=128',
-            'katmoviehd': 'https://www.google.com/s2/favicons?domain=katmoviehd.cx&sz=128',
-            'modmirage': 'https://www.google.com/s2/favicons?domain=modmirage.org&sz=128',
-            'topmovies': 'https://www.google.com/s2/favicons?domain=topmovies.guru&sz=128',
-            'allanime': 'https://www.google.com/s2/favicons?domain=allanime.day&sz=128',
-            'animekai': 'https://www.google.com/s2/favicons?domain=www3.anikai.cc&sz=128',
-            'animesalt': 'https://www.google.com/s2/favicons?domain=animesalt.link&sz=128',
-            'animetsu': 'https://www.google.com/s2/favicons?domain=animetsu.live&sz=128',
-            'allwish': 'https://www.google.com/s2/favicons?domain=megaplay.buzz&sz=128',
-            'dahmermovies': 'https://www.google.com/s2/favicons?domain=dahmermovies.org&sz=128',
-            'movieshunt': 'https://www.google.com/s2/favicons?domain=movieshunt.site&sz=128',
-            'ringz': 'https://www.google.com/s2/favicons?domain=ringz.to&sz=128',
-            '1shows': 'https://www.google.com/s2/favicons?domain=www.1shows.org&sz=128'
-        };
-
-        function getProviderLogoUrl(logo, name) {
-            const key = (name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-            if (KNOWN_SCRAPER_LOGOS[key]) {
-                return KNOWN_SCRAPER_LOGOS[key];
-            }
-            if (logo && typeof logo === 'string' && logo.trim() && !logo.includes('domain=moviesmod.farm')) {
-                return logo.trim();
-            }
-            return '';
-        }
-
-        function getProviderLogoFallback(name) {
-            const letters = (name || '').replace(/[^a-zA-Z0-9]/g, '').slice(0, 2).toUpperCase() || 'SP';
-            return `<div class="provider-logo-fallback">${letters}</div>`;
-        }
-
         function renderProviders() {
             const providersContainer = document.getElementById('providers-list');
             const providerCountBadge = document.getElementById('provider-count-badge');
@@ -6903,10 +6843,7 @@
 
             let html = '';
             allProvidersData.forEach((p) => {
-                const logoUrl = getProviderLogoUrl(p.logo, p.name);
-                const iconHtml = logoUrl 
-                    ? `<img src="${logoUrl}" alt="${p.name}" onerror="this.outerHTML='${getProviderLogoFallback(p.name)}'">` 
-                    : getProviderLogoFallback(p.name);
+                const iconHtml = p.logo ? `<img src="${p.logo}" alt="logo" onerror="this.outerHTML='🧩'">` : '🧩';
                 const typesStr = p.supportedTypes.map(t => t === 'movie' ? '🎬 Movie' : t === 'tv' ? '📺 TV' : t).join(' • ');
                 const isDisabled = settings.disabledProviders && settings.disabledProviders.includes(p.name);
                 const override = settings.scraperOverrides[p.name];
@@ -6993,10 +6930,7 @@
             if (titleEl) titleEl.innerText = provider.name;
             if (repoEl) repoEl.innerText = `${provider.repoName} • v${provider.version || '1.0.0'}`;
             if (iconEl) {
-                const logoUrl = getProviderLogoUrl(provider.logo, provider.name);
-                iconEl.innerHTML = logoUrl 
-                    ? `<img src="${logoUrl}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;" onerror="this.outerHTML='${getProviderLogoFallback(provider.name)}'">` 
-                    : getProviderLogoFallback(provider.name);
+                iconEl.innerHTML = provider.logo ? `<img src="${provider.logo}" style="width: 24px; height: 24px; border-radius: 6px;" onerror="this.outerHTML='🔌'">` : '🔌';
             }
 
             settings.scraperOverrides = settings.scraperOverrides || {};
