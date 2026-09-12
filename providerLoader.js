@@ -515,8 +515,26 @@ class ProviderLoader {
     async testScraper(manifestUrl, providerName, overrides = {}, mediaId = 'tt0137523', type = 'movie') {
         const startTime = Date.now();
         try {
-            const providers = await this.loadProviders(manifestUrl);
-            const targetProvider = providers.find(p => p.name.toLowerCase() === providerName.toLowerCase() || p.id === providerName);
+            const manifestsToTry = [manifestUrl];
+            const fallbackManifests = [
+                'https://raw.githubusercontent.com/yoru101/Nuvio-Providers/main/manifest.json',
+                'https://raw.githubusercontent.com/phisher98/Nuvio-Providers/main/manifest.json',
+                'https://cdn.jsdelivr.net/gh/D3adlyRocket/All-in-One-Nuvio@main/manifest.json'
+            ];
+            for (const fm of fallbackManifests) {
+                if (fm && !manifestsToTry.includes(fm)) manifestsToTry.push(fm);
+            }
+
+            let targetProvider = null;
+            for (const mUrl of manifestsToTry) {
+                if (!mUrl) continue;
+                try {
+                    const providers = await this.loadProviders(mUrl);
+                    targetProvider = providers.find(p => p.name.toLowerCase() === providerName.toLowerCase() || p.id === providerName);
+                    if (targetProvider) break;
+                } catch (e) {}
+            }
+
             if (!targetProvider) {
                 return {
                     success: false,
@@ -558,14 +576,68 @@ class ProviderLoader {
      * Extracts detected default domains and metadata from a scraper
      */
     async getScraperInfo(manifestUrl, providerName) {
-        try {
-            const manifestRes = await fetchWithRetry(manifestUrl, { timeout: 8000, httpAgent, httpsAgent });
-            const manifest = manifestRes.data;
-            const scraper = (manifest.scrapers || []).find(s => s.name.toLowerCase() === providerName.toLowerCase() || s.id === providerName);
-            if (!scraper) return { defaultDomain: '', detectedMirrors: [] };
+        const KNOWN_DEFAULT_DOMAINS = {
+            'hdhub4u': 'https://new1.hdhub4u.af',
+            'vegamovies': 'https://vegamovies.im',
+            'moviesdrive': 'https://moviesdrive.fit',
+            'moviesmod': 'https://moviesmod.cc',
+            'castle': 'https://castletv.in',
+            'modmirage': 'https://modmirage.org',
+            'topmovies': 'https://topmovies.guru',
+            'katmoviehd': 'https://katmoviehd.cx',
+            'allanime': 'https://allanime.day',
+            '4khdhub': 'https://4khdhub.one',
+            '1shows': 'https://www.1shows.org',
+            'animekai': 'https://www3.anikai.cc',
+            'animepahe': 'https://animepahe.com',
+            'animesalt': 'https://animesalt.link',
+            'animetsu': 'https://animetsu.live',
+            'allwish': 'https://megaplay.buzz',
+            'dahmermovies': 'https://dahmermovies.org',
+            'movieshunt': 'https://movieshunt.site',
+            'ringz': 'https://ringz.to',
+            'dvdplay': 'https://dvdplay.top'
+        };
+        const cleanKey = providerName.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const fallbackKnown = KNOWN_DEFAULT_DOMAINS[cleanKey] || '';
 
-            const baseUrl = manifestUrl.substring(0, manifestUrl.lastIndexOf('/'));
-            const scriptUrl = `${baseUrl}/${scraper.filename}`;
+        try {
+            const manifestsToTry = [manifestUrl];
+            const fallbackManifests = [
+                'https://raw.githubusercontent.com/yoru101/Nuvio-Providers/main/manifest.json',
+                'https://raw.githubusercontent.com/phisher98/Nuvio-Providers/main/manifest.json',
+                'https://cdn.jsdelivr.net/gh/D3adlyRocket/All-in-One-Nuvio@main/manifest.json'
+            ];
+            for (const fm of fallbackManifests) {
+                if (fm && !manifestsToTry.includes(fm)) manifestsToTry.push(fm);
+            }
+
+            let foundScraper = null;
+            let targetManifestUrl = manifestUrl;
+            for (const mUrl of manifestsToTry) {
+                if (!mUrl) continue;
+                try {
+                    const manifestRes = await fetchWithRetry(mUrl, { timeout: 8000, httpAgent, httpsAgent });
+                    const manifest = manifestRes.data;
+                    const scraper = (manifest.scrapers || []).find(s => s.name.toLowerCase() === providerName.toLowerCase() || s.id === providerName);
+                    if (scraper) {
+                        foundScraper = scraper;
+                        targetManifestUrl = mUrl;
+                        break;
+                    }
+                } catch (e) {}
+            }
+
+            if (!foundScraper) {
+                return {
+                    name: providerName,
+                    defaultDomain: fallbackKnown || '',
+                    detectedMirrors: fallbackKnown ? [fallbackKnown] : []
+                };
+            }
+
+            const baseUrl = targetManifestUrl.substring(0, targetManifestUrl.lastIndexOf('/'));
+            const scriptUrl = `${baseUrl}/${foundScraper.filename}`;
             let scriptCode = this.scriptCache.get(scriptUrl);
             if (!scriptCode) {
                 const scriptRes = await fetchWithRetry(scriptUrl, { timeout: 8000, httpAgent, httpsAgent });
@@ -576,42 +648,16 @@ class ProviderLoader {
             const rawMatches = (scriptCode.match(/https?:\/\/[a-zA-Z0-9.-]+\.[a-z]{2,}/g) || [])
                 .filter(u => !u.includes('themoviedb.org') && !u.includes('tmdb.org') && !u.includes('postimg.cc') && !u.includes('github.com') && !u.includes('jsdelivr.net') && !u.includes('graphql.anilist.co') && !u.includes('cinemeta.strem.io') && !u.includes('strem.io') && !u.includes('w3.org'));
 
-            const KNOWN_DEFAULT_DOMAINS = {
-                'hdhub4u': 'https://new1.hdhub4u.af',
-                'vegamovies': 'https://vegamovies.im',
-                'moviesdrive': 'https://moviesdrive.fit',
-                'moviesmod': 'https://moviesmod.cc',
-                'castle': 'https://castletv.in',
-                'modmirage': 'https://modmirage.org',
-                'topmovies': 'https://topmovies.guru',
-                'katmoviehd': 'https://katmoviehd.cx',
-                'allanime': 'https://allanime.day',
-                '4khdhub': 'https://4khdhub.one',
-                '1shows': 'https://www.1shows.org',
-                'animekai': 'https://www3.anikai.cc',
-                'animepahe': 'https://animepahe.com',
-                'animesalt': 'https://animesalt.link',
-                'animetsu': 'https://animetsu.live',
-                'allwish': 'https://megaplay.buzz',
-                'dahmermovies': 'https://dahmermovies.org',
-                'movieshunt': 'https://movieshunt.site',
-                'ringz': 'https://ringz.to',
-                'dvdplay': 'https://dvdplay.top'
-            };
-
-            const cleanKey = providerName.toLowerCase().replace(/[^a-z0-9]/g, '');
-            const fallbackKnown = KNOWN_DEFAULT_DOMAINS[cleanKey] || '';
-
             const unique = [...new Set(rawMatches)];
             const chosenDomain = unique[0] || fallbackKnown || '';
 
             return {
-                name: scraper.name,
+                name: foundScraper.name,
                 defaultDomain: chosenDomain,
                 detectedMirrors: unique.length > 0 ? unique : (fallbackKnown ? [fallbackKnown] : [])
             };
         } catch (e) {
-            return { defaultDomain: '', detectedMirrors: [] };
+            return { defaultDomain: fallbackKnown || '', detectedMirrors: fallbackKnown ? [fallbackKnown] : [] };
         }
     }
 }
