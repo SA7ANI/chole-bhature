@@ -543,7 +543,7 @@ async function probeLiveStream(url, customUserAgent = null) {
 /**
  * Retrieves catalog items for Stremio/Nuvio catalog handler.
  */
-async function getChannelsCatalog({ genre = 'All', search = '', skip = 0, limit = 40, config = {} }) {
+async function getChannelsCatalog({ type = 'tv', genre = 'All', search = '', skip = 0, limit = 40, config = {} }) {
     const channels = await getAllConfiguredChannels(config);
     if (!channels || channels.length === 0) return [];
 
@@ -592,7 +592,7 @@ async function getChannelsCatalog({ genre = 'All', search = '', skip = 0, limit 
         const formattedLogo = formatChannelLogo(ch.logo, config, ch.name);
         return {
             id: ch.id,
-            type: 'tv',
+            type: type || 'tv',
             name: ch.name,
             poster: formattedLogo,
             posterShape: 'square',
@@ -607,7 +607,7 @@ async function getChannelsCatalog({ genre = 'All', search = '', skip = 0, limit 
 /**
  * Retrieves metadata for a specific channel when clicked in Stremio.
  */
-async function getChannelMeta(channelId, config = {}) {
+async function getChannelMeta(channelId, config = {}, type = 'tv') {
     let channel = channelMetadataCache.get(channelId);
     if (!channel) {
         // Re-scan channels to find match
@@ -621,7 +621,7 @@ async function getChannelMeta(channelId, config = {}) {
 
     return {
         id: channel.id,
-        type: 'tv',
+        type: type || 'tv',
         name: channel.name,
         poster: formattedLogo,
         posterShape: 'square',
