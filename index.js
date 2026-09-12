@@ -367,7 +367,9 @@ const isRender = Boolean(process.env.RENDER || process.env.RENDER_SERVICE_ID);
 const isVercel = Boolean(process.env.VERCEL);
 
 // Global Server-Side Configuration (Admin Managed & Enforced)
-const ADMIN_SETTINGS_FILE = path.join(__dirname, 'admin_settings.json');
+const ADMIN_SETTINGS_FILE = isVercel
+    ? path.join('/tmp', 'admin_settings.json')
+    : path.join(__dirname, 'admin_settings.json');
 let globalServerSettings = {
     adminPasswordHash: null,
     globalEcoMode: true, // Protects both Render (0.1 CPU / 512MB RAM) and Vercel (Fluid CPU / 10s timeout)
@@ -380,21 +382,27 @@ let globalServerSettings = {
 
 function loadAdminSettings() {
     try {
-        if (fs.existsSync(ADMIN_SETTINGS_FILE)) {
+        const repoSettingsFile = path.join(__dirname, 'admin_settings.json');
+        if (fs.existsSync(repoSettingsFile)) {
+            const raw = fs.readFileSync(repoSettingsFile, 'utf8');
+            const data = JSON.parse(raw);
+            globalServerSettings = { ...globalServerSettings, ...data };
+        }
+        if (isVercel && fs.existsSync(ADMIN_SETTINGS_FILE)) {
             const raw = fs.readFileSync(ADMIN_SETTINGS_FILE, 'utf8');
             const data = JSON.parse(raw);
             globalServerSettings = { ...globalServerSettings, ...data };
-            if (process.env.RENDER_API_KEY) {
-                globalServerSettings.renderApiKey = process.env.RENDER_API_KEY;
-            }
-            if (process.env.VERCEL_API_TOKEN) {
-                globalServerSettings.vercelApiToken = process.env.VERCEL_API_TOKEN;
-            }
-            if (globalServerSettings.globalScraperOverrides) {
-                providerLoader.setGlobalScraperOverrides(globalServerSettings.globalScraperOverrides);
-            }
-            console.log('[Admin] Loaded server admin settings from admin_settings.json');
         }
+        if (process.env.RENDER_API_KEY) {
+            globalServerSettings.renderApiKey = process.env.RENDER_API_KEY;
+        }
+        if (process.env.VERCEL_API_TOKEN) {
+            globalServerSettings.vercelApiToken = process.env.VERCEL_API_TOKEN;
+        }
+        if (globalServerSettings.globalScraperOverrides) {
+            providerLoader.setGlobalScraperOverrides(globalServerSettings.globalScraperOverrides);
+        }
+        console.log('[Admin] Loaded server admin settings successfully');
     } catch (e) {
         console.error('[Admin] Failed to load admin_settings.json:', e.message);
     }
@@ -408,6 +416,7 @@ function saveAdminSettings() {
         fs.writeFileSync(ADMIN_SETTINGS_FILE, JSON.stringify(globalServerSettings, null, 2));
     } catch (e) {
         // Safe failover for read-only serverless filesystems
+        console.error('[Admin] Failed to write admin_settings.json:', e.message);
     }
 }
 loadAdminSettings();
@@ -682,6 +691,7 @@ function checkDiagnosticsAuth(req) {
     const rawKey = req.headers['x-admin-key'] || req.headers['x-diagnostic-token'] || req.query.key || req.query.token || (req.body && (req.body.key || req.body.token));
     if (!rawKey) return false;
     const key = String(rawKey).trim();
+    if (!key) return false;
 
     // 1. Match environment variable secret if set
     if (DIAGNOSTICS_TOKEN) {
@@ -699,8 +709,8 @@ function checkDiagnosticsAuth(req) {
         return false;
     }
 
-    // 3. Fallback for first-time unconfigured setup
-    return Boolean(key.length >= 3);
+    // Never accept arbitrary passwords
+    return false;
 }
 
 // Admin Server Auth State
@@ -753,6 +763,10 @@ const handleVerifyDiagnostics = (req, res) => {
     const candidate = key || token;
     if (!candidate) {
         return res.status(400).json({ success: false, error: 'Password or key required' });
+    }
+    const hasPassword = Boolean(DIAGNOSTICS_TOKEN || globalServerSettings.adminPasswordHash);
+    if (!hasPassword) {
+        return res.status(401).json({ success: false, error: 'No admin password configured on server. Please initialize admin password.' });
     }
     if (checkDiagnosticsAuth(req)) {
         return res.json({ success: true, mode: DIAGNOSTICS_TOKEN ? 'server_env' : 'server_saved' });
@@ -1121,11 +1135,18 @@ app.get('/api/image-proxy', async (req, res) => {
 });
 
 function sendCatalogLogoFallback(res, label) {
-    const text = String(label || 'TV').trim().slice(0, 3).toUpperCase().replace(/[^A-Z0-9]/g, '') || 'TV';
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><rect width="512" height="512" rx="56" fill="#111827"/><rect x="18" y="18" width="476" height="476" rx="42" fill="#1f2937" stroke="#374151" stroke-width="8"/><text x="256" y="290" text-anchor="middle" font-family="Arial,sans-serif" font-size="150" font-weight="700" fill="#a78bfa">${text}</text></svg>`;
-    res.status(200).setHeader('Content-Type', 'image/svg+xml; charset=utf-8');
+    const words = String(label || 'TV').trim().split(/\s+/).filter(Boolean);
+    let text = (words.length > 1 ? words.slice(0, 2).map(w => w[0]).join('') : (words[0] || 'TV').slice(0, 2)).toUpperCase();
+    text = text.replace(/[^A-Z0-9&+-]/g, '');
+    if (!text) text = 'TV';
+    const safeText = encodeURIComponent(text);
+    
+    // Use ui-avatars to generate a reliable PNG badge instead of SVG.
+    // Stremio Desktop (Qt) has a known bug where it drops <text> elements from SVGs loaded as posters.
+    const fallbackUrl = `https://ui-avatars.com/api/?name=${safeText}&background=1f2937&color=c4b5fd&size=512&font-size=0.35&bold=true`;
+    
     res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=86400');
-    res.send(svg);
+    return res.redirect(302, fallbackUrl);
 }
 
 function isPrivateAddress(address) {
@@ -1135,32 +1156,19 @@ function isPrivateAddress(address) {
     return address === '::1' || address.startsWith('fc') || address.startsWith('fd') || address.startsWith('fe80:');
 }
 
-// Catalog clients cannot provide an onerror fallback for poster URLs. Serve a
-// safe, cached image and generate an initials badge when a playlist logo dies.
-app.get('/api/catalog-logo', async (req, res) => {
-    const label = req.query.label;
-    try {
-        const imageUrl = new URL(String(req.query.url || ''));
-        if (!['http:', 'https:'].includes(imageUrl.protocol) || imageUrl.hostname === 'localhost') {
-            return sendCatalogLogoFallback(res, label);
-        }
-        const addresses = await dns.lookup(imageUrl.hostname, { all: true });
-        if (!addresses.length || addresses.some(({ address }) => isPrivateAddress(address))) {
-            return sendCatalogLogoFallback(res, label);
-        }
-        const response = await axios.get(imageUrl.href, {
-            responseType: 'arraybuffer', timeout: 8000, maxContentLength: 2 * 1024 * 1024,
-            maxRedirects: 0, validateStatus: status => status >= 200 && status < 300,
-            headers: { 'User-Agent': 'CholeBhature-CatalogLogo/1.0' }
-        });
-        const contentType = String(response.headers['content-type'] || '');
-        if (!contentType.startsWith('image/')) return sendCatalogLogoFallback(res, label);
-        res.setHeader('Content-Type', contentType);
-        res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400');
-        return res.send(Buffer.from(response.data));
-    } catch (err) {
+// Catalog logo endpoint redirects to wsrv.nl to guarantee square contain-fit and prevent cropping
+app.get('/api/catalog-logo', (req, res) => {
+    const rawUrl = String(req.query.url || '').trim();
+    const label = String(req.query.label || 'TV').trim();
+    if (!rawUrl || !rawUrl.startsWith('http')) {
         return sendCatalogLogoFallback(res, label);
     }
+    const safeLabel = encodeURIComponent(label.slice(0, 2).toUpperCase());
+    const fallback = encodeURIComponent(`https://ui-avatars.com/api/?name=${safeLabel}&background=1f2937&color=c4b5fd&size=512&font-size=0.35&bold=true`);
+    const targetUrl = `https://wsrv.nl/?url=${encodeURIComponent(rawUrl)}&w=512&h=512&fit=contain&cbg=111827&output=png&default=${fallback}&v=5`;
+    
+    res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=604800');
+    return res.redirect(302, targetUrl);
 });
 
 // Automated Vercel Cron Job to keep providers awake

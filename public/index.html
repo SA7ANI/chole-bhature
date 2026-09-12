@@ -2012,27 +2012,12 @@
             font-size: 20px;
             flex-shrink: 0;
             overflow: hidden;
-            position: relative;
         }
 
         .provider-avatar img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            position: relative;
-            z-index: 1;
-        }
-
-        .provider-logo-fallback {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #c4b5fd;
-            font-size: 12px;
-            font-weight: 800;
-            letter-spacing: 0.4px;
         }
 
         .provider-repo-badge {
@@ -5884,36 +5869,42 @@
                     icon: '👑',
                     confirmText: 'Create Master Password',
                     fields: [
-                        { id: 'key', label: 'Create Admin Password', type: 'password', placeholder: 'Enter secret password (min 3 chars)...', autofocus: true }
+                        { id: 'key', label: 'Create Admin Password', type: 'password', placeholder: 'Enter secret password (min 3 chars)...', autofocus: true },
+                        { id: 'confirmKey', label: 'Confirm Password', type: 'password', placeholder: 'Re-enter to confirm...', autofocus: false }
                     ]
                 });
                 if (!res.confirmed) return;
-                const newKey = res.values.key;
-                if (newKey && newKey.trim().length >= 3) {
-                    const cleanKey = newKey.trim();
-                    const hash = await hashStringSHA256(cleanKey);
-                    try {
-                        const setupRes = await fetch('/api/admin/setup-password', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ key: cleanKey, hash: hash })
-                        });
-                        const sData = await setupRes.json();
-                        if (sData.success) {
-                            localStorage.setItem('cb_admin_master_hash', hash);
-                            sessionStorage.setItem('cb_admin_key', cleanKey);
-                            showAdminTabs(true);
-                            switchTab('tab-admin');
-                            showToast('✨ <b>Admin Password Created & Saved on Server!</b>');
-                            fetchAdminStats();
-                        } else {
-                            showToast('❌ Failed to save password: ' + (sData.error || 'Server error'));
-                        }
-                    } catch (e) {
-                        showToast('❌ Cannot create admin password — server unreachable.');
-                    }
-                } else if (newKey) {
+                const newKey = (res.values.key || '').trim();
+                const confirmKey = (res.values.confirmKey || '').trim();
+                if (newKey.length < 3) {
                     showToast('⚠️ Password must be at least 3 characters.');
+                    return;
+                }
+                if (newKey !== confirmKey) {
+                    showToast('❌ Passwords do not match. Setup cancelled.');
+                    triggerHaptic('error');
+                    return;
+                }
+                const hash = await hashStringSHA256(newKey);
+                try {
+                    const setupRes = await fetch('/api/admin/setup-password', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ key: newKey, hash: hash })
+                    });
+                    const sData = await setupRes.json();
+                    if (sData.success) {
+                        localStorage.setItem('cb_admin_master_hash', hash);
+                        sessionStorage.setItem('cb_admin_key', newKey);
+                        showAdminTabs(true);
+                        switchTab('tab-admin');
+                        showToast('✨ <b>Admin Password Created & Saved on Server!</b>');
+                        fetchAdminStats();
+                    } else {
+                        showToast('❌ Failed to save password: ' + (sData.error || 'Server error'));
+                    }
+                } catch (e) {
+                    showToast('❌ Cannot create admin password — server unreachable.');
                 }
                 return;
             }
@@ -5986,17 +5977,29 @@
         }
 
         async function verifyAndActivateAdmin(key) {
+            const cleanKey = String(key || '').trim();
+            if (!cleanKey) return;
+
+            const candidateHash = await hashStringSHA256(cleanKey);
+            const storedHash = localStorage.getItem('cb_admin_master_hash');
+
+            // If a master hash is stored locally on this device, enforce strict match!
+            if (storedHash && candidateHash !== storedHash) {
+                showToast('❌ Incorrect Admin Password.');
+                triggerHaptic('error');
+                return;
+            }
+
             try {
                 const res = await fetch('/api/admin/verify', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ key })
+                    body: JSON.stringify({ key: cleanKey })
                 });
                 const data = await res.json();
                 if (data.success) {
-                    const hash = await hashStringSHA256(key);
-                    localStorage.setItem('cb_admin_master_hash', hash);
-                    sessionStorage.setItem('cb_admin_key', key);
+                    localStorage.setItem('cb_admin_master_hash', candidateHash);
+                    sessionStorage.setItem('cb_admin_key', cleanKey);
                     
                     showAdminTabs(true);
                     switchTab('tab-admin');
@@ -6008,12 +6011,51 @@
 
                     showToast('✨ <b>Admin Console Unlocked & Revealed!</b>');
                     fetchAdminStats();
+                    return;
+                }
+
+                // If server has no password yet, but this device had storedHash matching candidate, sync it to server!
+                if (res.status === 401 && data.error && data.error.includes('No admin password configured') && storedHash && candidateHash === storedHash) {
+                    try {
+                        const setupRes = await fetch('/api/admin/setup-password', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ key: cleanKey, hash: candidateHash })
+                        });
+                        const sData = await setupRes.json();
+                        if (sData.success) {
+                            sessionStorage.setItem('cb_admin_key', cleanKey);
+                            showAdminTabs(true);
+                            switchTab('tab-admin');
+                            const gate = document.getElementById('admin-auth-gate');
+                            const view = document.getElementById('admin-dashboard-view');
+                            if (gate) gate.style.display = 'none';
+                            if (view) view.style.display = 'flex';
+                            showToast('✨ <b>Admin Password Synced to Server!</b>');
+                            fetchAdminStats();
+                            return;
+                        }
+                    } catch (e) {}
+                }
+
+                showToast('❌ ' + (data.error || 'Incorrect Admin Password.'));
+                triggerHaptic('error');
+            } catch (e) {
+                // Offline fallback: if server is unreachable, verify against local storedHash only
+                if (storedHash && candidateHash === storedHash) {
+                    sessionStorage.setItem('cb_admin_key', cleanKey);
+                    showAdminTabs(true);
+                    switchTab('tab-admin');
+                    const gate = document.getElementById('admin-auth-gate');
+                    const view = document.getElementById('admin-dashboard-view');
+                    if (gate) gate.style.display = 'none';
+                    if (view) view.style.display = 'flex';
+                    showToast('🔓 <b>Admin Console Unlocked (Offline Mode)</b>');
+                    fetchAdminStats();
                 } else {
-                    showToast('❌ Incorrect Admin Password.');
+                    showToast('❌ Server authentication failed.');
                     triggerHaptic('error');
                 }
-            } catch (e) {
-                showToast('❌ Server authentication failed.');
             }
         }
 
@@ -6055,32 +6097,35 @@
                 return;
             }
 
+            const candidateHash = await hashStringSHA256(key);
+            const storedHash = localStorage.getItem('cb_admin_master_hash');
+
+            // If a master hash is stored on this device, reject any mismatch immediately!
+            if (storedHash && candidateHash !== storedHash) {
+                if (errEl) {
+                    errEl.style.display = 'block';
+                    errEl.innerText = '❌ Incorrect Admin Password. Access denied.';
+                }
+                triggerHaptic('error');
+                return;
+            }
+
             let hasAdminOnServer = false;
             let serverReachable = false;
             try {
                 const authRes = await fetch('/api/admin/auth-state');
-                if (!authRes.ok) {
-                    throw new Error(`Admin auth endpoint returned HTTP ${authRes.status}`);
+                if (authRes.ok) {
+                    const authData = await authRes.json();
+                    hasAdminOnServer = Boolean(authData.hasAdminPassword);
+                    serverReachable = true;
                 }
-                const authData = await authRes.json();
-                hasAdminOnServer = Boolean(authData.hasAdminPassword);
-                serverReachable = true;
             } catch (e) {
                 console.error('[Admin] Auth-state request failed:', e);
             }
 
             // If server is unreachable, fall back to local hash verification
             if (!serverReachable) {
-                const storedHash = localStorage.getItem('cb_admin_master_hash');
-                if (!storedHash) {
-                    if (errEl) {
-                        errEl.style.display = 'block';
-                        errEl.innerText = '❌ Server unreachable & no local password set. Start the server first.';
-                    }
-                    return;
-                }
-                const inputHash = await hashStringSHA256(key);
-                if (inputHash === storedHash) {
+                if (storedHash && candidateHash === storedHash) {
                     sessionStorage.setItem('cb_admin_key', key);
                     if (errEl) errEl.style.display = 'none';
                     showAdminTabs(true);
@@ -6093,7 +6138,7 @@
                 } else {
                     if (errEl) {
                         errEl.style.display = 'block';
-                        errEl.innerText = '❌ Incorrect Admin Password. Access denied.';
+                        errEl.innerText = '❌ Incorrect Admin Password or Server Unreachable.';
                     }
                     triggerHaptic('error');
                 }
@@ -6101,38 +6146,37 @@
             }
 
             if (!hasAdminOnServer) {
-                // First-time setup on server
-                try {
-                    const hash = await hashStringSHA256(key);
-                    const setupRes = await fetch('/api/admin/setup-password', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ key, hash })
-                    });
-                    if (!setupRes.ok) {
-                        throw new Error(`Admin setup endpoint returned HTTP ${setupRes.status}`);
-                    }
-                    const sData = await setupRes.json();
-                    if (sData.success) {
-                        localStorage.setItem('cb_admin_master_hash', hash);
-                        sessionStorage.setItem('cb_admin_key', key);
-                        if (errEl) errEl.style.display = 'none';
-                        showAdminTabs(true);
-                        const gate = document.getElementById('admin-auth-gate');
-                        const view = document.getElementById('admin-dashboard-view');
-                        if (gate) gate.style.display = 'none';
-                        if (view) view.style.display = 'flex';
-                        showToast('✨ <b>Admin Password Created & Saved on Server!</b>');
-                        fetchAdminStats();
-                        return;
-                    }
-                } catch (e) {
-                    if (errEl) {
-                        errEl.style.display = 'block';
-                        errEl.innerText = '❌ Failed to setup password on server.';
-                    }
-                    return;
+                // If local storedHash matched, sync it to server
+                if (storedHash && candidateHash === storedHash) {
+                    try {
+                        const setupRes = await fetch('/api/admin/setup-password', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ key, hash: candidateHash })
+                        });
+                        const sData = await setupRes.json();
+                        if (sData.success) {
+                            sessionStorage.setItem('cb_admin_key', key);
+                            if (errEl) errEl.style.display = 'none';
+                            showAdminTabs(true);
+                            const gate = document.getElementById('admin-auth-gate');
+                            const view = document.getElementById('admin-dashboard-view');
+                            if (gate) gate.style.display = 'none';
+                            if (view) view.style.display = 'flex';
+                            showToast('✨ <b>Admin Password Synced to Server!</b>');
+                            fetchAdminStats();
+                            return;
+                        }
+                    } catch (e) {}
                 }
+
+                // If no admin password exists yet, do not allow arbitrary passwords to unlock!
+                if (errEl) {
+                    errEl.style.display = 'block';
+                    errEl.innerHTML = '⚠️ No Admin Password configured yet. <a href="javascript:void(0)" onclick="promptSecretAdminKey()" style="color: #60a5fa; text-decoration: underline; font-weight: bold;">Click here to Create Admin Password</a>';
+                }
+                triggerHaptic('error');
+                return;
             }
 
             // Verify against server
@@ -6144,8 +6188,7 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    const hash = await hashStringSHA256(key);
-                    localStorage.setItem('cb_admin_master_hash', hash);
+                    localStorage.setItem('cb_admin_master_hash', candidateHash);
                     sessionStorage.setItem('cb_admin_key', key);
                     if (errEl) errEl.style.display = 'none';
                     
@@ -6160,7 +6203,7 @@
                 } else {
                     if (errEl) {
                         errEl.style.display = 'block';
-                        errEl.innerText = '❌ Incorrect Admin Password. Access denied.';
+                        errEl.innerText = '❌ ' + (data.error || 'Incorrect Admin Password. Access denied.');
                     }
                     triggerHaptic('error');
                 }
@@ -6781,26 +6824,6 @@
             updateStatsBar();
         }
 
-        function getProviderLogoUrl(logo) {
-            if (!logo || typeof logo !== 'string') return '';
-            try {
-                const url = new URL(logo, window.location.href);
-                // Postimages blocks or drops some browser hotlink requests. Route
-                // only that known host through our cached same-origin endpoint.
-                if (url.protocol === 'https:' && url.hostname === 'i.postimg.cc') {
-                    return `/api/image-proxy?url=${encodeURIComponent(url.href)}`;
-                }
-                return url.href;
-            } catch (e) {
-                return '';
-            }
-        }
-
-        function getProviderLogoFallback(name) {
-            const words = String(name || 'CB').replace(/[^a-z0-9 ]/gi, ' ').trim().split(/\s+/).filter(Boolean);
-            return (words.length > 1 ? words.slice(0, 2).map(word => word[0]).join('') : (words[0] || 'CB').slice(0, 2)).toUpperCase();
-        }
-
         function renderProviders() {
             const providersContainer = document.getElementById('providers-list');
             const providerCountBadge = document.getElementById('provider-count-badge');
@@ -6819,9 +6842,7 @@
 
             let html = '';
             allProvidersData.forEach((p) => {
-                const logoUrl = getProviderLogoUrl(p.logo);
-                const fallbackLogo = getProviderLogoFallback(p.name);
-                const iconHtml = `${logoUrl ? `<img src="${logoUrl}" alt="" onerror="this.remove();">` : ''}<span class="provider-logo-fallback">${fallbackLogo}</span>`;
+                const iconHtml = p.logo ? `<img src="${p.logo}" alt="logo" onerror="this.outerHTML='🧩'">` : '🧩';
                 const typesStr = p.supportedTypes.map(t => t === 'movie' ? '🎬 Movie' : t === 'tv' ? '📺 TV' : t).join(' • ');
                 const isDisabled = settings.disabledProviders && settings.disabledProviders.includes(p.name);
                 const override = settings.scraperOverrides[p.name];

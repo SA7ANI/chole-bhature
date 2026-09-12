@@ -16,7 +16,7 @@ const CURATED_CHANNELS = [
     {
         id: 'iptv:curated:bbc_news',
         name: 'BBC News Live',
-        logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/BBC_News_2019.svg/1200px-BBC_News_2019.svg.png',
+        logo: 'https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_BBC_NEWS/images/LOGO_HD/image.png',
         category: 'News',
         country: 'UK',
         url: 'https://vs-hls-push-ww-live.akamaized.net/x=4/i=urn:bbc:pips:service:bbc_news_channel_hd/t=3840/v=pv14/b=5070016/main.m3u8',
@@ -25,7 +25,7 @@ const CURATED_CHANNELS = [
     {
         id: 'iptv:curated:sky_news',
         name: 'Sky News UK',
-        logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/5/58/Sky_News_logo_2020.svg/1200px-Sky_News_logo_2020.svg.png',
+        logo: 'https://d2n0069hmnqmmx.cloudfront.net/epgdata/1.0/newchanlogos/512/512/skychb1404.png',
         category: 'News',
         country: 'UK',
         url: 'https://linear417-gb-dash1-prd-cf.cdn.sky.com/016a/unenc/03/live.mpd',
@@ -35,7 +35,7 @@ const CURATED_CHANNELS = [
     {
         id: 'iptv:curated:aljazeera_en',
         name: 'Al Jazeera English',
-        logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/f/f2/Al_Jazeera_English_logo.svg/1200px-Al_Jazeera_English_logo.svg.png',
+        logo: 'https://i.imgur.com/7bRVpnu.png',
         category: 'News',
         country: 'Global',
         url: 'https://live-hls-web-aje.getaj.net/AJE/03.m3u8',
@@ -44,7 +44,7 @@ const CURATED_CHANNELS = [
     {
         id: 'iptv:curated:france24_en',
         name: 'France 24 English',
-        logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/6/65/France_24_logo.svg/1200px-France_24_logo.svg.png',
+        logo: 'https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_FRANCE_24/images/LOGO_HD/image.png',
         category: 'News',
         country: 'France',
         url: 'https://static.france24.com/live/F24_EN_LO_HLS/live_tv.m3u8',
@@ -53,7 +53,7 @@ const CURATED_CHANNELS = [
     {
         id: 'iptv:curated:dw_english',
         name: 'DW English HD',
-        logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Deutsche_Welle_symbol_2012.svg/1200px-Deutsche_Welle_symbol_2012.svg.png',
+        logo: 'https://i.imgur.com/8MRNFb9.png',
         category: 'News',
         country: 'Germany',
         url: 'https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8',
@@ -62,7 +62,7 @@ const CURATED_CHANNELS = [
     {
         id: 'iptv:curated:euronews_en',
         name: 'Euronews English',
-        logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Euronews_2016_logo.svg/1200px-Euronews_2016_logo.svg.png',
+        logo: 'https://jiotvimages.cdn.jio.com/dare_images/images/Euro_News.png',
         category: 'News',
         country: 'Europe',
         url: 'https://rakuten-euronews-1-gb.samsung.wurl.tv/playlist.m3u8',
@@ -71,7 +71,7 @@ const CURATED_CHANNELS = [
     {
         id: 'iptv:curated:bloomberg_tv',
         name: 'Bloomberg Television',
-        logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Bloomberg_Television_logo.svg/1200px-Bloomberg_Television_logo.svg.png',
+        logo: 'https://jiotvimages.cdn.jio.com/dare_images/images/Bloomberg_TV.png',
         category: 'News',
         country: 'USA',
         url: 'https://liveprodupmulticdn.akamaized.net/live/channel/bloomberg/live.m3u8',
@@ -83,7 +83,7 @@ const CURATED_CHANNELS = [
     {
         id: 'iptv:curated:redbull_tv',
         name: 'Red Bull TV',
-        logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/f/f5/Red_Bull_TV_logo.svg/1200px-Red_Bull_TV_logo.svg.png',
+        logo: 'https://images.pluto.tv/channels/5e7cb84a172a0f0007da69e4/colorLogoPNG.png',
         category: 'Sports',
         country: 'Global',
         url: 'https://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master.m3u8',
@@ -92,7 +92,7 @@ const CURATED_CHANNELS = [
     {
         id: 'iptv:curated:fite_sports',
         name: 'Fight Sports TV',
-        logo: 'https://upload.wikimedia.org/wikipedia/commons/7/7b/Sports_icon.png',
+        logo: 'https://i.imgur.com/vlKPZHR.png',
         category: 'Sports',
         country: 'USA',
         url: 'https://linear-105.frequency.stream/mt/studio/105/hls/master.m3u8',
@@ -101,7 +101,7 @@ const CURATED_CHANNELS = [
     {
         id: 'iptv:curated:origin_sports',
         name: 'Origin Sports Network',
-        logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Soccerball.svg/500px-Soccerball.svg.png',
+        logo: 'https://i.imgur.com/ulGKX30.png',
         category: 'Sports',
         country: 'USA',
         url: 'https://amg01201-cinedigm-originsports-samsungus-o4sfn.amagi.tv/playlist.m3u8',
@@ -110,7 +110,7 @@ const CURATED_CHANNELS = [
     {
         id: 'iptv:curated:sportsgrid',
         name: 'SportsGrid Network',
-        logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/SportsGrid_logo.png/600px-SportsGrid_logo.png',
+        logo: 'https://i.imgur.com/ulGKX30.png',
         category: 'Sports',
         country: 'USA',
         url: 'https://sportsgrid-klowdtv.amagi.tv/playlist.m3u8',
@@ -119,7 +119,7 @@ const CURATED_CHANNELS = [
     {
         id: 'iptv:curated:edge_sport',
         name: 'Edge Sport Live',
-        logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Sports_icon.png/500px-Sports_icon.png',
+        logo: 'https://images.pluto.tv/channels/5f8ef85c88b4380007127e77/colorLogoPNG.png',
         category: 'Sports',
         country: 'Global',
         url: 'https://edgesport-samsunguk.amagi.tv/playlist.m3u8',
@@ -130,7 +130,7 @@ const CURATED_CHANNELS = [
     {
         id: 'iptv:curated:ndtv_24x7',
         name: 'NDTV 24x7 India',
-        logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/NDTV_24x7_Logo.svg/1200px-NDTV_24x7_Logo.svg.png',
+        logo: 'https://dtil.tmsimg.com/assets/s154895_ld_h15_aa.png?lock=720x540',
         category: 'India',
         country: 'India',
         url: 'https://ndtv24x7elemarchana.akamaized.net/hls/live/2003678/ndtv24x7/master.m3u8',
@@ -139,7 +139,7 @@ const CURATED_CHANNELS = [
     {
         id: 'iptv:curated:ndtv_india',
         name: 'NDTV India (Hindi)',
-        logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/NDTV_India_logo.png/600px-NDTV_India_logo.png',
+        logo: 'https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_NDTV_INDIA/images/LOGO_HD/image.png',
         category: 'India',
         country: 'India',
         url: 'https://ndtvindiaelemarchana.akamaized.net/hls/live/2003679/ndtvindia/master.m3u8',
@@ -148,7 +148,7 @@ const CURATED_CHANNELS = [
     {
         id: 'iptv:curated:aaj_tak',
         name: 'Aaj Tak Live',
-        logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/0/07/Aaj_Tak_logo.svg/1200px-Aaj_Tak_logo.svg.png',
+        logo: 'https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_AAJ_TAK/images/LOGO_HD/image.png',
         category: 'India',
         country: 'India',
         url: 'https://feeds.intoday.in/aajtak/api/aajtak-hd/master.m3u8',
@@ -157,7 +157,7 @@ const CURATED_CHANNELS = [
     {
         id: 'iptv:curated:india_today',
         name: 'India Today TV',
-        logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/6/65/India_Today_Television_logo.svg/1200px-India_Today_Television_logo.svg.png',
+        logo: 'https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_INDIA_TODAY/images/LOGO_HD/image.png',
         category: 'India',
         country: 'India',
         url: 'https://feeds.intoday.in/it/api/it-hd/master.m3u8',
@@ -166,7 +166,7 @@ const CURATED_CHANNELS = [
     {
         id: 'iptv:curated:dd_national',
         name: 'DD National HD',
-        logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Doordarshan_logo.svg/1200px-Doordarshan_logo.svg.png',
+        logo: 'https://ltsk-cdn.s3.eu-west-1.amazonaws.com/jumpstart/Temp_Live/cdn/HLS/Channel/transparentImages/DD%20National%20HD.png',
         category: 'India',
         country: 'India',
         url: 'https://play.prasarbharati.org/hls/live/ddnational/master.m3u8',
@@ -175,7 +175,7 @@ const CURATED_CHANNELS = [
     {
         id: 'iptv:curated:dd_sports',
         name: 'DD Sports Live',
-        logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Doordarshan_logo.svg/1200px-Doordarshan_logo.svg.png',
+        logo: 'https://ltsk-cdn.s3.eu-west-1.amazonaws.com/jumpstart/Temp_Live/cdn/HLS/Channel/transparentImages/DD%20Sports%20HD.png',
         category: 'India',
         country: 'India',
         url: 'https://play.prasarbharati.org/hls/live/ddsports/master.m3u8',
@@ -186,7 +186,7 @@ const CURATED_CHANNELS = [
     {
         id: 'iptv:curated:retro_movies',
         name: 'Retro Cinema Classics',
-        logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Film_strip.svg/500px-Film_strip.svg.png',
+        logo: 'https://images.pluto.tv/channels/5cae2e77b67ae2f573c71ea4/colorLogoPNG.png',
         category: 'Movies',
         country: 'USA',
         url: 'https://retrocrush-samsung.amagi.tv/playlist.m3u8',
@@ -195,7 +195,7 @@ const CURATED_CHANNELS = [
     {
         id: 'iptv:curated:filmrise_action',
         name: 'FilmRise Action',
-        logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Film_strip.svg/500px-Film_strip.svg.png',
+        logo: 'https://images.pluto.tv/channels/5b9919f2a07d3b3c373cb73a/colorLogoPNG.png',
         category: 'Movies',
         country: 'USA',
         url: 'https://filmrise-action-samsungus.amagi.tv/playlist.m3u8',
@@ -204,7 +204,7 @@ const CURATED_CHANNELS = [
     {
         id: 'iptv:curated:dust_scifi',
         name: 'DUST Sci-Fi Network',
-        logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Orbit_icon.svg/500px-Orbit_icon.svg.png',
+        logo: 'https://images.pluto.tv/channels/5d2dfcfd2f1f0a8270505106/colorLogoPNG.png',
         category: 'Entertainment',
         country: 'USA',
         url: 'https://dust-samsungus.amagi.tv/playlist.m3u8',
@@ -213,7 +213,7 @@ const CURATED_CHANNELS = [
     {
         id: 'iptv:curated:nasa_tv',
         name: 'NASA TV Public HD',
-        logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/NASA_logo.svg/1200px-NASA_logo.svg.png',
+        logo: 'https://images.pluto.tv/channels/59b199042b36a7e0251bbcf2/colorLogoPNG.png',
         category: 'Entertainment',
         country: 'USA',
         url: 'https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master.m3u8',
@@ -224,7 +224,7 @@ const CURATED_CHANNELS = [
     {
         id: 'iptv:curated:clubbing_tv',
         name: 'Clubbing TV Electronic',
-        logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Headphones_icon.svg/500px-Headphones_icon.svg.png',
+        logo: 'https://i.imgur.com/k6OQ1g9.png',
         category: 'Music',
         country: 'France',
         url: 'https://stream.clubbingtv.com/hls/clubbingtv.m3u8',
@@ -233,7 +233,7 @@ const CURATED_CHANNELS = [
     {
         id: 'iptv:curated:now_music',
         name: 'NOW Music Hits 80s/90s',
-        logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/Musical_notes.svg/500px-Musical_notes.svg.png',
+        logo: 'https://images.pluto.tv/channels/5ce3438f6ee226f1fc953b05/colorLogoPNG.png',
         category: 'Music',
         country: 'UK',
         url: 'https://nowmusic-samsunguk.amagi.tv/playlist.m3u8',
@@ -244,7 +244,7 @@ const CURATED_CHANNELS = [
     {
         id: 'iptv:curated:ewtn_global',
         name: 'EWTN Global Catholic',
-        logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/EWTN_logo.svg/500px-EWTN_logo.svg.png',
+        logo: 'https://i.imgur.com/46V3hi9.png',
         category: 'Religious',
         country: 'USA',
         url: 'https://ewtn-ewtn-1-us.samsung.wurl.tv/playlist.m3u8',
@@ -253,7 +253,7 @@ const CURATED_CHANNELS = [
     {
         id: 'iptv:curated:peace_tv',
         name: 'Peace TV Live',
-        logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Peace_TV_logo.svg/500px-Peace_TV_logo.svg.png',
+        logo: 'https://i.imgur.com/2CSW4V4.png',
         category: 'Religious',
         country: 'India',
         url: 'https://d2e1asnsl7br7b.cloudfront.net/datnlive/smil:datn.smil/playlist.m3u8',
@@ -262,9 +262,9 @@ const CURATED_CHANNELS = [
 
     // --- BUSINESS ---
     {
-        id: 'iptv:curated:bloomberg_tv',
-        name: 'Bloomberg Television',
-        logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Bloomberg_Television_logo.svg/1200px-Bloomberg_Television_logo.svg.png',
+        id: 'iptv:curated:bloomberg_tv_biz',
+        name: 'Bloomberg TV Business',
+        logo: 'https://jiotvimages.cdn.jio.com/dare_images/images/Bloomberg_TV.png',
         category: 'Business',
         country: 'USA',
         url: 'https://bloomberg-bloombergtv-1-us.samsung.wurl.tv/playlist.m3u8',
@@ -273,7 +273,7 @@ const CURATED_CHANNELS = [
     {
         id: 'iptv:curated:yahoo_finance',
         name: 'Yahoo Finance HD',
-        logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Yahoo%21_Finance_logo_2021.svg/500px-Yahoo%21_Finance_logo_2021.svg.png',
+        logo: 'https://images.pluto.tv/channels/5c3784013149c47e8f5723f4/colorLogoPNG.png',
         category: 'Business',
         country: 'USA',
         url: 'https://yahoofinance-samsungus.amagi.tv/playlist.m3u8',
@@ -284,7 +284,7 @@ const CURATED_CHANNELS = [
     {
         id: 'iptv:curated:dw_culture',
         name: 'DW Documentary & Culture',
-        logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Deutsche_Welle_symbol_2012.svg/500px-Deutsche_Welle_symbol_2012.svg.png',
+        logo: 'https://i.imgur.com/8MRNFb9.png',
         category: 'Culture',
         country: 'Germany',
         url: 'https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8',
@@ -295,7 +295,7 @@ const CURATED_CHANNELS = [
     {
         id: 'iptv:curated:toon_goggles',
         name: 'Toon Goggles Kids',
-        logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/Banana-Single.jpg/500px-Banana-Single.jpg',
+        logo: 'https://images.pluto.tv/channels/58ad50a1bf5e5c3e7655dff8/colorLogoPNG.png',
         category: 'Animation',
         country: 'USA',
         url: 'https://tgkids-samsungus.amagi.tv/playlist.m3u8',
@@ -306,7 +306,7 @@ const CURATED_CHANNELS = [
     {
         id: 'iptv:curated:tastemade_food',
         name: 'Tastemade Food & Travel',
-        logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Silver_fork_and_knife_icon.svg/500px-Silver_fork_and_knife_icon.svg.png',
+        logo: 'https://images.pluto.tv/channels/582df87ca7ea6bb0343a41bf/colorLogoPNG.png',
         category: 'Lifestyle',
         country: 'USA',
         url: 'https://tastemade-samsungus.amagi.tv/playlist.m3u8',
@@ -477,21 +477,21 @@ async function fetchXtreamChannels(server, username, password) {
 async function getAllConfiguredChannels(config = {}) {
     let allChannels = [];
 
-    // 1. Custom M3U / M3U8 Playlist (Prioritized first so user-selected presets show immediately at top of catalog)
+    // 1. Curated Channels (Enabled by default unless disabled)
+    if (config.enableCuratedIptv !== false) {
+        allChannels = allChannels.concat(CURATED_CHANNELS);
+        for (const ch of CURATED_CHANNELS) {
+            channelMetadataCache.set(ch.id, ch);
+        }
+    }
+
+    // 2. Custom M3U / M3U8 Playlist
     if (config.customIptvUrl) {
         let customChannels = await fetchRemoteM3u(config.customIptvUrl, config.iptvUserAgent);
         if (config.iptvLimit && Number(config.iptvLimit) > 0) {
             customChannels = customChannels.slice(0, Number(config.iptvLimit));
         }
         allChannels = allChannels.concat(customChannels);
-    }
-
-    // 2. Curated Channels (Enabled by default unless disabled)
-    if (config.enableCuratedIptv !== false) {
-        allChannels = allChannels.concat(CURATED_CHANNELS);
-        for (const ch of CURATED_CHANNELS) {
-            channelMetadataCache.set(ch.id, ch);
-        }
     }
 
     // 3. Xtream Codes Integration
@@ -514,27 +514,16 @@ async function probeLiveStream(url, customUserAgent = null) {
             'Accept': '*/*'
         };
         
-        let res;
-        try {
-            // Quick Range chunk probe with 2.5s timeout
-            res = await axios.get(url, {
-                timeout: 2500,
-                httpsAgent: dohHttpsAgent,
-                headers: {
-                    ...headers,
-                    'Range': 'bytes=0-1024'
-                },
-                validateStatus: (status) => status >= 200 && status < 400
-            });
-        } catch (rangeErr) {
-            // If Range request rejected (e.g. 416 or strict server), fallback to quick HEAD probe
-            res = await axios.head(url, {
-                timeout: 2000,
-                httpsAgent: dohHttpsAgent,
-                headers,
-                validateStatus: (status) => status >= 200 && status < 400
-            });
-        }
+        // Quick HEAD probe with small 2.5s timeout
+        const res = await axios.get(url, {
+            timeout: 2500,
+            httpsAgent: dohHttpsAgent,
+            headers: {
+                ...headers,
+                'Range': 'bytes=0-1024' // Lightweight chunk probe
+            },
+            validateStatus: (status) => status >= 200 && status < 400
+        });
 
         const latency = Date.now() - start;
         return {
@@ -549,35 +538,6 @@ async function probeLiveStream(url, customUserAgent = null) {
             error: e.message
         };
     }
-}
-
-/**
- * Formats channel logo into a contain-fitted 1:1 square to prevent
- * Nuvio and Stremio from horizontally cropping rectangular channel logos.
- */
-function formatChannelLogo(url, config = {}, label = 'Live TV') {
-    if (!url || typeof url !== 'string' || !url.trim()) {
-        return 'https://raw.githubusercontent.com/yoruix/nuvio-providers/main/public/icon-512.png';
-    }
-    const cleanUrl = url.trim();
-    if (cleanUrl.startsWith('data:') || cleanUrl.includes('wsrv.nl')) {
-        return cleanUrl;
-    }
-    // Don't proxy localhost or private IP addresses through public image proxy
-    if (/(localhost|127\.0\.0\.1|192\.168\.|10\.\d+\.|172\.(1[6-9]|2\d|3[01])\.)/i.test(cleanUrl)) {
-        return cleanUrl;
-    }
-    // On hosted deployments, proxy through this addon so an unavailable playlist
-    // logo becomes a generated badge instead of a blank catalog poster.
-    if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
-        if (config.addonHost) {
-            const protocol = config.addonProtocol || 'https';
-            return `${protocol}://${config.addonHost}/api/catalog-logo?url=${encodeURIComponent(cleanUrl)}&label=${encodeURIComponent(label)}`;
-        }
-        // Local fallback keeps catalog posters square when no public addon host exists.
-        return `https://wsrv.nl/?url=${encodeURIComponent(cleanUrl)}&w=512&h=512&fit=contain&cbg=0c101d&output=png`;
-    }
-    return cleanUrl;
 }
 
 /**
@@ -647,81 +607,32 @@ async function getChannelsCatalog({ genre = 'All', search = '', skip = 0, limit 
 /**
  * Retrieves metadata for a specific channel when clicked in Stremio.
  */
-async function getChannelMeta(channelId, config = {}, type = 'tv') {
-    try {
-        let channel = channelMetadataCache.get(channelId);
-        if (!channel) {
-            // Re-scan channels to find match
-            const channels = await getAllConfiguredChannels(config);
-            channel = channels.find(c => c.id === channelId);
-        }
-
-        if (!channel) {
-            // Fallback: Synthesize metadata so Nuvio/Stremio never fails to load the details page
-            const parts = (channelId || '').split(':');
-            const fallbackName = parts.slice(2).join(' ').replace(/[_-]/g, ' ') || 'Live Channel';
-            channel = {
-                id: channelId,
-                name: fallbackName.charAt(0).toUpperCase() + fallbackName.slice(1),
-                logo: 'https://raw.githubusercontent.com/yoruix/nuvio-providers/main/public/icon-512.png',
-                category: 'Live TV',
-                country: 'Global',
-                description: 'Live Broadcast Stream'
-            };
-        }
-
-        const formattedLogo = formatChannelLogo(channel.logo, config, channel.name);
-        const resolvedType = type || 'tv';
-
-        return {
-            id: channel.id,
-            type: resolvedType,
-            name: channel.name,
-            poster: formattedLogo,
-            posterShape: 'square',
-            background: 'https://images.unsplash.com/photo-1593784991095-a205069470b6?w=1280&q=80',
-            logo: formattedLogo,
-            genres: [channel.category || 'Live TV', channel.country || 'Global'].filter(Boolean),
-            description: channel.description || `${channel.name} - Live Broadcast`,
-            releaseInfo: 'LIVE',
-            behaviorHints: {
-                isLive: true,
-                defaultVideoId: channel.id
-            },
-            videos: [
-                {
-                    id: channel.id,
-                    title: channel.name || 'Live Stream',
-                    released: new Date().toISOString()
-                }
-            ]
-        };
-    } catch (err) {
-        console.error(`[IPTV] Error getting channel meta for ${channelId}:`, err);
-        return {
-            id: channelId,
-            type: type || 'tv',
-            name: 'Live Stream',
-            poster: 'https://raw.githubusercontent.com/yoruix/nuvio-providers/main/public/icon-512.png',
-            posterShape: 'square',
-            background: 'https://images.unsplash.com/photo-1593784991095-a205069470b6?w=1280&q=80',
-            logo: 'https://raw.githubusercontent.com/yoruix/nuvio-providers/main/public/icon-512.png',
-            genres: ['Live TV'],
-            description: '24/7 Live Stream Broadcast',
-            releaseInfo: 'LIVE',
-            behaviorHints: {
-                isLive: true,
-                defaultVideoId: channelId
-            },
-            videos: [
-                {
-                    id: channelId,
-                    title: 'Live Stream',
-                    released: new Date().toISOString()
-                }
-            ]
-        };
+async function getChannelMeta(channelId, config = {}) {
+    let channel = channelMetadataCache.get(channelId);
+    if (!channel) {
+        // Re-scan channels to find match
+        const channels = await getAllConfiguredChannels(config);
+        channel = channels.find(c => c.id === channelId);
     }
+
+    if (!channel) return null;
+
+    const formattedLogo = formatChannelLogo(channel.logo, config, channel.name);
+
+    return {
+        id: channel.id,
+        type: 'tv',
+        name: channel.name,
+        poster: formattedLogo,
+        posterShape: 'square',
+        background: 'https://images.unsplash.com/photo-1593784991095-a205069470b6?w=1280&q=80',
+        logo: formattedLogo,
+        genres: [channel.category || 'Live TV', channel.country || 'Global'].filter(Boolean),
+        description: channel.description || `${channel.name} - Live Broadcast`,
+        behaviorHints: {
+            isLive: true
+        }
+    };
 }
 
 /**
@@ -736,19 +647,20 @@ async function getChannelStreams(channelId, config = {}) {
 
     if (!channel || !channel.url) return [];
 
-    // Probe stream latency concurrently
+    // Probe stream latency in parallel
     const urlsToTest = [
         { url: channel.url, name: 'Primary HLS' },
         ...(channel.fallbackUrl ? [{ url: channel.fallbackUrl, name: 'Backup Feed' }] : [])
     ];
 
-    const streams = await Promise.all(urlsToTest.map(async (item) => {
+    const streams = [];
+    for (const item of urlsToTest) {
         const probe = await probeLiveStream(item.url, channel.userAgent);
         const pingBadge = probe.online 
             ? (probe.latency < 500 ? `🟢 FAST (${probe.latency}ms)` : `🟡 STABLE (${probe.latency}ms)`)
             : '⚪ DIRECT STREAM';
 
-        return {
+        streams.push({
             name: '⚡ CHOLE BHATURE [LIVE]',
             title: `📡 ${channel.name} • ${item.name} • ${pingBadge}\n🌐 Live 24/7 Broadcast (HLS)`,
             url: item.url,
@@ -757,10 +669,125 @@ async function getChannelStreams(channelId, config = {}) {
                 bingeGroup: 'chole-iptv-live',
                 headers: channel.userAgent ? { 'User-Agent': channel.userAgent } : undefined
             }
-        };
-    }));
+        });
+    }
 
     return streams;
+}
+
+const KNOWN_CHANNEL_LOGOS = [
+    { pattern: /\b(bbc\s*news)\b/i, logo: 'https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_BBC_NEWS/images/LOGO_HD/image.png' },
+    { pattern: /\b(sky\s*news)\b/i, logo: 'https://d2n0069hmnqmmx.cloudfront.net/epgdata/1.0/newchanlogos/512/512/skychb1404.png' },
+    { pattern: /\b(al\s*jazeera)\b/i, logo: 'https://i.imgur.com/7bRVpnu.png' },
+    { pattern: /\b(france\s*24)\b/i, logo: 'https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_FRANCE_24/images/LOGO_HD/image.png' },
+    { pattern: /\b(dw\s*(english|tv|deutsch)?)\b/i, logo: 'https://i.imgur.com/8MRNFb9.png' },
+    { pattern: /\b(euronews)\b/i, logo: 'https://jiotvimages.cdn.jio.com/dare_images/images/Euro_News.png' },
+    { pattern: /\b(bloomberg)\b/i, logo: 'https://jiotvimages.cdn.jio.com/dare_images/images/Bloomberg_TV.png' },
+    { pattern: /\b(red\s*bull)\b/i, logo: 'https://images.pluto.tv/channels/5e7cb84a172a0f0007da69e4/colorLogoPNG.png' },
+    { pattern: /\b(ndtv\s*24x7|ndtv)\b/i, logo: 'https://dtil.tmsimg.com/assets/s154895_ld_h15_aa.png?lock=720x540' },
+    { pattern: /\b(aaj\s*tak)\b/i, logo: 'https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_AAJ_TAK/images/LOGO_HD/image.png' },
+    { pattern: /\b(india\s*today)\b/i, logo: 'https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_INDIA_TODAY/images/LOGO_HD/image.png' },
+    { pattern: /\b6\s*tv\b/i, logo: 'https://i.imgur.com/l3EcRnZ.png' },
+    { pattern: /\b7s\s*music\b/i, logo: 'https://i.imgur.com/zDiIhdN.png' },
+    { pattern: /\b99\s*tv\b/i, logo: 'https://i.imgur.com/dZA4gel.png' },
+    { pattern: /\b9x\s*jalwa\b/i, logo: 'https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_9X_JALWA/images/LOGO_HD/image.png' },
+    { pattern: /\b9xm\b/i, logo: 'https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_9XM/images/LOGO_HD/image.png' },
+    { pattern: /\b10\s*tv\b/i, logo: 'https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_10TV/images/LOGO_HD/image.png' },
+    { pattern: /\b(sportsgrid)\b/i, logo: 'https://i.imgur.com/ulGKX30.png' },
+    { pattern: /\b(origin\s*sports)\b/i, logo: 'https://i.imgur.com/ulGKX30.png' }
+];
+
+/**
+ * Generates a polished, stylish TV badge image as a self-contained Data URI.
+ * This guarantees it loads instantly everywhere without depending on external services.
+ */
+function createTvBadgeDataUri(label = 'TV') {
+    const cleanLabel = String(label || 'TV').trim();
+    // Take first 2 meaningful words or up to 4 letters
+    const words = cleanLabel.split(/\s+/).filter(Boolean);
+    let initials = '';
+    if (words.length >= 2) {
+        initials = (words[0][0] + words[1][0]).toUpperCase();
+    } else {
+        initials = cleanLabel.substring(0, 3).toUpperCase();
+    }
+    // Clean characters for SVG
+    initials = initials.replace(/[^A-Z0-9&]/g, '') || 'TV';
+
+    // Subtitle under the initials (first word or TV)
+    const sub = cleanLabel.length > 14 ? cleanLabel.substring(0, 12) + '…' : cleanLabel;
+    const safeSub = sub.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const safeInitials = initials.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    // Color gradient based on name hash for nice visual variety
+    let hash = 0;
+    for (let i = 0; i < cleanLabel.length; i++) hash = cleanLabel.charCodeAt(i) + ((hash << 5) - hash);
+    const hues = [210, 260, 320, 160, 30, 190];
+    const hue = hues[Math.abs(hash) % hues.length];
+
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e1b4b"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="hsl(${hue}, 85%, 65%)"/>
+      <stop offset="100%" stop-color="hsl(${hue + 40}, 85%, 50%)"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="64" fill="url(#bg)"/>
+  <rect x="24" y="24" width="464" height="464" rx="48" fill="none" stroke="url(#glow)" stroke-width="6" opacity="0.35"/>
+  <circle cx="256" cy="210" r="130" fill="url(#glow)" opacity="0.12"/>
+  <text x="256" y="255" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif" font-size="110" font-weight="900" fill="url(#glow)" letter-spacing="2">${safeInitials}</text>
+  <rect x="96" y="325" width="320" height="40" rx="20" fill="#000" opacity="0.4"/>
+  <text x="256" y="352" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif" font-size="22" font-weight="700" fill="#94a3b8" letter-spacing="1.5">${safeSub.toUpperCase()}</text>
+</svg>`;
+
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+/**
+ * Formats channel logo into a contain-fitted 1:1 square to prevent
+ * Nuvio and Stremio from horizontally cropping rectangular channel logos.
+ */
+function formatChannelLogo(url, config = {}, label = 'Live TV') {
+    let resolvedUrl = url;
+
+    // Check if channel matches our curated brand map first
+    const matchedBrand = KNOWN_CHANNEL_LOGOS.find(item => item.pattern.test(label));
+
+    // If logo URL is missing, invalid, or generic placeholder
+    if (!resolvedUrl || typeof resolvedUrl !== 'string' || !resolvedUrl.trim() || 
+        resolvedUrl.includes('nuvio-providers/main/public/icon-512.png')) {
+        if (matchedBrand) {
+            resolvedUrl = matchedBrand.logo;
+        } else {
+            return createTvBadgeDataUri(label);
+        }
+    }
+
+    const cleanUrl = resolvedUrl.trim().replace(/^http:\/\//i, 'https://');
+    if (cleanUrl.startsWith('data:')) {
+        return cleanUrl;
+    }
+
+    // Wikimedia Commons aggressively blocks image proxies/hotlinking with 403 Forbidden.
+    // If an image URL comes from Wikimedia Commons, fall back to known brand or stylish SVG badge.
+    if (cleanUrl.includes('wikimedia.org') || cleanUrl.includes('wikipedia.org')) {
+        if (matchedBrand && !matchedBrand.logo.includes('wikimedia.org')) {
+            return `https://wsrv.nl/?url=${encodeURIComponent(matchedBrand.logo)}&w=512&h=512&fit=contain&cbg=111827&output=png&v=9`;
+        }
+        return createTvBadgeDataUri(label);
+    }
+
+    // Don't proxy localhost or private IP addresses
+    if (/(localhost|127\.0\.0\.1|192\.168\.|10\.\d+\.|172\.(1[6-9]|2\d|3[01])\.)/i.test(cleanUrl)) {
+        return cleanUrl;
+    }
+
+    // Clean contain-fit via wsrv.nl
+    return `https://wsrv.nl/?url=${encodeURIComponent(cleanUrl)}&w=512&h=512&fit=contain&cbg=111827&output=png&v=9`;
 }
 
 module.exports = {
@@ -772,5 +799,6 @@ module.exports = {
     probeLiveStream,
     getChannelsCatalog,
     getChannelMeta,
-    getChannelStreams
+    getChannelStreams,
+    formatChannelLogo
 };
