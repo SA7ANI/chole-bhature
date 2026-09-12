@@ -1,7 +1,8 @@
 node_modules/
 .env
+.env.*
 user_configs.json
+admin_settings.json
+telemetry_metrics.json
 test_suite.js
-
-
 .secret

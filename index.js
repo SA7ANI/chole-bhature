@@ -409,13 +409,35 @@ const ADMIN_SETTINGS_FILE = isVercel
     : path.join(__dirname, 'admin_settings.json');
 let globalServerSettings = {
     adminPasswordHash: null,
-    globalEcoMode: true, // Protects both Render (0.1 CPU / 512MB RAM) and Vercel (Fluid CPU / 10s timeout)
-    allowClientEcoOverride: true,
+    globalEcoMode: true, // Universal: Enforced across all addon users
+    allowClientEcoOverride: false, // Strict server-wide enforcement (Admin page is universal)
     renderKeepAlive: true,
     renderPingUrl: process.env.RENDER_PING_URL || null,
     renderApiKey: process.env.RENDER_API_KEY || null,
-    vercelApiToken: process.env.VERCEL_API_TOKEN || null
+    vercelApiToken: process.env.VERCEL_API_TOKEN || null,
+    globalScraperOverrides: {}
 };
+
+// Universal Server-Wide Admin Directives: Merges global overrides onto any user configuration
+function applyGlobalAdminOverrides(userConfig) {
+    const cfg = { ...(userConfig || {}) };
+    
+    // 1. Universal Eco Mode: Admin setting strictly governs 100% of all addon users
+    if (globalServerSettings.globalEcoMode !== undefined) {
+        cfg.renderEcoMode = Boolean(globalServerSettings.globalEcoMode);
+        cfg.vercelEcoMode = Boolean(globalServerSettings.globalEcoMode);
+    }
+    
+    // 2. Universal Scraper Overrides: Base URL / mirrors / custom headers apply to all users
+    if (globalServerSettings.globalScraperOverrides && typeof globalServerSettings.globalScraperOverrides === 'object') {
+        cfg.scraperOverrides = {
+            ...(cfg.scraperOverrides || {}),
+            ...globalServerSettings.globalScraperOverrides
+        };
+    }
+    
+    return cfg;
+}
 
 function loadAdminSettings() {
     try {
@@ -439,7 +461,7 @@ function loadAdminSettings() {
         if (globalServerSettings.globalScraperOverrides) {
             providerLoader.setGlobalScraperOverrides(globalServerSettings.globalScraperOverrides);
         }
-        console.log('[Admin] Loaded server admin settings successfully');
+        console.log('[Admin] Loaded server admin settings successfully (Universal EcoMode=' + globalServerSettings.globalEcoMode + ')');
     } catch (e) {
         console.error('[Admin] Failed to load admin_settings.json:', e.message);
     }
@@ -451,6 +473,10 @@ function saveAdminSettings() {
             providerLoader.setGlobalScraperOverrides(globalServerSettings.globalScraperOverrides);
         }
         fs.writeFileSync(ADMIN_SETTINGS_FILE, JSON.stringify(globalServerSettings, null, 2));
+        const repoSettings = path.join(__dirname, 'admin_settings.json');
+        if (ADMIN_SETTINGS_FILE !== repoSettings && fs.existsSync(repoSettings)) {
+            try { fs.writeFileSync(repoSettings, JSON.stringify(globalServerSettings, null, 2)); } catch (_) {}
+        }
     } catch (e) {
         // Safe failover for read-only serverless filesystems
         console.error('[Admin] Failed to write admin_settings.json:', e.message);
@@ -1144,11 +1170,12 @@ const handleUpdateAdminSettings = async (req, res) => {
     if (!checkDiagnosticsAuth(req)) {
         return res.status(401).json({ success: false, error: 'Unauthorized' });
     }
-    const { globalEcoMode, allowClientEcoOverride, renderKeepAlive, renderPingUrl, renderApiKey, vercelApiToken } = req.body || {};
+    const { globalEcoMode, allowClientEcoOverride, renderKeepAlive, renderPingUrl, renderApiKey, vercelApiToken, globalScraperOverrides } = req.body || {};
     if (typeof globalEcoMode === 'boolean') {
         globalServerSettings.globalEcoMode = globalEcoMode;
-    }
-    if (typeof allowClientEcoOverride === 'boolean') {
+        // Universal Admin Enforcement: Admin switch strictly dictates Eco Mode for all users
+        globalServerSettings.allowClientEcoOverride = (allowClientEcoOverride === true);
+    } else if (typeof allowClientEcoOverride === 'boolean') {
         globalServerSettings.allowClientEcoOverride = allowClientEcoOverride;
     }
     if (typeof renderKeepAlive === 'boolean') {
@@ -1159,6 +1186,13 @@ const handleUpdateAdminSettings = async (req, res) => {
     }
     if (typeof renderPingUrl === 'string') {
         globalServerSettings.renderPingUrl = renderPingUrl.trim() || null;
+    }
+    if (globalScraperOverrides && typeof globalScraperOverrides === 'object') {
+        globalServerSettings.globalScraperOverrides = {
+            ...(globalServerSettings.globalScraperOverrides || {}),
+            ...globalScraperOverrides
+        };
+        providerLoader.setGlobalScraperOverrides(globalServerSettings.globalScraperOverrides);
     }
     if (typeof renderApiKey === 'string') {
         const cleanRenderKey = renderApiKey.replace(/^Bearer\s+/i, '').trim();
@@ -1193,7 +1227,7 @@ const handleUpdateAdminSettings = async (req, res) => {
         vercelApiUsageCache = { timestamp: 0, data: null };
     }
     saveAdminSettings();
-    console.log(`[Admin] Global server settings updated & persisted: EcoMode=${globalServerSettings.globalEcoMode}`);
+    console.log(`[Admin] Global server settings updated & persisted: EcoMode=${globalServerSettings.globalEcoMode} (Universal=${!globalServerSettings.allowClientEcoOverride})`);
     res.json({ 
         success: true, 
         settings: {
@@ -1205,8 +1239,29 @@ const handleUpdateAdminSettings = async (req, res) => {
 };
 app.post('/api/telemetry/settings', handleUpdateAdminSettings);
 app.post('/api/admin/settings', handleUpdateAdminSettings);
-app.get('/api/telemetry/settings', (req, res) => res.json({ settings: globalServerSettings }));
-app.get('/api/admin/settings', (req, res) => res.json({ settings: globalServerSettings }));
+
+// Sanitized Public Settings (Allows Web UI to sync server-wide Eco Mode without leaking keys)
+const getPublicServerSettings = () => ({
+    success: true,
+    globalEcoMode: Boolean(globalServerSettings.globalEcoMode),
+    allowClientEcoOverride: Boolean(globalServerSettings.allowClientEcoOverride),
+    renderKeepAlive: Boolean(globalServerSettings.renderKeepAlive),
+    hasScraperOverrides: Boolean(globalServerSettings.globalScraperOverrides && Object.keys(globalServerSettings.globalScraperOverrides).length > 0),
+    globalScraperOverrides: globalServerSettings.globalScraperOverrides || {}
+});
+app.get('/api/public/settings', (req, res) => res.json(getPublicServerSettings()));
+app.get('/api/telemetry/settings', (req, res) => {
+    if (checkDiagnosticsAuth(req)) {
+        return res.json({ settings: globalServerSettings });
+    }
+    return res.json({ settings: getPublicServerSettings() });
+});
+app.get('/api/admin/settings', (req, res) => {
+    if (checkDiagnosticsAuth(req)) {
+        return res.json({ settings: globalServerSettings });
+    }
+    return res.json({ settings: getPublicServerSettings() });
+});
 
 // Edge Stream Cache Optimization & Flush
 const handleClearDiagnosticsCache = (req, res) => {
@@ -1256,7 +1311,7 @@ app.post('/api/test-scraper', async (req, res) => {
     }
 });
 
-// Admin Global Scraper Overrides
+// Admin Global Scraper Overrides (Universal Server-Wide Enforcement)
 app.get('/api/admin/scraper-overrides', (req, res) => {
     res.json({ success: true, overrides: globalServerSettings.globalScraperOverrides || {} });
 });
@@ -1265,11 +1320,18 @@ app.post('/api/admin/scraper-overrides', (req, res) => {
     if (!checkDiagnosticsAuth(req)) {
         return res.status(401).json({ success: false, error: 'Unauthorized' });
     }
-    const { overrides } = req.body || {};
+    const { overrides, providerName, override } = req.body || {};
     if (overrides && typeof overrides === 'object') {
         globalServerSettings.globalScraperOverrides = overrides;
         saveAdminSettings();
         console.log(`[Admin] Saved global scraper overrides for ${Object.keys(overrides).length} scrapers`);
+        return res.json({ success: true, overrides: globalServerSettings.globalScraperOverrides });
+    }
+    if (providerName && override && typeof override === 'object') {
+        globalServerSettings.globalScraperOverrides = globalServerSettings.globalScraperOverrides || {};
+        globalServerSettings.globalScraperOverrides[providerName] = override;
+        saveAdminSettings();
+        console.log(`[Admin] Saved global scraper override for provider: ${providerName}`);
         return res.json({ success: true, overrides: globalServerSettings.globalScraperOverrides });
     }
     res.status(400).json({ success: false, error: 'Invalid overrides payload' });
@@ -1625,6 +1687,7 @@ app.get('/debrid/:service/:apiKey/:hash', async (req, res) => {
 
 // Addon builder factory
 function createAddon(config) {
+    config = applyGlobalAdminOverrides(config);
     if (config && config.enableDoh !== undefined) setDohEnabled(config.enableDoh !== false);
     if (config && config.dohProvider) setDohProvider(config.dohProvider);
 
@@ -1930,10 +1993,11 @@ function createAddon(config) {
 
             let allStreams = [];
             // High-speed parallel scraper execution timeout to ensure streams return within client limits
+            // Universal Server-Wide Admin Enforcement: Admin switch strictly dictates Eco Mode for all users
             const isClientEco = config.renderEcoMode !== undefined ? config.renderEcoMode : config.vercelEcoMode;
-            const isEcoMode = globalServerSettings.globalEcoMode === true 
-                ? (globalServerSettings.allowClientEcoOverride ? (isClientEco !== false) : true)
-                : Boolean(isClientEco === true);
+            const isEcoMode = globalServerSettings.globalEcoMode !== undefined 
+                ? Boolean(globalServerSettings.globalEcoMode)
+                : (globalServerSettings.allowClientEcoOverride ? Boolean(isClientEco !== false) : true);
             const PROVIDER_TIMEOUT_MS = isEcoMode || (typeof process !== 'undefined' && (process.env.RENDER || process.env.VERCEL)) ? 8000 : 15000;
 
             const scrapeStartTime = Date.now();

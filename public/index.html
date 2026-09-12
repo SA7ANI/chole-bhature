@@ -3721,6 +3721,22 @@
                     </div>
                 </div>
 
+                <!-- Universal Server-Wide Enforcement Directive Banner -->
+                <div class="section-wrap" style="margin-bottom: 0;">
+                    <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(56, 189, 248, 0.1) 50%, rgba(168, 85, 247, 0.12) 100%); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 14px; padding: 14px 18px; display: flex; align-items: center; gap: 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.25);">
+                        <div style="width: 40px; height: 40px; border-radius: 12px; background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.4); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;">👑</div>
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                <span style="font-size: 13.5px; font-weight: 800; color: #f8fafc; letter-spacing: 0.2px;">Universal Server-Wide Enforcement Active</span>
+                                <span class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.4); color: #34d399; font-size: 10px; font-weight: 700; padding: 2px 8px;">100% All Addon Users</span>
+                            </div>
+                            <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 3px; line-height: 1.45;">
+                                This console controls the global server. Any settings configured here (<strong>Eco Mode</strong>, <strong>Keep-Alive Heartbeat</strong>, <strong>Scraper Domain Overrides</strong>, <strong>Cache Purging</strong>) are automatically enforced across <strong>every user, device, and player</strong> connecting to this addon.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Dynamic Host Platform Indicator -->
                 <div id="cloud-platform-bar" class="section-wrap" style="margin-bottom: 0;">
                     <div class="section-label-bar">
@@ -3748,17 +3764,17 @@
                     <!-- Render Free-Tier Eco Optimizer Guard -->
                     <div class="section-wrap" id="section-render-guard">
                         <div class="section-label-bar">
-                            <span class="section-label">⚡ Render Free-Tier Eco Optimizer</span>
-                            <span id="admin-render-badge" class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.35); color: #34d399;">🟢 Eco Mode: Active (Sub-5ms)</span>
+                            <span class="section-label">⚡ Render Eco Optimizer (Universal)</span>
+                            <span id="admin-render-badge" class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.35); color: #34d399;">🟢 Universal Eco: Active (Sub-5ms)</span>
                         </div>
                         <div class="section-card">
                             <div class="setting-item-row" style="border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 16px;">
                                 <div class="setting-text-block">
                                     <div class="setting-headline">
-                                        ⚡ Render Free-Tier Eco Optimizer
-                                        <span class="tag-pill-badge" style="background: rgba(168, 85, 247, 0.15); border-color: rgba(168, 85, 247, 0.35); color: #d8b4fe;">Zero 0.1 vCPU Starvation</span>
+                                        ⚡ Universal Server-Wide Eco Optimizer
+                                        <span class="tag-pill-badge" style="background: rgba(168, 85, 247, 0.15); border-color: rgba(168, 85, 247, 0.35); color: #d8b4fe;">Applies to All Users</span>
                                     </div>
-                                    <div class="setting-description">Uses sub-5ms instant speed heuristics instead of blocking HTTP network probes. Shields Render free accounts against <b>512MB RAM</b> ceiling and prevents <b>0.1 shared vCPU</b> CPU throttling so your addon never lags or crashes.</div>
+                                    <div class="setting-description">Uses sub-5ms instant speed heuristics instead of blocking HTTP network probes. Automatically enforced across 100% of all users and connected streaming devices to shield your server from <b>512MB RAM</b> ceiling and <b>0.1 vCPU</b> CPU throttling.</div>
                                 </div>
                                 <div class="dual-filter-group">
                                     <label class="filter-capsule">
@@ -3926,17 +3942,17 @@
                     <!-- Vercel Free-Tier Eco Optimizer Guard -->
                     <div class="section-wrap" id="section-vercel-guard">
                         <div class="section-label-bar">
-                            <span class="section-label">⚡ Vercel Free-Tier Eco Optimizer</span>
-                            <span id="admin-vercel-badge" class="tag-pill-badge" style="background: rgba(148, 163, 184, 0.12); border-color: rgba(148, 163, 184, 0.25); color: var(--text-muted);">⚪ Eco Mode: Disabled</span>
+                            <span class="section-label">⚡ Vercel Eco Optimizer (Universal)</span>
+                            <span id="admin-vercel-badge" class="tag-pill-badge" style="background: rgba(148, 163, 184, 0.12); border-color: rgba(148, 163, 184, 0.25); color: var(--text-muted);">⚪ Universal Eco: Disabled</span>
                         </div>
                         <div class="section-card">
                             <div class="setting-item-row" style="border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 16px;">
                                 <div class="setting-text-block">
                                     <div class="setting-headline">
-                                        ⚡ Vercel Free-Tier Eco Optimizer
-                                        <span class="tag-pill-badge" style="background: rgba(139, 92, 246, 0.15); border-color: rgba(139, 92, 246, 0.35); color: #c4b5fd;">Zero CPU Exhaustion</span>
+                                        ⚡ Universal Server-Wide Eco Optimizer
+                                        <span class="tag-pill-badge" style="background: rgba(139, 92, 246, 0.15); border-color: rgba(139, 92, 246, 0.35); color: #c4b5fd;">Applies to All Users</span>
                                     </div>
-                                    <div class="setting-description">Uses instant speed heuristics (&lt; 5ms) instead of blocking HTTP network probes. Slashes Serverless CPU duration by <b>&gt; 96%</b> so your Vercel Hobby free account runs all month long without reaching the 4-hour Fluid CPU limit.</div>
+                                    <div class="setting-description">Uses instant speed heuristics (&lt; 5ms) instead of blocking HTTP network probes. Universally applied across 100% of addon users to slash Serverless CPU duration by <b>&gt; 96%</b> so your Vercel Hobby free account runs all month long without reaching the 4-hour Fluid CPU limit.</div>
                                 </div>
                                 <div class="dual-filter-group">
                                     <label class="filter-capsule">
@@ -4002,14 +4018,13 @@
                     </div>
 
                     <!-- Detailed Vercel Free-Tier Economics & Limits Breakdown -->
-                    <!-- Detailed Vercel Free-Tier Economics & Limits Breakdown -->
                     <div class="section-wrap" id="section-vercel-economics">
                         <div class="section-label-bar" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <div style="display: inline-flex; align-items: center; gap: 8px;">
-                                <span class="section-label">📈 Vercel Free-Tier Monthly Budget</span>
-                                <span id="budget-sync-badge" class="tag-pill-badge" style="background: rgba(148, 163, 184, 0.12); border-color: rgba(148, 163, 184, 0.25); color: var(--text-muted); font-size: 11px;">⚪ Local Profiler</span>
+                            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; flex: 1 1 auto;">
+                                <span class="section-label" style="white-space: nowrap; margin-bottom: 0; font-size: 13px;">📈 Vercel Monthly Budget</span>
+                                <span id="budget-sync-badge" class="tag-pill-badge" style="background: rgba(148, 163, 184, 0.12); border-color: rgba(148, 163, 184, 0.25); color: var(--text-muted); font-size: 11px; max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-flex; align-items: center;" title="Vercel Sync Status">⚪ Local Profiler</span>
                             </div>
-                            <button class="pill-btn pill-btn-glass" onclick="fetchAdminStats(true)" style="padding: 4px 12px; font-size: 11.5px; height: 28px; line-height: 1; flex-shrink: 0;">🔄 Refresh Vercel Sync</button>
+                            <button class="pill-btn pill-btn-glass" onclick="fetchAdminStats(true)" style="padding: 4px 10px; font-size: 11px; height: 26px; line-height: 1; flex-shrink: 0; margin-left: auto;">🔄 Refresh</button>
                         </div>
                         <div class="section-card">
                             <div style="display: flex; flex-direction: column; gap: 14px;">
@@ -4342,6 +4357,16 @@
                     </div>
                     <div id="scraper-test-result-box" style="margin-top: 8px; display: none; font-size: 11.5px;">
                         <!-- Injected dynamically -->
+                    </div>
+                </div>
+                <!-- Universal Server-Wide Sync Option -->
+                <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 10px; padding: 8px 12px; margin-top: 6px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                    <label for="scraper-global-override-toggle" style="font-size: 11px; font-weight: 700; color: #34d399; margin-bottom: 0; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                        <span>👑</span> Apply Universally to All Addon Users
+                    </label>
+                    <div class="switch-toggle" style="transform: scale(0.85); transform-origin: right center;">
+                        <input type="checkbox" id="scraper-global-override-toggle" checked>
+                        <span class="switch-slider"></span>
                     </div>
                 </div>
             </div>
@@ -5354,12 +5379,12 @@
             const renderBadge = document.getElementById('admin-render-badge');
             if (renderBadge) {
                 if (isEco) {
-                    renderBadge.innerText = '🟢 Eco Mode: Active (Sub-5ms)';
+                    renderBadge.innerText = '🟢 Universal Eco: Active (All Users)';
                     renderBadge.style.background = 'rgba(16, 185, 129, 0.15)';
                     renderBadge.style.borderColor = 'rgba(16, 185, 129, 0.35)';
                     renderBadge.style.color = '#34d399';
                 } else {
-                    renderBadge.innerText = '⚪ Eco Mode: Disabled';
+                    renderBadge.innerText = '⚪ Universal Eco: Disabled';
                     renderBadge.style.background = 'rgba(148, 163, 184, 0.12)';
                     renderBadge.style.borderColor = 'rgba(148, 163, 184, 0.25)';
                     renderBadge.style.color = 'var(--text-muted)';
@@ -5471,12 +5496,12 @@
             const badge = document.getElementById('admin-vercel-badge');
             if (badge) {
                 if (isEco) {
-                    badge.innerText = '🟢 Eco Mode: Active (Zero CPU)';
+                    badge.innerText = '🟢 Universal Eco: Active (All Users)';
                     badge.style.background = 'rgba(16, 185, 129, 0.15)';
                     badge.style.borderColor = 'rgba(16, 185, 129, 0.35)';
                     badge.style.color = '#34d399';
                 } else {
-                    badge.innerText = '⚪ Eco Mode: Disabled';
+                    badge.innerText = '⚪ Universal Eco: Disabled';
                     badge.style.background = 'rgba(148, 163, 184, 0.12)';
                     badge.style.borderColor = 'rgba(148, 163, 184, 0.25)';
                     badge.style.color = 'var(--text-muted)';
@@ -5558,13 +5583,14 @@
                 if (isOfficial) {
                     const uname = ov.username || 'Vercel User';
                     const pName = ov.project?.name || null;
-                    const tag = pName ? `@${uname} (${pName})` : `@${uname}`;
-                    budgetSyncBadge.innerHTML = `<span style="display:inline-block; width:6px; height:6px; background:#34d399; border-radius:50%; margin-right:4px;"></span> Synced: ${tag}`;
+                    budgetSyncBadge.title = `Connected to @${uname}${pName ? ' • Project: ' + pName : ''}`;
+                    budgetSyncBadge.innerHTML = `<span style="display:inline-block; width:6px; height:6px; background:#34d399; border-radius:50%; margin-right:4px; flex-shrink:0;"></span><span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Synced: @${uname}</span>`;
                     budgetSyncBadge.style.background = 'rgba(16, 185, 129, 0.15)';
                     budgetSyncBadge.style.borderColor = 'rgba(16, 185, 129, 0.35)';
                     budgetSyncBadge.style.color = '#34d399';
                 } else {
                     budgetSyncBadge.innerText = '⚪ Local Profiler';
+                    budgetSyncBadge.title = 'Built-in Local Profiler';
                     budgetSyncBadge.style.background = 'rgba(148, 163, 184, 0.12)';
                     budgetSyncBadge.style.borderColor = 'rgba(148, 163, 184, 0.25)';
                     budgetSyncBadge.style.color = 'var(--text-muted)';
@@ -6574,11 +6600,11 @@
                         'x-admin-key': token,
                         'x-diagnostic-token': token
                     },
-                    body: JSON.stringify({ globalEcoMode: isEnabled })
+                    body: JSON.stringify({ globalEcoMode: isEnabled, allowClientEcoOverride: false })
                 });
                 const data = await res.json();
                 if (data && data.success) {
-                    showToast(`⚡ <b>Global Server Eco Mode:</b> ${isEnabled ? 'ENABLED' : 'DISABLED'} across all users!`);
+                    showToast(`👑 <b>Universal Server Eco Mode:</b> ${isEnabled ? 'ENABLED (100% of Users)' : 'DISABLED'}!`);
                     triggerHaptic('success');
                 }
             } catch (e) {
@@ -7412,6 +7438,25 @@
 
             saveSettingsLocal();
             saveConfigurationToServer(true);
+
+            // If admin is authenticated or global toggle checked, sync server-wide for ALL users
+            const adminToken = getAdminKey();
+            const isGlobalToggle = document.getElementById('scraper-global-override-toggle')?.checked !== false;
+            if (adminToken && isGlobalToggle) {
+                const overrideObj = (domain || fallbackMirrors.length > 0 || Object.keys(headers).length > 0)
+                    ? { domain, fallbackMirrors, headers }
+                    : null;
+                fetch('/api/admin/scraper-overrides', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-admin-key': adminToken, 'x-diagnostic-token': adminToken },
+                    body: JSON.stringify({ providerName: currentEditingScraper, override: overrideObj || {} })
+                }).then(r => r.json()).then(res => {
+                    if (res && res.success) {
+                        showToast(`👑 <b>Universal Override:</b> ${currentEditingScraper} updated for 100% of users!`);
+                    }
+                }).catch(e => console.error('Failed to sync global scraper override', e));
+            }
+
             renderProviders();
             closeScraperModal();
         }
@@ -8236,6 +8281,24 @@
             } catch (err) {
                 console.error('[Init] Error setting up UI components:', err);
             }
+
+            // Sync universal server settings (Eco Mode, Keep-Alive, Scraper Overrides)
+            fetch('/api/public/settings')
+                .then(r => r.ok ? r.json() : null)
+                .then(pub => {
+                    if (pub && pub.success) {
+                        if (pub.globalEcoMode !== undefined) {
+                            settings.renderEcoMode = pub.globalEcoMode;
+                            settings.vercelEcoMode = pub.globalEcoMode;
+                            const rEl = document.getElementById('renderEcoMode');
+                            const vEl = document.getElementById('vercelEcoMode');
+                            if (rEl) rEl.checked = pub.globalEcoMode;
+                            if (vEl) vEl.checked = pub.globalEcoMode;
+                        }
+                        updateAdminView();
+                    }
+                })
+                .catch(() => {});
 
             // Warmup telemetry in background (non-blocking)
             fetch('/api/telemetry/stats', { headers: { 'x-diagnostic-token': 'guest' } })
