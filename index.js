@@ -701,41 +701,49 @@ async function fetchOfficialVercelUsage(apiToken, forceFresh = false) {
         const now = new Date();
         const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
         const endNow = now.toISOString();
+        const nextMonthDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+        const daysRemaining = Math.max(1, Math.ceil((nextMonthDate - now) / (1000 * 60 * 60 * 24)));
+        const endOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59)).toISOString();
 
-        // 3. Query usage for personal scope + all identified team scopes
+        // 3. Query usage for personal scope + all identified team scopes across all key metric types
+        const metricTypes = ['requests', 'bandwidth', 'serverless-function-execution', 'edge-function-execution'];
         const usageQueries = [];
 
-        // Query personal scope if user profile exists
-        if (userRes.status === 'fulfilled') {
+        const addQueriesForScope = (teamId = null) => {
+            const teamQuery = teamId ? `&teamId=${encodeURIComponent(teamId)}` : '';
+            // Generic query without type (some Hobby tiers return consolidated payload)
             usageQueries.push(
-                axios.get(`https://api.vercel.com/v2/usage?type=requests&from=${startOfMonth}&to=${endNow}`, {
+                axios.get(`https://api.vercel.com/v2/usage?from=${startOfMonth}&to=${endNow}${teamQuery}`, {
                     headers,
                     httpsAgent: dohHttpsAgent,
                     timeout: 6000
                 })
             );
+            // Specific metric type queries
+            for (const mt of metricTypes) {
+                usageQueries.push(
+                    axios.get(`https://api.vercel.com/v2/usage?type=${mt}&from=${startOfMonth}&to=${endNow}${teamQuery}`, {
+                        headers,
+                        httpsAgent: dohHttpsAgent,
+                        timeout: 6000
+                    })
+                );
+            }
+        };
+
+        // Query personal scope if user profile exists
+        if (userRes.status === 'fulfilled') {
+            addQueriesForScope(null);
         }
 
         // Query each team scope
         for (const tId of teamIds) {
-            usageQueries.push(
-                axios.get(`https://api.vercel.com/v2/usage?type=requests&from=${startOfMonth}&to=${endNow}&teamId=${tId}`, {
-                    headers,
-                    httpsAgent: dohHttpsAgent,
-                    timeout: 6000
-                })
-            );
+            addQueriesForScope(tId);
         }
 
-        // If no queries yet, fallback to generic query
+        // Fallback if no scope was matched
         if (usageQueries.length === 0) {
-            usageQueries.push(
-                axios.get(`https://api.vercel.com/v2/usage?type=requests&from=${startOfMonth}&to=${endNow}`, {
-                    headers,
-                    httpsAgent: dohHttpsAgent,
-                    timeout: 6000
-                })
-            );
+            addQueriesForScope(null);
         }
 
         const usageResults = await Promise.allSettled(usageQueries);
@@ -769,6 +777,11 @@ async function fetchOfficialVercelUsage(apiToken, forceFresh = false) {
             totalRequests,
             bandwidthUsedGB,
             fluidCpuHours,
+            billingCycle: {
+                start: startOfMonth,
+                end: endOfMonth,
+                daysRemaining
+            },
             lastSynced: Date.now()
         };
         vercelApiUsageCache = {

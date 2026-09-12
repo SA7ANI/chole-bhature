@@ -4002,40 +4002,84 @@
                     </div>
 
                     <!-- Detailed Vercel Free-Tier Economics & Limits Breakdown -->
+                    <!-- Detailed Vercel Free-Tier Economics & Limits Breakdown -->
                     <div class="section-wrap" id="section-vercel-economics">
-                        <div class="section-label-bar" style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
-                            <span class="section-label">📈 Vercel Free-Tier Monthly Budget</span>
+                        <div class="section-label-bar" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <div style="display: inline-flex; align-items: center; gap: 8px;">
+                                <span class="section-label">📈 Vercel Free-Tier Monthly Budget</span>
+                                <span id="budget-sync-badge" class="tag-pill-badge" style="background: rgba(148, 163, 184, 0.12); border-color: rgba(148, 163, 184, 0.25); color: var(--text-muted); font-size: 11px;">⚪ Local Profiler</span>
+                            </div>
                             <button class="pill-btn pill-btn-glass" onclick="fetchAdminStats(true)" style="padding: 4px 12px; font-size: 11.5px; height: 28px; line-height: 1; flex-shrink: 0;">🔄 Refresh Vercel Sync</button>
                         </div>
                         <div class="section-card">
-                            <div style="display: flex; flex-direction: column; gap: 12px;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.06); padding-bottom: 10px; gap: 8px;">
-                                    <div style="min-width: 0; flex: 1;">
-                                        <div style="font-weight: 700; font-size: 13px; color: #f8fafc; line-height: 1.3;">Fluid Active CPU Budget</div>
-                                        <div id="budget-cpu-sub" style="font-size: 11.5px; color: var(--text-muted); line-height: 1.35; margin-top: 2px;">4.0 Hours free per billing month</div>
+                            <div style="display: flex; flex-direction: column; gap: 14px;">
+                                <!-- 1. Fluid CPU Budget -->
+                                <div style="border-bottom: 1px solid rgba(255, 255, 255, 0.06); padding-bottom: 12px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                                        <div style="font-weight: 700; font-size: 13px; color: #f8fafc; line-height: 1.3; display: flex; align-items: center; gap: 6px;">
+                                            <span>⚡</span> Fluid Active CPU Budget
+                                        </div>
+                                        <div style="text-align: right; flex-shrink: 0;">
+                                            <span id="budget-cpu-val" style="font-size: 11px; font-weight: 700; color: #34d399; background: rgba(16, 185, 129, 0.12); padding: 4px 8px; border-radius: 6px; white-space: nowrap;">0.00h / 4.0h</span>
+                                        </div>
                                     </div>
-                                    <div style="text-align: right; flex-shrink: 0;">
-                                        <span id="budget-cpu-val" style="font-size: 11px; font-weight: 700; color: #34d399; background: rgba(16, 185, 129, 0.12); padding: 4px 8px; border-radius: 6px; white-space: nowrap;">100k+ /mo</span>
+                                    <!-- Progress Track -->
+                                    <div style="height: 8px; background: rgba(255, 255, 255, 0.06); border-radius: 9999px; overflow: hidden; margin: 8px 0 6px 0; position: relative;">
+                                        <div id="budget-cpu-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #10b981, #34d399); border-radius: 9999px; transition: width 0.4s ease;"></div>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; color: var(--text-muted); gap: 8px; flex-wrap: wrap;">
+                                        <div id="budget-cpu-sub" style="line-height: 1.35;">4.0 Hours free per billing month</div>
+                                        <div id="budget-cpu-headroom" style="color: #34d399; font-weight: 600; white-space: nowrap;">100% Free Headroom</div>
                                     </div>
                                 </div>
 
-                                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.06); padding-bottom: 10px; gap: 8px;">
-                                    <div style="min-width: 0; flex: 1;">
-                                        <div style="font-weight: 700; font-size: 13px; color: #f8fafc; line-height: 1.3;">Serverless Invocations</div>
-                                        <div id="budget-invocations-sub" style="font-size: 11.5px; color: var(--text-muted); line-height: 1.35; margin-top: 2px;">1,000,000 free serverless calls</div>
+                                <!-- 2. Serverless Invocations -->
+                                <div style="border-bottom: 1px solid rgba(255, 255, 255, 0.06); padding-bottom: 12px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                                        <div style="font-weight: 700; font-size: 13px; color: #f8fafc; line-height: 1.3; display: flex; align-items: center; gap: 6px;">
+                                            <span>🚀</span> Serverless Invocations
+                                        </div>
+                                        <div style="text-align: right; flex-shrink: 0;">
+                                            <span id="budget-invocations-val" style="font-size: 11px; font-weight: 700; color: #38bdf8; background: rgba(56, 189, 248, 0.12); padding: 4px 8px; border-radius: 6px; white-space: nowrap;">0 / 1M Calls</span>
+                                        </div>
                                     </div>
-                                    <div style="text-align: right; flex-shrink: 0;">
-                                        <span id="budget-invocations-val" style="font-size: 11px; font-weight: 700; color: #38bdf8; background: rgba(56, 189, 248, 0.12); padding: 4px 8px; border-radius: 6px; white-space: nowrap;">1M Calls</span>
+                                    <!-- Progress Track -->
+                                    <div style="height: 8px; background: rgba(255, 255, 255, 0.06); border-radius: 9999px; overflow: hidden; margin: 8px 0 6px 0; position: relative;">
+                                        <div id="budget-invocations-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #0284c7, #38bdf8); border-radius: 9999px; transition: width 0.4s ease;"></div>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; color: var(--text-muted); gap: 8px; flex-wrap: wrap;">
+                                        <div id="budget-invocations-sub" style="line-height: 1.35;">1,000,000 free serverless calls</div>
+                                        <div id="budget-invocations-headroom" style="color: #38bdf8; font-weight: 600; white-space: nowrap;">1,000,000 Available</div>
                                     </div>
                                 </div>
 
-                                <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
-                                    <div style="min-width: 0; flex: 1;">
-                                        <div style="font-weight: 700; font-size: 13px; color: #f8fafc; line-height: 1.3;">Edge Network Bandwidth</div>
-                                        <div id="budget-bandwidth-sub" style="font-size: 11.5px; color: var(--text-muted); line-height: 1.35; margin-top: 2px;">100 GB Fast Worldwide CDN Bandwidth</div>
+                                <!-- 3. Edge Network Bandwidth -->
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                                        <div style="font-weight: 700; font-size: 13px; color: #f8fafc; line-height: 1.3; display: flex; align-items: center; gap: 6px;">
+                                            <span>🌐</span> Edge Network Bandwidth
+                                        </div>
+                                        <div style="text-align: right; flex-shrink: 0;">
+                                            <span id="budget-bandwidth-val" style="font-size: 11px; font-weight: 700; color: #c084fc; background: rgba(192, 132, 252, 0.12); padding: 4px 8px; border-radius: 6px; white-space: nowrap;">0.00 GB / 100 GB</span>
+                                        </div>
                                     </div>
-                                    <div style="text-align: right; flex-shrink: 0;">
-                                        <span id="budget-bandwidth-val" style="font-size: 11px; font-weight: 700; color: #c084fc; background: rgba(192, 132, 252, 0.12); padding: 4px 8px; border-radius: 6px; white-space: nowrap;">100 GB Free</span>
+                                    <!-- Progress Track -->
+                                    <div style="height: 8px; background: rgba(255, 255, 255, 0.06); border-radius: 9999px; overflow: hidden; margin: 8px 0 6px 0; position: relative;">
+                                        <div id="budget-bandwidth-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #9333ea, #c084fc); border-radius: 9999px; transition: width 0.4s ease;"></div>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; color: var(--text-muted); gap: 8px; flex-wrap: wrap;">
+                                        <div id="budget-bandwidth-sub" style="line-height: 1.35;">100 GB Fast Worldwide CDN Bandwidth</div>
+                                        <div id="budget-bandwidth-headroom" style="color: #c084fc; font-weight: 600; white-space: nowrap;">100 GB Free</div>
+                                    </div>
+                                </div>
+
+                                <!-- 4. Combined Telemetry & Billing Cycle Strip -->
+                                <div id="budget-footer-row" style="display: flex; justify-content: space-between; align-items: center; margin-top: 2px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.06); font-size: 11px; color: var(--text-muted); flex-wrap: wrap; gap: 8px;">
+                                    <div id="budget-cycle-sub" style="display: flex; align-items: center; gap: 5px;">
+                                        <span>📅</span> Monthly Billing Cycle (Resets on 1st)
+                                    </div>
+                                    <div id="budget-instance-telemetry" style="display: flex; align-items: center; gap: 5px;">
+                                        <span>⚡</span> Instance Traffic: <span id="budget-instance-invocations" style="color: #f8fafc; font-weight: 700;">0 calls</span> (<span id="budget-instance-cpu" style="color: #34d399; font-weight: 700;">~0.00h CPU</span>)
                                     </div>
                                 </div>
                             </div>
@@ -5484,10 +5528,23 @@
             // 3. Vercel Monthly Budget
             const budgetCpu = document.getElementById('budget-cpu-val');
             const budgetCpuSub = document.getElementById('budget-cpu-sub');
+            const budgetCpuBar = document.getElementById('budget-cpu-bar');
+            const budgetCpuHeadroom = document.getElementById('budget-cpu-headroom');
+
             const budgetInvocations = document.getElementById('budget-invocations-val');
             const budgetInvocationsSub = document.getElementById('budget-invocations-sub');
+            const budgetInvocationsBar = document.getElementById('budget-invocations-bar');
+            const budgetInvocationsHeadroom = document.getElementById('budget-invocations-headroom');
+
             const budgetBandwidth = document.getElementById('budget-bandwidth-val');
             const budgetBandwidthSub = document.getElementById('budget-bandwidth-sub');
+            const budgetBandwidthBar = document.getElementById('budget-bandwidth-bar');
+            const budgetBandwidthHeadroom = document.getElementById('budget-bandwidth-headroom');
+
+            const budgetSyncBadge = document.getElementById('budget-sync-badge');
+            const budgetCycleSub = document.getElementById('budget-cycle-sub');
+            const budgetInstInvs = document.getElementById('budget-instance-invocations');
+            const budgetInstCpu = document.getElementById('budget-instance-cpu');
 
             const ov = d.officialVercel;
             const isOfficial = Boolean(ov && ov.connected);
@@ -5496,48 +5553,115 @@
             const invocationsUsed = isOfficial ? (ov.totalInvocations || 0) : (d.serverlessInvocations || 0);
             const bandwidthUsed = isOfficial ? (ov.bandwidthUsedGB || 0) : (d.bandwidthUsedGB || 0);
 
-            if (budgetCpu) {
-                if (fluidCpuUsed > 0) {
-                    budgetCpu.innerText = `${fluidCpuUsed} / 4.0 Hrs`;
+            // Sync Badge in Header
+            if (budgetSyncBadge) {
+                if (isOfficial) {
+                    const uname = ov.username || 'Vercel User';
+                    budgetSyncBadge.innerHTML = `<span style="display:inline-block; width:6px; height:6px; background:#34d399; border-radius:50%; margin-right:4px;"></span> Synced: @${uname}`;
+                    budgetSyncBadge.style.background = 'rgba(16, 185, 129, 0.15)';
+                    budgetSyncBadge.style.borderColor = 'rgba(16, 185, 129, 0.35)';
+                    budgetSyncBadge.style.color = '#34d399';
                 } else {
-                    budgetCpu.innerText = isEco ? '100k+ /mo' : '25k+ /mo';
+                    budgetSyncBadge.innerText = '⚪ Local Profiler';
+                    budgetSyncBadge.style.background = 'rgba(148, 163, 184, 0.12)';
+                    budgetSyncBadge.style.borderColor = 'rgba(148, 163, 184, 0.25)';
+                    budgetSyncBadge.style.color = 'var(--text-muted)';
                 }
+            }
+
+            // 1. Fluid CPU Budget (4.0 Hours Max)
+            const cpuLimit = 4.0;
+            const cpuPct = Math.min(100, Math.max(0, (fluidCpuUsed / cpuLimit) * 100));
+            const freeCpu = Math.max(0, cpuLimit - fluidCpuUsed);
+            const freeCpuPct = ((freeCpu / cpuLimit) * 100).toFixed(1);
+
+            if (budgetCpu) {
+                budgetCpu.innerText = `${fluidCpuUsed.toFixed(2)}h / ${cpuLimit.toFixed(1)}h (${cpuPct.toFixed(1)}%)`;
+                budgetCpu.style.color = cpuPct > 85 ? '#f87171' : (cpuPct > 65 ? '#facc15' : '#34d399');
+                budgetCpu.style.background = cpuPct > 85 ? 'rgba(239, 68, 68, 0.15)' : (cpuPct > 65 ? 'rgba(250, 204, 21, 0.15)' : 'rgba(16, 185, 129, 0.12)');
+            }
+            if (budgetCpuBar) {
+                budgetCpuBar.style.width = `${Math.max(cpuPct, fluidCpuUsed > 0 ? 1.5 : 0)}%`;
+                budgetCpuBar.style.background = cpuPct > 85 
+                    ? 'linear-gradient(90deg, #ef4444, #dc2626)' 
+                    : (cpuPct > 65 ? 'linear-gradient(90deg, #f59e0b, #facc15)' : 'linear-gradient(90deg, #10b981, #34d399)');
             }
             if (budgetCpuSub) {
                 if (isOfficial) {
-                    budgetCpuSub.innerText = `Official Vercel CPU: ${fluidCpuUsed}h / 4.0h used (Monthly Billing Cycle)`;
+                    budgetCpuSub.innerText = `Official Account CPU: ${fluidCpuUsed.toFixed(2)}h / 4.0h used (Monthly Billing Cycle)`;
                 } else if (d.isVercel !== undefined) {
                     budgetCpuSub.innerText = d.isVercel ? `Region: ${d.vercelRegion || 'iad1'} • Fluid Active Compute` : `Environment: ${d.vercelRegion || 'Local Node'} • 4.0h Free`;
                 }
             }
+            if (budgetCpuHeadroom) {
+                budgetCpuHeadroom.innerText = `🟢 ${freeCpu.toFixed(2)}h (${freeCpuPct}%) Free Headroom`;
+            }
+
+            // 2. Serverless Invocations (1,000,000 Max)
+            const invLimit = 1000000;
+            const invPct = Math.min(100, Math.max(0, (invocationsUsed / invLimit) * 100));
+            const remCalls = Math.max(0, invLimit - invocationsUsed);
+            const remCallsPct = ((remCalls / invLimit) * 100).toFixed(1);
+
             if (budgetInvocations) {
-                if (invocationsUsed > 0) {
-                    budgetInvocations.innerText = `${invocationsUsed.toLocaleString()} Calls`;
-                } else {
-                    budgetInvocations.innerText = '1M Calls';
-                }
+                budgetInvocations.innerText = `${invocationsUsed.toLocaleString()} / 1M Calls (${invPct.toFixed(1)}%)`;
+                budgetInvocations.style.color = invPct > 85 ? '#f87171' : (invPct > 65 ? '#facc15' : '#38bdf8');
+                budgetInvocations.style.background = invPct > 85 ? 'rgba(239, 68, 68, 0.15)' : (invPct > 65 ? 'rgba(250, 204, 21, 0.15)' : 'rgba(56, 189, 248, 0.12)');
+            }
+            if (budgetInvocationsBar) {
+                budgetInvocationsBar.style.width = `${Math.max(invPct, invocationsUsed > 0 ? 1.5 : 0)}%`;
+                budgetInvocationsBar.style.background = invPct > 85 
+                    ? 'linear-gradient(90deg, #ef4444, #dc2626)' 
+                    : (invPct > 65 ? 'linear-gradient(90deg, #f59e0b, #facc15)' : 'linear-gradient(90deg, #0284c7, #38bdf8)');
             }
             if (budgetInvocationsSub) {
-                const remCalls = Math.max(0, 1000000 - invocationsUsed);
-                const pct = ((remCalls / 1000000) * 100).toFixed(1);
                 budgetInvocationsSub.innerText = isOfficial 
-                    ? `${remCalls.toLocaleString()} free calls remaining (${pct}% remaining on Vercel account)`
-                    : `${remCalls.toLocaleString()} free calls remaining`;
+                    ? `Official Vercel Account: ${invocationsUsed.toLocaleString()} calls recorded this cycle`
+                    : `Estimated Invocations: ${invocationsUsed.toLocaleString()} / 1,000,000 calls`;
             }
+            if (budgetInvocationsHeadroom) {
+                budgetInvocationsHeadroom.innerText = `🟢 ${remCalls.toLocaleString()} (${remCallsPct}%) Available`;
+            }
+
+            // 3. Edge Network Bandwidth (100 GB Max)
+            const bwLimit = 100.0;
+            const bwPct = Math.min(100, Math.max(0, (bandwidthUsed / bwLimit) * 100));
+            const remBw = Math.max(0, bwLimit - bandwidthUsed);
+            const remBwPct = ((remBw / bwLimit) * 100).toFixed(1);
+
             if (budgetBandwidth) {
-                if (bandwidthUsed > 0) {
-                    const remaining = Math.max(0, 100 - bandwidthUsed).toFixed(2);
-                    budgetBandwidth.innerText = `${remaining} GB Free`;
-                } else {
-                    budgetBandwidth.innerText = '100 GB Free';
-                }
+                budgetBandwidth.innerText = `${bandwidthUsed.toFixed(2)} GB / 100 GB (${bwPct.toFixed(1)}%)`;
+                budgetBandwidth.style.color = bwPct > 85 ? '#f87171' : (bwPct > 65 ? '#facc15' : '#c084fc');
+                budgetBandwidth.style.background = bwPct > 85 ? 'rgba(239, 68, 68, 0.15)' : (bwPct > 65 ? 'rgba(250, 204, 21, 0.15)' : 'rgba(192, 132, 252, 0.12)');
+            }
+            if (budgetBandwidthBar) {
+                budgetBandwidthBar.style.width = `${Math.max(bwPct, bandwidthUsed > 0 ? 1.5 : 0)}%`;
+                budgetBandwidthBar.style.background = bwPct > 85 
+                    ? 'linear-gradient(90deg, #ef4444, #dc2626)' 
+                    : (bwPct > 65 ? 'linear-gradient(90deg, #f59e0b, #facc15)' : 'linear-gradient(90deg, #9333ea, #c084fc)');
             }
             if (budgetBandwidthSub) {
-                if (bandwidthUsed > 0) {
-                    budgetBandwidthSub.innerText = `${bandwidthUsed.toFixed(2)} GB / 100 GB Used (${(100 - bandwidthUsed).toFixed(2)} GB Remaining)`;
+                budgetBandwidthSub.innerText = isOfficial 
+                    ? `Official Vercel Account: ${bandwidthUsed.toFixed(2)} GB fast worldwide CDN used`
+                    : `100 GB Fast Worldwide CDN Bandwidth`;
+            }
+            if (budgetBandwidthHeadroom) {
+                budgetBandwidthHeadroom.innerText = `🟢 ${remBw.toFixed(2)} GB (${remBwPct}%) Free`;
+            }
+
+            // 4. Footer info strip
+            if (budgetCycleSub) {
+                if (ov && ov.billingCycle && ov.billingCycle.daysRemaining) {
+                    budgetCycleSub.innerHTML = `<span>📅</span> Monthly Billing Cycle • Resets in <b>${ov.billingCycle.daysRemaining} days</b>`;
                 } else {
-                    budgetBandwidthSub.innerText = '100 GB Fast Worldwide CDN Bandwidth';
+                    budgetCycleSub.innerHTML = `<span>📅</span> Monthly Billing Cycle (Resets on 1st)`;
                 }
+            }
+            if (budgetInstInvs) {
+                budgetInstInvs.innerText = `${(d.serverlessInvocations || 0).toLocaleString()} calls`;
+            }
+            if (budgetInstCpu) {
+                budgetInstCpu.innerText = `~${(d.fluidCpuUsedHours || 0).toFixed(3)}h CPU`;
             }
 
             // 4. Official Vercel REST API Live Status
