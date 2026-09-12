@@ -408,10 +408,9 @@ const ADMIN_SETTINGS_FILE = isVercel
     ? path.join('/tmp', 'admin_settings.json')
     : path.join(__dirname, 'admin_settings.json');
 let globalServerSettings = {
-    adminPasswordHash: null,
     globalEcoMode: process.env.GLOBAL_ECO_MODE !== undefined
         ? (process.env.GLOBAL_ECO_MODE === 'true' || process.env.GLOBAL_ECO_MODE === '1')
-        : false, // Universal: Enforced across all addon users
+        : true, // Universal: Enforced across all addon users (Default: Enabled)
     allowClientEcoOverride: false, // Strict server-wide enforcement (Admin page is universal)
     renderKeepAlive: true,
     renderPingUrl: process.env.RENDER_PING_URL || null,
@@ -952,8 +951,8 @@ app.get('/api/analytics', (req, res) => {
 
 // Serverless Telemetry & Diagnostic Engine (Vercel Performance Profiler)
 // Profiles heap memory, execution latencies, and edge cache heuristics.
-// Optional environment token: process.env.ADMIN_SECRET_KEY / process.env.DIAGNOSTICS_TOKEN
-const DIAGNOSTICS_TOKEN = process.env.ADMIN_SECRET_KEY || process.env.DIAGNOSTICS_TOKEN || null;
+// Admin Authentication Secret: Exclusively configured via environment variable (default fallback: 'sa7ani')
+const ADMIN_SECRET_KEY = String(process.env.ADMIN_SECRET_KEY || process.env.DIAGNOSTICS_TOKEN || 'sa7ani').trim();
 
 function checkDiagnosticsAuth(req) {
     const rawKey = req.headers['x-admin-key'] || req.headers['x-diagnostic-token'] || req.query.key || req.query.token || (req.body && (req.body.key || req.body.token));
@@ -961,68 +960,23 @@ function checkDiagnosticsAuth(req) {
     const key = String(rawKey).trim();
     if (!key) return false;
 
-    // 1. Match environment variable secret if set
-    if (DIAGNOSTICS_TOKEN) {
-        if (key === DIAGNOSTICS_TOKEN) return true;
-        const keyHash = crypto.createHash('sha256').update(key).digest('hex');
-        const tokenHash = crypto.createHash('sha256').update(DIAGNOSTICS_TOKEN).digest('hex');
-        if (key === tokenHash || keyHash === tokenHash) return true;
-    }
+    // 1. Direct match with plain text secret
+    if (key === ADMIN_SECRET_KEY) return true;
 
-    // 2. Match server-stored password hash
-    if (globalServerSettings.adminPasswordHash) {
-        if (key === globalServerSettings.adminPasswordHash) return true;
-        const keyHash = crypto.createHash('sha256').update(key).digest('hex');
-        if (keyHash === globalServerSettings.adminPasswordHash) return true;
-        return false;
-    }
+    // 2. Match with SHA-256 hash
+    const keyHash = crypto.createHash('sha256').update(key).digest('hex');
+    const adminHash = crypto.createHash('sha256').update(ADMIN_SECRET_KEY).digest('hex');
+    if (key === adminHash || keyHash === adminHash) return true;
 
-    // Never accept arbitrary passwords
     return false;
 }
 
 // Admin Server Auth State
 app.get('/api/admin/auth-state', (req, res) => {
-    const hasPassword = Boolean(DIAGNOSTICS_TOKEN || globalServerSettings.adminPasswordHash);
     res.json({
-        hasAdminPassword: hasPassword,
-        isEnvConfigured: Boolean(DIAGNOSTICS_TOKEN)
+        hasAdminPassword: true,
+        isEnvConfigured: Boolean(process.env.ADMIN_SECRET_KEY || process.env.DIAGNOSTICS_TOKEN)
     });
-});
-
-// Setup admin password on server (Multi-device universal sync)
-app.post('/api/admin/setup-password', (req, res) => {
-    const hasExisting = Boolean(DIAGNOSTICS_TOKEN || globalServerSettings.adminPasswordHash);
-    if (hasExisting && !checkDiagnosticsAuth(req)) {
-        return res.status(401).json({ success: false, error: 'Unauthorized. Admin password already set on server.' });
-    }
-    const { key, password, hash } = req.body || {};
-    const candidate = password || key;
-    const finalHash = hash || (candidate ? crypto.createHash('sha256').update(String(candidate).trim()).digest('hex') : null);
-    if (!finalHash) {
-        return res.status(400).json({ success: false, error: 'Password is required' });
-    }
-    globalServerSettings.adminPasswordHash = finalHash;
-    saveAdminSettings();
-    console.log('[Admin] Admin password hash registered & persisted on server.');
-    res.json({ success: true, message: 'Admin password saved on server' });
-});
-
-// Change admin password
-app.post('/api/admin/change-password', (req, res) => {
-    if (!checkDiagnosticsAuth(req)) {
-        return res.status(401).json({ success: false, error: 'Unauthorized. Current key is incorrect.' });
-    }
-    const { newPassword, newKey, newHash } = req.body || {};
-    const candidate = newPassword || newKey;
-    const finalHash = newHash || (candidate ? crypto.createHash('sha256').update(String(candidate).trim()).digest('hex') : null);
-    if (!finalHash) {
-        return res.status(400).json({ success: false, error: 'New password is required' });
-    }
-    globalServerSettings.adminPasswordHash = finalHash;
-    saveAdminSettings();
-    console.log('[Admin] Admin password hash updated & persisted on server.');
-    res.json({ success: true, message: 'Password changed successfully' });
 });
 
 // Telemetry Signature Verification (Supports dual endpoint naming)
@@ -1030,16 +984,12 @@ const handleVerifyDiagnostics = (req, res) => {
     const { key, token } = req.body || {};
     const candidate = key || token;
     if (!candidate) {
-        return res.status(400).json({ success: false, error: 'Password or key required' });
-    }
-    const hasPassword = Boolean(DIAGNOSTICS_TOKEN || globalServerSettings.adminPasswordHash);
-    if (!hasPassword) {
-        return res.status(401).json({ success: false, error: 'No admin password configured on server. Please initialize admin password.' });
+        return res.status(400).json({ success: false, error: 'Password is required' });
     }
     if (checkDiagnosticsAuth(req)) {
-        return res.json({ success: true, mode: DIAGNOSTICS_TOKEN ? 'server_env' : 'server_saved' });
+        return res.json({ success: true, mode: process.env.ADMIN_SECRET_KEY ? 'server_env' : 'server_default' });
     }
-    return res.status(401).json({ success: false, error: 'Incorrect Admin Secret Key' });
+    return res.status(401).json({ success: false, error: 'Incorrect Admin Password' });
 };
 app.post('/api/telemetry/verify', handleVerifyDiagnostics);
 app.post('/api/admin/verify', handleVerifyDiagnostics);
