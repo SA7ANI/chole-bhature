@@ -3721,21 +3721,6 @@
                     </div>
                 </div>
 
-                <!-- Universal Server-Wide Enforcement Directive Banner -->
-                <div class="section-wrap" style="margin-bottom: 0;">
-                    <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(56, 189, 248, 0.1) 50%, rgba(168, 85, 247, 0.12) 100%); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 14px; padding: 14px 18px; display: flex; align-items: center; gap: 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.25);">
-                        <div style="width: 40px; height: 40px; border-radius: 12px; background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.4); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;">👑</div>
-                        <div style="flex: 1; min-width: 0;">
-                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                                <span style="font-size: 13.5px; font-weight: 800; color: #f8fafc; letter-spacing: 0.2px;">Universal Server-Wide Enforcement Active</span>
-                                <span class="tag-pill-badge" style="background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.4); color: #34d399; font-size: 10px; font-weight: 700; padding: 2px 8px;">100% All Addon Users</span>
-                            </div>
-                            <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 3px; line-height: 1.45;">
-                                This console controls the global server. Any settings configured here (<strong>Eco Mode</strong>, <strong>Keep-Alive Heartbeat</strong>, <strong>Scraper Domain Overrides</strong>, <strong>Cache Purging</strong>) are automatically enforced across <strong>every user, device, and player</strong> connecting to this addon.
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- Dynamic Host Platform Indicator -->
                 <div id="cloud-platform-bar" class="section-wrap" style="margin-bottom: 0;">
@@ -3780,7 +3765,7 @@
                                     <label class="filter-capsule">
                                         <span class="filter-capsule-text">⚡ Eco Mode</span>
                                         <div class="switch-toggle">
-                                            <input type="checkbox" id="renderEcoMode" checked onchange="handleAdminEcoToggle(this.checked)">
+                                            <input type="checkbox" id="renderEcoMode" onchange="handleAdminEcoToggle(this.checked)">
                                             <span class="switch-slider"></span>
                                         </div>
                                     </label>
@@ -3841,9 +3826,9 @@
 
                     <!-- Render Free-Tier Economics & Inactivity Keep-Alive -->
                     <div class="section-wrap" id="section-render-economics">
-                        <div class="section-label-bar" style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
-                            <span class="section-label">📈 Render 750 Free Hours & Inactivity Guard</span>
-                            <button class="pill-btn pill-btn-glass" onclick="fetchAdminStats(true)" style="padding: 4px 12px; font-size: 11.5px; height: 28px; line-height: 1; flex-shrink: 0;">🔄 Refresh Render Sync</button>
+                        <div class="section-label-bar" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+                            <span class="section-label" style="line-height: 1.3;">📈 Render 750 Free Hours & Inactivity Guard</span>
+                            <button class="pill-btn pill-btn-glass" onclick="fetchAdminStats(true)" style="padding: 4px 10px; font-size: 11px; height: 26px; line-height: 1; flex-shrink: 0; align-self: flex-start; white-space: nowrap; margin-top: 1px;">🔄 Refresh</button>
                         </div>
                         <div class="section-card">
                             <div style="display: flex; flex-direction: column; gap: 12px;">
@@ -4019,12 +4004,14 @@
 
                     <!-- Detailed Vercel Free-Tier Economics & Limits Breakdown -->
                     <div class="section-wrap" id="section-vercel-economics">
-                        <div class="section-label-bar" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; flex: 1 1 auto;">
-                                <span class="section-label" style="white-space: nowrap; margin-bottom: 0; font-size: 13px;">📈 Vercel Monthly Budget</span>
-                                <span id="budget-sync-badge" class="tag-pill-badge" style="background: rgba(148, 163, 184, 0.12); border-color: rgba(148, 163, 184, 0.25); color: var(--text-muted); font-size: 11px; max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-flex; align-items: center;" title="Vercel Sync Status">⚪ Local Profiler</span>
+                        <div class="section-label-bar" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+                            <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1;">
+                                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                    <span class="section-label" style="white-space: nowrap; margin-bottom: 0; font-size: 13px;">📈 Vercel Monthly Budget</span>
+                                    <span id="budget-sync-badge" class="tag-pill-badge" style="background: rgba(148, 163, 184, 0.12); border-color: rgba(148, 163, 184, 0.25); color: var(--text-muted); font-size: 11px; max-width: 175px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-flex; align-items: center;" title="Vercel Sync Status">⚪ Local Profiler</span>
+                                </div>
                             </div>
-                            <button class="pill-btn pill-btn-glass" onclick="fetchAdminStats(true)" style="padding: 4px 10px; font-size: 11px; height: 26px; line-height: 1; flex-shrink: 0; margin-left: auto;">🔄 Refresh</button>
+                            <button class="pill-btn pill-btn-glass" onclick="fetchAdminStats(true)" style="padding: 4px 10px; font-size: 11px; height: 26px; line-height: 1; flex-shrink: 0; align-self: flex-start; margin-top: 1px;">🔄 Refresh</button>
                         </div>
                         <div class="section-card">
                             <div style="display: flex; flex-direction: column; gap: 14px;">
@@ -4454,8 +4441,8 @@
             cleanTitles: true,
             showFileSize: true,
             showReleaseGroup: true,
-            renderEcoMode: true,
-            vercelEcoMode: true,
+            renderEcoMode: false,
+            vercelEcoMode: false,
             enableDoh: true,
             dohProvider: 'cloudflare',
             debridProvider: 'none',
@@ -5309,6 +5296,17 @@
         function updateAdminView(data) {
             if (data) latestTelemetryData = data;
             const d = latestTelemetryData || {};
+
+            // Check if server-provided eco mode is present in telemetry data
+            const serverEco = (d.globalEcoMode !== undefined)
+                ? d.globalEcoMode
+                : (d.globalSettings && d.globalSettings.globalEcoMode !== undefined ? d.globalSettings.globalEcoMode : undefined);
+            if (serverEco !== undefined) {
+                const sEcoBool = Boolean(serverEco !== false);
+                settings.renderEcoMode = sEcoBool;
+                settings.vercelEcoMode = sEcoBool;
+                try { localStorage.setItem('nuvio_settings', JSON.stringify(settings)); } catch (_) {}
+            }
             const isEco = Boolean(settings.renderEcoMode !== false && settings.vercelEcoMode !== false);
 
             // Sync admin eco toggles in UI
@@ -6240,6 +6238,7 @@
                 const data = await res.json();
                 if (data.success) {
                     localStorage.setItem('cb_admin_master_hash', candidateHash);
+                    localStorage.setItem('cb_admin_key', cleanKey);
                     sessionStorage.setItem('cb_admin_key', cleanKey);
                     
                     showAdminTabs(true);
@@ -6308,7 +6307,7 @@
         }
 
         function getAdminKey() {
-            return sessionStorage.getItem('cb_admin_key') || localStorage.getItem('cb_admin_key') || '';
+            return sessionStorage.getItem('cb_admin_key') || localStorage.getItem('cb_admin_key') || localStorage.getItem('cb_admin_master_hash') || '';
         }
 
         function toggleAdminKeyVisibility() {
@@ -6430,6 +6429,7 @@
                 const data = await res.json();
                 if (data.success) {
                     localStorage.setItem('cb_admin_master_hash', candidateHash);
+                    localStorage.setItem('cb_admin_key', key);
                     sessionStorage.setItem('cb_admin_key', key);
                     if (errEl) errEl.style.display = 'none';
                     
@@ -6459,6 +6459,7 @@
         function lockAdminConsole() {
             triggerHaptic('light');
             sessionStorage.removeItem('cb_admin_key');
+            localStorage.removeItem('cb_admin_key');
             
             showAdminTabs(false);
             switchTab('tab-home', document.querySelectorAll('.nav-pill-item')[0]);
@@ -6563,14 +6564,19 @@
                         }
                     }
 
-                    if (data.globalEcoMode !== undefined) {
-                        const isE = Boolean(data.globalEcoMode !== false);
+                    const serverEco = (data.globalEcoMode !== undefined)
+                        ? data.globalEcoMode
+                        : (data.globalSettings && data.globalSettings.globalEcoMode !== undefined ? data.globalSettings.globalEcoMode : undefined);
+
+                    if (serverEco !== undefined) {
+                        const isE = Boolean(serverEco !== false);
                         const ecoEl = document.getElementById('vercelEcoMode');
                         const rEcoEl = document.getElementById('renderEcoMode');
                         if (ecoEl) ecoEl.checked = isE;
                         if (rEcoEl) rEcoEl.checked = isE;
                         settings.vercelEcoMode = isE;
                         settings.renderEcoMode = isE;
+                        try { localStorage.setItem('nuvio_settings', JSON.stringify(settings)); } catch (_) {}
                     }
 
                     // Dynamically update Render & Vercel matrix, execution gauge, and budget cards
@@ -6583,14 +6589,18 @@
 
         async function handleAdminEcoToggle(isEnabled) {
             triggerHaptic('medium');
-            settings.renderEcoMode = isEnabled;
-            settings.vercelEcoMode = isEnabled;
             const rEcoEl = document.getElementById('renderEcoMode');
             const vEcoEl = document.getElementById('vercelEcoMode');
+            
+            // Optimistically update local state
+            settings.renderEcoMode = isEnabled;
+            settings.vercelEcoMode = isEnabled;
             if (rEcoEl) rEcoEl.checked = isEnabled;
             if (vEcoEl) vEcoEl.checked = isEnabled;
+            try { localStorage.setItem('nuvio_settings', JSON.stringify(settings)); } catch (_) {}
             onSettingChanged();
             updateAdminView();
+
             const token = getAdminKey();
             try {
                 const res = await fetch('/api/admin/settings', {
@@ -6606,9 +6616,22 @@
                 if (data && data.success) {
                     showToast(`👑 <b>Universal Server Eco Mode:</b> ${isEnabled ? 'ENABLED (100% of Users)' : 'DISABLED'}!`);
                     triggerHaptic('success');
+                    fetchAdminStats(true);
+                } else {
+                    const errMsg = data?.error || 'Unauthorized. Please verify your Admin Password.';
+                    showToast(`❌ <b>Failed to update server:</b> ${errMsg}`);
+                    triggerHaptic('error');
+                    settings.renderEcoMode = !isEnabled;
+                    settings.vercelEcoMode = !isEnabled;
+                    if (rEcoEl) rEcoEl.checked = !isEnabled;
+                    if (vEcoEl) vEcoEl.checked = !isEnabled;
+                    try { localStorage.setItem('nuvio_settings', JSON.stringify(settings)); } catch (_) {}
+                    updateAdminView();
                 }
             } catch (e) {
                 console.error('Failed to sync global Eco mode to server', e);
+                showToast('❌ <b>Network error:</b> Could not reach server.');
+                triggerHaptic('error');
             }
         }
 
@@ -6755,7 +6778,7 @@
             setCheck('showFileSize', settings.showFileSize !== false);
             setCheck('showReleaseGroup', settings.showReleaseGroup !== false);
             
-            const isEcoActiveVal = Boolean(settings.renderEcoMode !== false && settings.vercelEcoMode !== false);
+            const isEcoActiveVal = Boolean(settings.renderEcoMode === true || settings.vercelEcoMode === true);
             setCheck('renderEcoMode', isEcoActiveVal);
             setCheck('vercelEcoMode', isEcoActiveVal);
             
@@ -8290,6 +8313,7 @@
                         if (pub.globalEcoMode !== undefined) {
                             settings.renderEcoMode = pub.globalEcoMode;
                             settings.vercelEcoMode = pub.globalEcoMode;
+                            try { localStorage.setItem('nuvio_settings', JSON.stringify(settings)); } catch (_) {}
                             const rEl = document.getElementById('renderEcoMode');
                             const vEl = document.getElementById('vercelEcoMode');
                             if (rEl) rEl.checked = pub.globalEcoMode;

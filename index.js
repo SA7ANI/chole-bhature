@@ -409,7 +409,9 @@ const ADMIN_SETTINGS_FILE = isVercel
     : path.join(__dirname, 'admin_settings.json');
 let globalServerSettings = {
     adminPasswordHash: null,
-    globalEcoMode: true, // Universal: Enforced across all addon users
+    globalEcoMode: process.env.GLOBAL_ECO_MODE !== undefined
+        ? (process.env.GLOBAL_ECO_MODE === 'true' || process.env.GLOBAL_ECO_MODE === '1')
+        : false, // Universal: Enforced across all addon users
     allowClientEcoOverride: false, // Strict server-wide enforcement (Admin page is universal)
     renderKeepAlive: true,
     renderPingUrl: process.env.RENDER_PING_URL || null,
