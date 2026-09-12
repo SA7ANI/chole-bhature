@@ -89,7 +89,7 @@ async function checkDebridAvailability(hashes, config = {}) {
 
 function cleanProviderName(rawName) {
     if (!rawName) return 'Stream';
-    let clean = rawName.replace(/[🟢🟡🔴🧲]/g, '').trim();
+    let clean = String(rawName).split('\n')[0].replace(/[🟢🟡🔴🧲]/g, '').trim();
     if (clean.includes('•')) {
         const parts = clean.split('•');
         clean = parts[parts.length - 1].trim();
@@ -100,12 +100,48 @@ function cleanProviderName(rawName) {
     return clean || 'Stream';
 }
 
-function extractCleanTitleAndDetails(rawText) {
-    if (!rawText || typeof rawText !== 'string') {
+function extractCleanTitleAndDetails(rawText, stream = null) {
+    if ((!rawText || typeof rawText !== 'string') && (!stream || !stream.behaviorHints?.filename)) {
         return { cleanTitle: '', year: null, seasonEpisode: null, releaseGroup: null, dvProfile: null };
     }
 
-    let text = rawText.split('\n')[0].trim();
+    // Determine candidate strings: check behaviorHints.filename first, then evaluate lines
+    const candidates = [];
+    if (stream && stream.behaviorHints && typeof stream.behaviorHints.filename === 'string' && stream.behaviorHints.filename.trim()) {
+        candidates.push(stream.behaviorHints.filename.trim());
+    }
+
+    if (rawText && typeof rawText === 'string') {
+        const rawLines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
+        for (const line of rawLines) {
+            // Exclude lines that are purely stats, emoji lines, or provider tags
+            if (/^(?:👤|💾|⚙️|🌱|⚡|📦|🔗|🏷️|🎬|💎|🌐|\d+\s*(?:GB|MB|GiB|MiB)|(?:fast|slow|dead)\s*\()/i.test(line)) continue;
+            if (/^\[?(?:rd\+|ad\+|tb\+|pm\+|p2p)\]?/i.test(line) && line.length < 30 && !/\b(?:19\d\d|20\d\d)\b/.test(line)) continue;
+            candidates.push(line);
+        }
+    }
+
+    if (candidates.length === 0) {
+        candidates.push((rawText || '').split('\n')[0].trim());
+    }
+
+    // Pick the best candidate line (prefers lines containing scene dots/underscores, year, resolution, or season episode)
+    let bestCandidate = candidates[0] || '';
+    let highestScore = -1;
+    for (const cand of candidates) {
+        let score = 0;
+        if (/\b(19\d\d|20[0-3]\d)\b/.test(cand)) score += 5;
+        if (/\b(S\d{1,2}(?:[\s._-]?E\d{1,3})?|\d{1,2}x\d{1,3})\b/i.test(cand)) score += 5;
+        if (/\b(?:2160p|1080p|720p|480p|4k|uhd|bluray|web-dl|webrip|remux|hevc|x265|x264)\b/i.test(cand)) score += 4;
+        if (/[\._]/.test(cand)) score += 2;
+        if (cand.length > 10) score += 1;
+        if (score > highestScore) {
+            highestScore = score;
+            bestCandidate = cand;
+        }
+    }
+
+    let text = bestCandidate;
     // Strip file extensions (.mkv, .mp4, .avi, .ts, etc.)
     text = text.replace(/\.(mkv|mp4|avi|mov|ts|m2ts|webm)$/i, '');
 
@@ -114,7 +150,7 @@ function extractCleanTitleAndDetails(rawText) {
     const groupMatch = text.match(/[-_]([A-Za-z0-9]+)$/) || text.match(/\[([A-Za-z0-9]+)\]$/);
     if (groupMatch) {
         const potentialGroup = groupMatch[1];
-        if (!/^(mkv|mp4|avi|2160p|1080p|720p|480p|hevc|x265|x264|aac|ac3|dvd|hd|uhd|web|dl|rip)$/i.test(potentialGroup)) {
+        if (!/^(mkv|mp4|avi|2160p|1080p|720p|480p|hevc|x265|x264|aac|ac3|dvd|hd|uhd|web|dl|rip|ita|eng|fra|ger|spa|rus)$/i.test(potentialGroup)) {
             releaseGroup = potentialGroup;
         }
     }
@@ -168,8 +204,13 @@ function extractCleanTitleAndDetails(rawText) {
         .replace(/\s+/g, ' ')
         .trim();
 
+    // If cleaned title is purely a generic placeholder/resolution/noise, discard it so canonical fallback can take over
+    if (/^(?:2160p|1080p|720p|480p|4k|uhd|fhd|hd|stream|video|fast|slow|dead|nuvio|torrentio|rd|ad|tb|movie|series)$/i.test(titlePortion)) {
+        titlePortion = '';
+    }
+
     return {
-        cleanTitle: titlePortion || text.replace(/[\._]/g, ' ').trim(),
+        cleanTitle: titlePortion,
         year: year,
         seasonEpisode: seasonEpisode,
         releaseGroup: releaseGroup,
@@ -290,10 +331,12 @@ function isStreamMatchingTarget(stream, target) {
 }
 
 function parseStreamMetadata(stream) {
+    if (!stream) return {};
     const rawName = stream.name || '';
     const rawTitle = stream.title || stream.description || stream.quality || '';
-    const fullText = `${rawName} ${rawTitle}`;
-    const sceneDetails = extractCleanTitleAndDetails(rawTitle || rawName);
+    const filename = (stream.behaviorHints && typeof stream.behaviorHints.filename === 'string') ? stream.behaviorHints.filename : '';
+    const fullText = `${rawName} ${rawTitle} ${filename}`;
+    const sceneDetails = extractCleanTitleAndDetails(rawTitle || rawName, stream);
 
     const metadata = {
         cleanTitle: sceneDetails.cleanTitle,
@@ -330,39 +373,51 @@ function parseStreamMetadata(stream) {
         metadata.isSample = true;
     }
 
-    // 2. Resolution (Strict pattern matching, ignoring release group noise like 4kHDHub, UHDMovies)
-    const has2160 = /\b2160[pi]?\b/i.test(fullText);
-    const has1080 = /\b1080[pi]?\b/i.test(fullText);
-    const has720  = /\b720[pi]?\b/i.test(fullText);
-    const has480  = /\b(?:480[pi]?|576[pi]?)\b/i.test(fullText);
+    // 2. Resolution (Direct property or sanitized pattern matching, ignoring release domain noise)
+    const directRes = String(stream.resolution || stream.quality || '').trim().toLowerCase();
+    if (/^(?:2160p|4k|uhd)$/i.test(directRes)) metadata.resolution = '2160p';
+    else if (/^(?:1080p|fhd)$/i.test(directRes)) metadata.resolution = '1080p';
+    else if (/^(?:720p|hd)$/i.test(directRes)) metadata.resolution = '720p';
+    else if (/^(?:480p|576p|sd)$/i.test(directRes)) metadata.resolution = '480p';
 
-    if (has2160 && !has1080 && !has720 && !has480) {
-        metadata.resolution = '2160p';
-    } else if (has1080 && !has2160) {
-        metadata.resolution = '1080p';
-    } else if (has720 && !has1080 && !has2160) {
-        metadata.resolution = '720p';
-    } else if (has480 && !has1080 && !has2160 && !has720) {
-        metadata.resolution = '480p';
-    } else if (has2160 && has1080) {
-        const match2160 = fullText.search(/\b2160[pi]?\b/i);
-        const match1080 = fullText.search(/\b1080[pi]?\b/i);
-        metadata.resolution = match2160 < match1080 ? '2160p' : '1080p';
-    } else {
-        const cleanText = fullText.replace(/uhdmovies|4khdhub|hdhub4u|hdhub|uhdrip/gi, ' ');
-        if (/\b(?:4k|uhd)\b/i.test(cleanText)) metadata.resolution = '2160p';
-        else if (/\b(?:fhd|full[\s._-]?hd)\b/i.test(cleanText)) metadata.resolution = '1080p';
-        else if (/\b(?:hd)\b/i.test(cleanText) && !/\b(?:hdtv|hdrip|hdcam|hdts)\b/i.test(fullText)) metadata.resolution = '720p';
-        else if (/\b(?:sd)\b/i.test(cleanText)) metadata.resolution = '480p';
+    if (!metadata.resolution) {
+        // Strip provider/tracker domains containing numbers before scanning resolution
+        const cleanScanText = fullText.replace(/\b(?:uhdmovies|4khdhub|hdhub4u|hdhub|moviesmod|moviesdrive|net22|netmirror)[\w.-]*/gi, ' ');
+
+        const has2160 = /\b(?:2160[pi]?|4k|uhd|3840x2160)\b/i.test(cleanScanText);
+        const has1080 = /\b(?:1080[pi]?|fhd|full[\s._-]?hd|1920x1080)\b/i.test(cleanScanText);
+        const has720  = /\b(?:720[pi]?|1280x720)\b/i.test(cleanScanText) || (/\bhd\b/i.test(cleanScanText) && !/\b(?:hdtv|hdrip|hdcam|hdts)\b/i.test(fullText));
+        const has480  = /\b(?:480[pi]?|576[pi]?|sd|848x480)\b/i.test(cleanScanText);
+
+        if (has2160 && !has1080) {
+            metadata.resolution = '2160p';
+        } else if (has1080 && !has2160) {
+            metadata.resolution = '1080p';
+        } else if (has720 && !has1080 && !has2160) {
+            metadata.resolution = '720p';
+        } else if (has480 && !has1080 && !has2160 && !has720) {
+            metadata.resolution = '480p';
+        } else if (has2160 && has1080) {
+            // Check whether "1080p" is the actual video stream spec or if 4K was just source tag
+            if (/1080p.*(?:bluray|web-dl|webrip|remux|hevc|x264|x265)/i.test(cleanScanText) && !/2160p.*(?:bluray|web-dl|webrip|remux)/i.test(cleanScanText)) {
+                metadata.resolution = '1080p';
+            } else if (/2160p.*(?:bluray|web-dl|webrip|remux|hevc|x265)/i.test(cleanScanText)) {
+                metadata.resolution = '2160p';
+            } else {
+                const match2160 = cleanScanText.search(/\b(?:2160[pi]?|4k|uhd)\b/i);
+                const match1080 = cleanScanText.search(/\b(?:1080[pi]?|fhd)\b/i);
+                metadata.resolution = match2160 < match1080 ? '2160p' : '1080p';
+            }
+        }
     }
 
     // 3. Quality / Source
     if (/\b(?:bd|uhd)?remux\b/i.test(fullText)) metadata.special.push('REMUX');
-    if (/\b(?:bluray|blu[\s._-]?ray|bd[\s._-]?rip|br[\s._-]?rip)\b/i.test(fullText)) metadata.quality = 'BluRay';
-    else if (/\b(?:web[\s._-]?dl|webdl)\b/i.test(fullText)) metadata.quality = 'WEB-DL';
+    if (/\b(?:bluray|blu[\s._-]?ray|bd[\s._-]?rip|br[\s._-]?rip|bdr)\b/i.test(fullText)) metadata.quality = 'BluRay';
+    else if (/\b(?:web[\s._-]?dl|webdl)\b/i.test(fullText) || /\b(?:amzn|nf|dsnp|atvp|hmax|itunes)[\s._-]?web\b/i.test(fullText)) metadata.quality = 'WEB-DL';
     else if (/\b(?:web[\s._-]?rip|webrip)\b/i.test(fullText)) metadata.quality = 'WEBRip';
-    else if (/\b(?:hdtv|pdtv|dsr)\b/i.test(fullText)) metadata.quality = 'HDTV';
-    else if (/\b(?:dvd[\s._-]?rip)\b/i.test(fullText)) metadata.quality = 'DVDRip';
+    else if (/\b(?:hdtv|pdtv|dsr|tvrip)\b/i.test(fullText)) metadata.quality = 'HDTV';
+    else if (/\b(?:dvd[\s._-]?rip|dvd|dvd-r)\b/i.test(fullText)) metadata.quality = 'DVDRip';
     else if (metadata.isCam) metadata.quality = 'CAM';
 
     // 4. Visual / HDR / IMAX / Bit-depth
@@ -393,12 +448,14 @@ function parseStreamMetadata(stream) {
         metadata.hdr.push('HDR');
     }
 
-    if (/\b10[\s._-]?bit\b/i.test(fullText) || /\bhevc[\s._-]?10\b/i.test(fullText)) metadata.special.push('10bit');
+    if (/\b10[\s._-]?bit\b/i.test(fullText) || /\bhevc[\s._-]?10\b/i.test(fullText) || /\bhi10p\b/i.test(fullText)) {
+        metadata.special.push('10bit');
+    }
 
     // 5. Video Codec
     if (/\b(?:hevc|h[\s._-]?265|x265)\b/i.test(fullText)) metadata.codec = 'HEVC';
     else if (/\b(?:avc|h[\s._-]?264|x264)\b/i.test(fullText)) metadata.codec = 'H.264';
-    else if (/\bav1\b/i.test(fullText)) metadata.codec = 'AV1';
+    else if (/\b(?:av1|av01)\b/i.test(fullText)) metadata.codec = 'AV1';
     else if (/\b(?:xvid|divx)\b/i.test(fullText)) metadata.codec = 'XviD';
 
     // 6. Audio Formats & Atmos
@@ -415,11 +472,10 @@ function parseStreamMetadata(stream) {
     const hasDTSHD = /\bdts[\s._-]?(?:hd|ma)\b/i.test(fullText);
     const hasDTS = /\bdts\b/i.test(fullText) && !hasDTSHD && !hasDTSX;
     const hasFLAC = /\bflac\b/i.test(fullText);
-    const hasAAC = /\baac\b/i.test(fullText);
+    const hasAAC = /\baac(?:\d(?:\.\d)?)?\b/i.test(fullText);
+    const hasOpus = /\bopus\b/i.test(fullText);
 
-    if (hasAtmos) {
-        metadata.audio.push('Dolby Atmos');
-    }
+    if (hasAtmos) metadata.audio.push('Dolby Atmos');
     if (hasTrueHD) metadata.audio.push('TrueHD');
     else if (hasDDP) metadata.audio.push('DDP');
     else if (hasDD) metadata.audio.push('DD');
@@ -428,13 +484,14 @@ function parseStreamMetadata(stream) {
     else if (hasDTS) metadata.audio.push('DTS');
     else if (hasFLAC) metadata.audio.push('FLAC');
     else if (hasAAC && metadata.audio.length === 0) metadata.audio.push('AAC');
+    else if (hasOpus && metadata.audio.length === 0) metadata.audio.push('Opus');
 
     // 7. Channels
     if (/(?:^|[^0-9])7[. ]1(?![0-9])|\b8ch\b/i.test(fullText)) metadata.channels = '7.1';
     else if (/(?:^|[^0-9])5[. ]1(?![0-9])|\b6ch\b/i.test(fullText)) metadata.channels = '5.1';
     else if (/(?:^|[^0-9])2[. ]0(?![0-9])|\b2ch\b|\bstereo\b/i.test(fullText)) metadata.channels = '2.0';
 
-    // 8. Languages (Indian & Global / Anime)
+    // 8. Languages (Indian Regional & Global / Anime)
     const hasMulti = /\b(?:multi[\s._-]?audio|multi[\s._-]?sub|multi)\b/i.test(fullText);
     const hasDual = /\b(?:dual[\s._-]?audio|dual)\b/i.test(fullText) && !hasMulti;
     if (hasMulti) metadata.languages.push('Multi-Audio');
@@ -446,6 +503,7 @@ function parseStreamMetadata(stream) {
     if (/\bkannada\b|\bkan\b/i.test(fullText)) metadata.languages.push('Kannada');
     if (/\bbengali|bangla\b|\bben\b/i.test(fullText)) metadata.languages.push('Bengali');
     if (/\bpunjabi\b|\bpun\b/i.test(fullText)) metadata.languages.push('Punjabi');
+    if (/\bmarathi\b|\bmar\b/i.test(fullText)) metadata.languages.push('Marathi');
     if (/\bjapanese|jap\b|\bjpn\b|\banime\b/i.test(fullText)) metadata.languages.push('Japanese');
     if (/\benglish\b|\beng\b/i.test(fullText)) metadata.languages.push('English');
     if (/\bkorean|kor\b/i.test(fullText)) metadata.languages.push('Korean');
@@ -456,28 +514,70 @@ function parseStreamMetadata(stream) {
     if (/\bitalian\b|\bita\b/i.test(fullText)) metadata.languages.push('Italian');
     if (/\brussian\b|\brus\b/i.test(fullText)) metadata.languages.push('Russian');
 
-    // 9. Size & Normalized Size in GB
-    const sizeMatch = fullText.match(/\b(\d+(?:\.\d+)?)\s*(GB|MB|GiB|MiB)\b/i);
-    if (sizeMatch) {
-        metadata.size = `${sizeMatch[1]} ${sizeMatch[2].toUpperCase()}`;
-        const numVal = parseFloat(sizeMatch[1]);
-        const unit = sizeMatch[2].toUpperCase();
-        if (unit.startsWith('M')) {
-            metadata.sizeGB = Math.round((numVal / 1024) * 100) / 100;
+    // 9. Real File Size (Checks behaviorHints.videoSize, fileSize, size property, and regex)
+    let rawByteSize = null;
+    if (stream.behaviorHints && typeof stream.behaviorHints.videoSize === 'number' && stream.behaviorHints.videoSize > 0) {
+        rawByteSize = stream.behaviorHints.videoSize;
+    } else if (typeof stream.fileSize === 'number' && stream.fileSize > 0) {
+        rawByteSize = stream.fileSize;
+    } else if (typeof stream.size === 'number' && stream.size > 0) {
+        rawByteSize = stream.size;
+    }
+
+    if (rawByteSize && rawByteSize > 0) {
+        const gb = rawByteSize / (1024 * 1024 * 1024);
+        if (gb >= 0.9) {
+            metadata.size = `${gb.toFixed(2)} GB`;
+            metadata.sizeGB = Math.round(gb * 100) / 100;
         } else {
-            metadata.sizeGB = numVal;
+            const mb = rawByteSize / (1024 * 1024);
+            metadata.size = `${Math.round(mb)} MB`;
+            metadata.sizeGB = Math.round(gb * 100) / 100;
+        }
+    } else {
+        const rawSizeStr = typeof stream.size === 'string' ? stream.size : (typeof stream.fileSize === 'string' ? stream.fileSize : '');
+        const textForSize = `${rawSizeStr} ${fullText}`;
+        const sizeMatch = textForSize.match(/(?:💾|size[:\s]*|\[\s*)?(\d+(?:[.,]\d+)?)\s*(GB|MB|GiB|MiB|TB|TiB)\b/i);
+        if (sizeMatch) {
+            const cleanNum = parseFloat(sizeMatch[1].replace(',', '.'));
+            const unit = sizeMatch[2].toUpperCase();
+            if (!isNaN(cleanNum) && cleanNum > 0) {
+                metadata.size = `${cleanNum} ${unit}`;
+                if (unit.startsWith('T')) {
+                    metadata.sizeGB = Math.round(cleanNum * 1024 * 100) / 100;
+                } else if (unit.startsWith('M')) {
+                    metadata.sizeGB = Math.round((cleanNum / 1024) * 100) / 100;
+                } else {
+                    metadata.sizeGB = cleanNum;
+                }
+            }
         }
     }
 
-    // 10. Torrent Seeders & Peers
-    const seederMatch = fullText.match(/(?:👤|seeders?|seeds?|\bs:)\s*(\d+)/i)
-        || fullText.match(/\[\s*(\d+)\s*\/\s*\d+\s*\]/);
-    if (seederMatch) {
-        metadata.seeders = parseInt(seederMatch[1], 10);
+    // 10. Real Torrent Seeders & Peers (Checks stream properties first, then regex)
+    if (typeof stream.seeders === 'number' && stream.seeders >= 0) {
+        metadata.seeders = stream.seeders;
+    } else if (typeof stream.seeds === 'number' && stream.seeds >= 0) {
+        metadata.seeders = stream.seeds;
+    } else if (typeof stream.peerCount === 'number' && stream.peerCount >= 0) {
+        metadata.seeders = stream.peerCount;
+    } else {
+        const seederMatch = fullText.match(/(?:👤|🌱|\bseeds?[:\s]*|\bseeders?[:\s]*|\bs:)\s*(\d+)/i)
+            || fullText.match(/\[\s*(\d+)\s*\/\s*\d+\s*\]/);
+        if (seederMatch) {
+            metadata.seeders = parseInt(seederMatch[1], 10);
+        }
     }
-    const peerMatch = fullText.match(/(?:peers?|leechers?|leech|\bl:)\s*(\d+)/i);
-    if (peerMatch) {
-        metadata.peers = parseInt(peerMatch[1], 10);
+
+    if (typeof stream.peers === 'number' && stream.peers >= 0) {
+        metadata.peers = stream.peers;
+    } else if (typeof stream.leechers === 'number' && stream.leechers >= 0) {
+        metadata.peers = stream.leechers;
+    } else {
+        const peerMatch = fullText.match(/(?:peers?[:\s]*|leechers?[:\s]*|leech[:\s]*|\bl:)\s*(\d+)/i);
+        if (peerMatch) {
+            metadata.peers = parseInt(peerMatch[1], 10);
+        }
     }
 
     return metadata;
@@ -674,14 +774,29 @@ function formatStreamLabels(stream, latency = 150, isP2P = false, isDead = false
 
     // Line 1: Header (Title, Year, Episode, Main Release Specs)
     const titleHeaderParts = [];
-    if (meta.cleanTitle) {
-        let titleHeader = meta.cleanTitle;
-        if (meta.year) titleHeader += ` (${meta.year})`;
-        if (meta.seasonEpisode) titleHeader += ` • ${meta.seasonEpisode}`;
+    const resolvedTitle = (config && config.target && config.target.title)
+        ? config.target.title
+        : (meta.cleanTitle || '');
+
+    const resolvedYear = (config && config.target && config.target.year)
+        ? config.target.year
+        : meta.year;
+
+    let resolvedSeasonEpisode = meta.seasonEpisode;
+    if (config && config.target && (config.target.type === 'series' || config.target.type === 'tv') && config.target.season && config.target.episode) {
+        const reqS = String(config.target.season).padStart(2, '0');
+        const reqE = String(config.target.episode).padStart(2, '0');
+        resolvedSeasonEpisode = `S${reqS}E${reqE}`;
+    }
+
+    if (resolvedTitle) {
+        let titleHeader = resolvedTitle;
+        if (resolvedYear) titleHeader += ` (${resolvedYear})`;
+        if (resolvedSeasonEpisode) titleHeader += ` • ${resolvedSeasonEpisode}`;
         titleHeaderParts.push(titleHeader);
     }
     const qualityTags = [
-        meta.resolution ? (meta.resolution === '2160p' ? '4K UHD' : meta.resolution === '1080p' ? '1080p FHD' : meta.resolution) : null,
+        meta.resolution ? (meta.resolution === '2160p' ? '4K UHD' : meta.resolution === '1080p' ? '1080p FHD' : meta.resolution === '720p' ? '720p HD' : meta.resolution) : null,
         meta.special.includes('REMUX') ? 'REMUX' : (meta.quality || null),
         meta.special.includes('IMAX Enhanced') ? 'IMAX Enhanced' : (meta.special.includes('IMAX') ? 'IMAX' : null),
         meta.codec || null,
@@ -1447,7 +1562,10 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
             ...meta.languages
         ].filter(Boolean);
 
-        const baseTitle = (stremioStream.title || stremioStream.name || 'Video').split('\n')[0].replace(/[^a-zA-Z0-9]/g, '.');
+        const cleanBase = (config && config.target && config.target.title)
+            ? config.target.title
+            : (meta.cleanTitle || 'Video');
+        const baseTitle = cleanBase.replace(/[^a-zA-Z0-9]/g, '.').replace(/\.+/g, '.');
         const synthFilename = `${baseTitle}.${tokens.join('.')}.mkv`;
 
         stremioStream.behaviorHints = {
