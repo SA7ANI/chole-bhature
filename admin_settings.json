@@ -1,0 +1,9 @@
+{
+  "adminPasswordHash": "6ed535446de0295c486057770d8a682781715cb5b523c423e0697ff4ed974d36",
+  "globalEcoMode": false,
+  "allowClientEcoOverride": true,
+  "renderKeepAlive": true,
+  "renderPingUrl": null,
+  "renderApiKey": null,
+  "vercelApiToken": null
+}
