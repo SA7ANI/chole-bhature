@@ -2682,9 +2682,10 @@
                     <div class="hero-pagination-dots" id="hero-dots">
                         <div class="pagination-dot active-bar" onclick="goToHeroSlide(0)" title="Meta-Sorter"></div>
                         <div class="pagination-dot" onclick="goToHeroSlide(1)" title="4K Debrid"></div>
-                        <div class="pagination-dot" onclick="goToHeroSlide(2)" title="DNS Bypass"></div>
-                        <div class="pagination-dot" onclick="goToHeroSlide(3)" title="Multi-Audio"></div>
-                        <div class="pagination-dot" onclick="goToHeroSlide(4)" title="Scrapers"></div>
+                        <div class="pagination-dot" onclick="goToHeroSlide(2)" title="Live TV"></div>
+                        <div class="pagination-dot" onclick="goToHeroSlide(3)" title="DNS Bypass"></div>
+                        <div class="pagination-dot" onclick="goToHeroSlide(4)" title="Multi-Audio"></div>
+                        <div class="pagination-dot" onclick="goToHeroSlide(5)" title="Scrapers"></div>
                     </div>
 
                     <div class="hero-cta-group" id="hero-cta">
@@ -6101,7 +6102,7 @@
                 icon: '🔐',
                 confirmText: 'Unlock Console',
                 fields: [
-                    { id: 'key', label: 'Admin Password', type: 'password', placeholder: 'Enter admin password (default: sa7ani)...', autofocus: true }
+                    { id: 'key', label: 'Admin Password', type: 'password', placeholder: 'Enter admin password', autofocus: true }
                 ]
             });
             if (!res.confirmed) return;
@@ -7661,6 +7662,20 @@
                 btn1Text: 'Setup Debrid',
                 btn1Icon: '⚡',
                 btn1Action: "navigateToSection('tab-settings', 'section-debrid')",
+                btn2Text: 'Install Addon',
+                btn2Icon: '🚀',
+                btn2Action: 'installAddon()'
+            },
+            {
+                badges: [
+                    { text: '📺 Live TV & IPTV', bg: 'rgba(236, 72, 153, 0.2)', border: 'rgba(236, 72, 153, 0.4)', color: '#f472b6' },
+                    { text: '🔴 500+ Curated HD', bg: 'rgba(239, 68, 68, 0.15)', border: 'rgba(239, 68, 68, 0.35)', color: '#f87171' }
+                ],
+                title: 'Live TV & IPTV Feeds',
+                meta: ['Sports', 'News', 'Entertainment', 'Custom M3U/M3U8', '100% Free'],
+                btn1Text: 'Explore Live TV',
+                btn1Icon: '📺',
+                btn1Action: "switchTab('tab-iptv', document.querySelectorAll('.nav-pill-item')[3])",
                 btn2Text: 'Install Addon',
                 btn2Icon: '🚀',
                 btn2Action: 'installAddon()'
