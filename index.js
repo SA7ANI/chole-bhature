@@ -1786,19 +1786,6 @@ function createAddon(config) {
             ],
             extraSupported: ['genre', 'search', 'skip']
         });
-        enabledCatalogs.push({
-            type: 'channel',
-            id: 'cb_live_tv',
-            name: 'Live TV / IPTV',
-            posterShape: 'square',
-            genres: liveTvGenres,
-            extra: [
-                { name: 'genre', options: liveTvGenres, isRequired: false },
-                { name: 'search', isRequired: false },
-                { name: 'skip', isRequired: false }
-            ],
-            extraSupported: ['genre', 'search', 'skip']
-        });
     }
 
     const resources = ['stream'];
