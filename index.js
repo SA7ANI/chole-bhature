@@ -610,7 +610,11 @@ let vercelApiUsageCache = {
 };
 
 async function fetchOfficialVercelUsage(apiToken, forceFresh = false) {
-    const cleanToken = String(apiToken || '').replace(/^Bearer\s+/i, '').trim();
+    const cleanToken = String(apiToken || '')
+        .trim()
+        .replace(/^Bearer\s+/i, '')
+        .replace(/^["']|["']$/g, '')
+        .trim();
     if (!cleanToken) return null;
     if (!forceFresh && (Date.now() - vercelApiUsageCache.timestamp < 120000) && vercelApiUsageCache.data) {
         return vercelApiUsageCache.data;
@@ -618,17 +622,32 @@ async function fetchOfficialVercelUsage(apiToken, forceFresh = false) {
     try {
         const headers = { Authorization: `Bearer ${cleanToken}` };
         
-        // 1. Authenticate user identity and check validity
-        let userRes;
-        try {
-            userRes = await axios.get('https://api.vercel.com/v2/user', {
+        // 1. Parallel Probe: Check User, Teams, and Projects.
+        // Tokens scoped to a Team return 404 "User not found." on /v2/user, but succeed on /v2/teams and /v9/projects.
+        const [userRes, teamsRes, projectsRes] = await Promise.allSettled([
+            axios.get('https://api.vercel.com/v2/user', {
                 headers,
                 httpsAgent: dohHttpsAgent,
                 timeout: 6000
-            });
-        } catch (authErr) {
-            const errStatus = authErr.response?.status;
-            const errMsg = authErr.response?.data?.error?.message || (errStatus === 401 || errStatus === 403 ? 'Unauthorized: Invalid Vercel Token' : (authErr.message || 'Failed to authenticate with Vercel'));
+            }),
+            axios.get('https://api.vercel.com/v2/teams', {
+                headers,
+                httpsAgent: dohHttpsAgent,
+                timeout: 6000
+            }),
+            axios.get('https://api.vercel.com/v9/projects?limit=5', {
+                headers,
+                httpsAgent: dohHttpsAgent,
+                timeout: 6000
+            })
+        ]);
+
+        // If all 3 endpoints failed with 401 or 403, the token is invalid/unauthorized
+        if (userRes.status === 'rejected' && teamsRes.status === 'rejected' && projectsRes.status === 'rejected') {
+            const firstErr = userRes.reason || teamsRes.reason || projectsRes.reason;
+            const errStatus = firstErr?.response?.status;
+            const errMsg = firstErr?.response?.data?.error?.message 
+                || (errStatus === 401 || errStatus === 403 ? 'Unauthorized: Invalid Vercel Token' : (firstErr?.message || 'Authentication failed'));
             const errResult = {
                 connected: false,
                 error: errMsg,
@@ -638,46 +657,85 @@ async function fetchOfficialVercelUsage(apiToken, forceFresh = false) {
             return errResult;
         }
 
-        const userData = userRes.data?.user || {};
-        const username = userData.username || userData.name || userData.email || 'Vercel User';
-        const defaultTeamId = userData.defaultTeamId || null;
-
-        // 2. Discover user teams (in case project is deployed under a team)
+        let username = null;
         let teams = [];
-        try {
-            const teamsRes = await axios.get('https://api.vercel.com/v2/teams', {
-                headers,
-                httpsAgent: dohHttpsAgent,
-                timeout: 5000
-            });
-            teams = Array.isArray(teamsRes.data?.teams) ? teamsRes.data.teams : [];
-        } catch (e) {
-            // Teams discovery optional
+        let teamIds = new Set();
+        let defaultTeamId = null;
+
+        // Check user endpoint
+        if (userRes.status === 'fulfilled' && userRes.value.data?.user) {
+            const u = userRes.value.data.user;
+            username = u.username || u.name || u.email || null;
+            if (u.defaultTeamId) {
+                defaultTeamId = u.defaultTeamId;
+                teamIds.add(u.defaultTeamId);
+            }
+        }
+
+        // Check teams endpoint (critical for team-scoped tokens)
+        if (teamsRes.status === 'fulfilled' && Array.isArray(teamsRes.value.data?.teams)) {
+            teams = teamsRes.value.data.teams;
+            for (const t of teams) {
+                if (t && t.id) teamIds.add(t.id);
+            }
+            if (!username && teams.length > 0) {
+                username = teams[0].slug || teams[0].name || 'Vercel Team';
+            }
+        }
+
+        // Check projects endpoint
+        if (projectsRes.status === 'fulfilled' && Array.isArray(projectsRes.value.data?.projects)) {
+            const projs = projectsRes.value.data.projects;
+            for (const p of projs) {
+                if (p && p.accountId) teamIds.add(p.accountId);
+            }
+            if (!username && projs.length > 0) {
+                username = projs[0].name || 'Vercel Project';
+            }
+        }
+
+        if (!username) {
+            username = 'Vercel Team';
         }
 
         const now = new Date();
         const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
         const endNow = now.toISOString();
 
-        // 3. Query usage for user personal scope + team scopes
-        const usageQueries = [
-            axios.get(`https://api.vercel.com/v2/usage?type=requests&from=${startOfMonth}&to=${endNow}`, {
-                headers,
-                httpsAgent: dohHttpsAgent,
-                timeout: 6000
-            })
-        ];
+        // 3. Query usage for personal scope + all identified team scopes
+        const usageQueries = [];
 
-        for (const team of teams) {
-            if (team && team.id) {
-                usageQueries.push(
-                    axios.get(`https://api.vercel.com/v2/usage?type=requests&from=${startOfMonth}&to=${endNow}&teamId=${team.id}`, {
-                        headers,
-                        httpsAgent: dohHttpsAgent,
-                        timeout: 6000
-                    })
-                );
-            }
+        // Query personal scope if user profile exists
+        if (userRes.status === 'fulfilled') {
+            usageQueries.push(
+                axios.get(`https://api.vercel.com/v2/usage?type=requests&from=${startOfMonth}&to=${endNow}`, {
+                    headers,
+                    httpsAgent: dohHttpsAgent,
+                    timeout: 6000
+                })
+            );
+        }
+
+        // Query each team scope
+        for (const tId of teamIds) {
+            usageQueries.push(
+                axios.get(`https://api.vercel.com/v2/usage?type=requests&from=${startOfMonth}&to=${endNow}&teamId=${tId}`, {
+                    headers,
+                    httpsAgent: dohHttpsAgent,
+                    timeout: 6000
+                })
+            );
+        }
+
+        // If no queries yet, fallback to generic query
+        if (usageQueries.length === 0) {
+            usageQueries.push(
+                axios.get(`https://api.vercel.com/v2/usage?type=requests&from=${startOfMonth}&to=${endNow}`, {
+                    headers,
+                    httpsAgent: dohHttpsAgent,
+                    timeout: 6000
+                })
+            );
         }
 
         const usageResults = await Promise.allSettled(usageQueries);
@@ -894,17 +952,35 @@ const handleGetDiagnosticsStats = async (req, res) => {
     const forceFresh = req.query.fresh === '1' || req.query.refresh === 'true';
 
     // Fetch official live Vercel API stats if token is available
-    const vercelToken = req.headers['x-vercel-token'] || globalServerSettings.vercelApiToken || process.env.VERCEL_API_TOKEN || null;
+    const clientVercelTok = req.headers['x-vercel-token'] || null;
+    const serverVercelTok = globalServerSettings.vercelApiToken || process.env.VERCEL_API_TOKEN || null;
     let officialVercel = null;
-    if (vercelToken) {
-        officialVercel = await fetchOfficialVercelUsage(vercelToken, forceFresh);
+    if (clientVercelTok) {
+        officialVercel = await fetchOfficialVercelUsage(clientVercelTok, forceFresh);
+        if (officialVercel && officialVercel.connected === false && serverVercelTok && serverVercelTok !== clientVercelTok) {
+            const serverRes = await fetchOfficialVercelUsage(serverVercelTok, forceFresh);
+            if (serverRes && serverRes.connected) {
+                officialVercel = serverRes;
+            }
+        }
+    } else if (serverVercelTok) {
+        officialVercel = await fetchOfficialVercelUsage(serverVercelTok, forceFresh);
     }
 
     // Fetch official live Render API stats if token is available
-    const renderKey = req.headers['x-render-key'] || globalServerSettings.renderApiKey || process.env.RENDER_API_KEY || null;
+    const clientRenderKey = req.headers['x-render-key'] || null;
+    const serverRenderKey = globalServerSettings.renderApiKey || process.env.RENDER_API_KEY || null;
     let officialRender = null;
-    if (renderKey) {
-        officialRender = await fetchOfficialRenderUsage(renderKey, forceFresh);
+    if (clientRenderKey) {
+        officialRender = await fetchOfficialRenderUsage(clientRenderKey, forceFresh);
+        if (officialRender && officialRender.connected === false && serverRenderKey && serverRenderKey !== clientRenderKey) {
+            const serverR = await fetchOfficialRenderUsage(serverRenderKey, forceFresh);
+            if (serverR && serverR.connected) {
+                officialRender = serverR;
+            }
+        }
+    } else if (serverRenderKey) {
+        officialRender = await fetchOfficialRenderUsage(serverRenderKey, forceFresh);
     }
 
     const rssMB = Math.round((memUsage.rss / 1024 / 1024) * 100) / 100;
