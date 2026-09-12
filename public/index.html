@@ -5557,7 +5557,9 @@
             if (budgetSyncBadge) {
                 if (isOfficial) {
                     const uname = ov.username || 'Vercel User';
-                    budgetSyncBadge.innerHTML = `<span style="display:inline-block; width:6px; height:6px; background:#34d399; border-radius:50%; margin-right:4px;"></span> Synced: @${uname}`;
+                    const pName = ov.project?.name || null;
+                    const tag = pName ? `@${uname} (${pName})` : `@${uname}`;
+                    budgetSyncBadge.innerHTML = `<span style="display:inline-block; width:6px; height:6px; background:#34d399; border-radius:50%; margin-right:4px;"></span> Synced: ${tag}`;
                     budgetSyncBadge.style.background = 'rgba(16, 185, 129, 0.15)';
                     budgetSyncBadge.style.borderColor = 'rgba(16, 185, 129, 0.35)';
                     budgetSyncBadge.style.color = '#34d399';
@@ -5615,8 +5617,9 @@
                     : (invPct > 65 ? 'linear-gradient(90deg, #f59e0b, #facc15)' : 'linear-gradient(90deg, #0284c7, #38bdf8)');
             }
             if (budgetInvocationsSub) {
+                const offInv = (ov && ov.officialInvocations !== undefined) ? ov.officialInvocations : invocationsUsed;
                 budgetInvocationsSub.innerText = isOfficial 
-                    ? `Official Vercel Account: ${invocationsUsed.toLocaleString()} calls recorded this cycle`
+                    ? `Official Vercel Account: ${offInv.toLocaleString()} calls recorded on Vercel`
                     : `Estimated Invocations: ${invocationsUsed.toLocaleString()} / 1,000,000 calls`;
             }
             if (budgetInvocationsHeadroom) {
@@ -5676,16 +5679,27 @@
 
             if (isConnected) {
                 const username = ov?.username || 'Vercel User';
+                const projName = ov?.project?.name || null;
+                const projUrl = ov?.project?.url || null;
+                const projState = ov?.project?.state || null;
+                const apiScope = ov?.apiScope || 'Live Sync';
                 const teamStr = (ov?.teams && ov.teams.length > 0) ? ` • Teams: ${ov.teams.join(', ')}` : '';
                 if (apiBadge) {
-                    apiBadge.innerText = `🟢 Connected to @${username} (Live Sync)`;
+                    apiBadge.innerText = `🟢 Connected: @${username} (${apiScope})`;
                     apiBadge.style.background = 'rgba(16, 185, 129, 0.15)';
                     apiBadge.style.borderColor = 'rgba(16, 185, 129, 0.35)';
                     apiBadge.style.color = '#34d399';
                 }
                 if (inputBox) inputBox.style.display = 'none';
                 if (connectedBox) connectedBox.style.display = 'flex';
-                if (connectedName) connectedName.innerText = `Connected to @${username}${teamStr} • Live Sync Active`;
+                if (connectedName) {
+                    let desc = `Connected to @${username}${teamStr} • ${apiScope}`;
+                    if (projName) {
+                        desc += ` • Project: ${projName}`;
+                        if (projState) desc += ` (${projState})`;
+                    }
+                    connectedName.innerText = desc;
+                }
                 if (vErrorMsg) { vErrorMsg.style.display = 'none'; vErrorMsg.innerText = ''; }
             } else if (vercelError) {
                 if (apiBadge) {
