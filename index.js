@@ -506,16 +506,43 @@ let renderApiUsageCache = {
 };
 
 async function fetchOfficialRenderUsage(apiKey, forceFresh = false) {
-    if (!apiKey) return null;
+    const cleanKey = String(apiKey || '').replace(/^Bearer\s+/i, '').trim();
+    if (!cleanKey) return null;
     if (!forceFresh && (Date.now() - renderApiUsageCache.timestamp < 120000) && renderApiUsageCache.data) {
         return renderApiUsageCache.data;
     }
     try {
-        const headers = { Authorization: `Bearer ${apiKey}`, Accept: 'application/json' };
-        const [servicesRes, ownersRes] = await Promise.allSettled([
-            axios.get('https://api.render.com/v1/services?limit=10', { headers, timeout: 6000 }),
-            axios.get('https://api.render.com/v1/owners', { headers, timeout: 5000 })
-        ]);
+        const headers = { Authorization: `Bearer ${cleanKey}`, Accept: 'application/json' };
+        
+        let servicesRes, ownersRes;
+        try {
+            const [sRes, oRes] = await Promise.allSettled([
+                axios.get('https://api.render.com/v1/services?limit=10', { headers, httpsAgent: dohHttpsAgent, timeout: 6000 }),
+                axios.get('https://api.render.com/v1/owners', { headers, httpsAgent: dohHttpsAgent, timeout: 5000 })
+            ]);
+            servicesRes = sRes;
+            ownersRes = oRes;
+        } catch (callErr) {
+            return {
+                connected: false,
+                error: callErr.message || 'Render connection failed',
+                lastSynced: Date.now()
+            };
+        }
+
+        // Validate that at least one call succeeded; if rejected with 401/403, fail gracefully
+        if (servicesRes.status === 'rejected' && ownersRes.status === 'rejected') {
+            const err = servicesRes.reason || ownersRes.reason;
+            const errStatus = err?.response?.status;
+            const errMsg = err?.response?.data?.message || (errStatus === 401 || errStatus === 403 ? 'Unauthorized: Invalid Render API Key' : (err?.message || 'Unauthorized / Invalid Key'));
+            const errResult = {
+                connected: false,
+                error: errMsg,
+                lastSynced: Date.now()
+            };
+            renderApiUsageCache = { timestamp: Date.now(), data: errResult };
+            return errResult;
+        }
 
         let serviceName = process.env.RENDER_SERVICE_NAME || 'chole-bhature';
         let serviceId = process.env.RENDER_SERVICE_ID || null;
@@ -525,7 +552,7 @@ async function fetchOfficialRenderUsage(apiKey, forceFresh = false) {
         let repo = null;
         let updatedAt = null;
 
-        if (servicesRes.status === 'fulfilled' && Array.isArray(servicesRes.value.data)) {
+        if (servicesRes.status === 'fulfilled' && Array.isArray(servicesRes.value?.data)) {
             const services = servicesRes.value.data;
             let currentService = null;
             if (serviceId) {
@@ -545,7 +572,7 @@ async function fetchOfficialRenderUsage(apiKey, forceFresh = false) {
         }
 
         let ownerName = null;
-        if (ownersRes.status === 'fulfilled' && Array.isArray(ownersRes.value.data) && ownersRes.value.data.length > 0) {
+        if (ownersRes.status === 'fulfilled' && Array.isArray(ownersRes.value?.data) && ownersRes.value.data.length > 0) {
             ownerName = ownersRes.value.data[0]?.owner?.name || ownersRes.value.data[0]?.owner?.email || ownersRes.value.data[0]?.name;
         }
 
@@ -583,43 +610,103 @@ let vercelApiUsageCache = {
 };
 
 async function fetchOfficialVercelUsage(apiToken, forceFresh = false) {
-    if (!apiToken) return null;
+    const cleanToken = String(apiToken || '').replace(/^Bearer\s+/i, '').trim();
+    if (!cleanToken) return null;
     if (!forceFresh && (Date.now() - vercelApiUsageCache.timestamp < 120000) && vercelApiUsageCache.data) {
         return vercelApiUsageCache.data;
     }
     try {
-        const headers = { Authorization: `Bearer ${apiToken}` };
+        const headers = { Authorization: `Bearer ${cleanToken}` };
+        
+        // 1. Authenticate user identity and check validity
+        let userRes;
+        try {
+            userRes = await axios.get('https://api.vercel.com/v2/user', {
+                headers,
+                httpsAgent: dohHttpsAgent,
+                timeout: 6000
+            });
+        } catch (authErr) {
+            const errStatus = authErr.response?.status;
+            const errMsg = authErr.response?.data?.error?.message || (errStatus === 401 || errStatus === 403 ? 'Unauthorized: Invalid Vercel Token' : (authErr.message || 'Failed to authenticate with Vercel'));
+            const errResult = {
+                connected: false,
+                error: errMsg,
+                lastSynced: Date.now()
+            };
+            vercelApiUsageCache = { timestamp: Date.now(), data: errResult };
+            return errResult;
+        }
+
+        const userData = userRes.data?.user || {};
+        const username = userData.username || userData.name || userData.email || 'Vercel User';
+        const defaultTeamId = userData.defaultTeamId || null;
+
+        // 2. Discover user teams (in case project is deployed under a team)
+        let teams = [];
+        try {
+            const teamsRes = await axios.get('https://api.vercel.com/v2/teams', {
+                headers,
+                httpsAgent: dohHttpsAgent,
+                timeout: 5000
+            });
+            teams = Array.isArray(teamsRes.data?.teams) ? teamsRes.data.teams : [];
+        } catch (e) {
+            // Teams discovery optional
+        }
+
         const now = new Date();
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+        const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
         const endNow = now.toISOString();
 
-        const [userRes, usageRes] = await Promise.allSettled([
-            axios.get('https://api.vercel.com/v2/user', { headers, timeout: 5000 }),
-            axios.get(`https://api.vercel.com/v2/usage?type=requests&from=${startOfMonth}&to=${endNow}`, { headers, timeout: 6000 })
-        ]);
+        // 3. Query usage for user personal scope + team scopes
+        const usageQueries = [
+            axios.get(`https://api.vercel.com/v2/usage?type=requests&from=${startOfMonth}&to=${endNow}`, {
+                headers,
+                httpsAgent: dohHttpsAgent,
+                timeout: 6000
+            })
+        ];
 
-        const username = userRes.status === 'fulfilled' ? (userRes.value.data?.user?.username || userRes.value.data?.user?.name) : null;
-        
+        for (const team of teams) {
+            if (team && team.id) {
+                usageQueries.push(
+                    axios.get(`https://api.vercel.com/v2/usage?type=requests&from=${startOfMonth}&to=${endNow}&teamId=${team.id}`, {
+                        headers,
+                        httpsAgent: dohHttpsAgent,
+                        timeout: 6000
+                    })
+                );
+            }
+        }
+
+        const usageResults = await Promise.allSettled(usageQueries);
+
         let totalRequests = 0;
         let totalInvocations = 0;
         let totalBandwidthBytes = 0;
         let totalGbHours = 0;
 
-        if (usageRes.status === 'fulfilled' && usageRes.value.data?.data) {
-            for (const item of usageRes.value.data.data) {
-                totalRequests += (item.request_hit_count || 0) + (item.request_miss_count || 0);
-                totalInvocations += (item.function_invocation_successful_count || 0) + (item.function_invocation_error_count || 0) + (item.function_invocation_timeout_count || 0);
-                totalBandwidthBytes += (item.bandwidth_outgoing_bytes || 0) + (item.bandwidth_incoming_bytes || 0);
-                totalGbHours += (item.function_execution_successful_gb_hours || 0) + (item.function_execution_error_gb_hours || 0) + (item.function_execution_timeout_gb_hours || 0);
+        for (const res of usageResults) {
+            if (res.status === 'fulfilled' && Array.isArray(res.value.data?.data)) {
+                for (const item of res.value.data.data) {
+                    totalRequests += (item.request_hit_count || 0) + (item.request_miss_count || 0);
+                    totalInvocations += (item.function_invocation_successful_count || 0) + (item.function_invocation_error_count || 0) + (item.function_invocation_timeout_count || 0);
+                    totalBandwidthBytes += (item.bandwidth_outgoing_bytes || 0) + (item.bandwidth_incoming_bytes || 0);
+                    totalGbHours += (item.function_execution_successful_gb_hours || 0) + (item.function_execution_error_gb_hours || 0) + (item.function_execution_timeout_gb_hours || 0);
+                }
             }
         }
 
         const bandwidthUsedGB = Math.round((totalBandwidthBytes / (1024 * 1024 * 1024)) * 1000) / 1000;
         const fluidCpuHours = Math.round(totalGbHours * 10000) / 10000;
+        const teamNames = teams.map(t => t.name || t.slug).filter(Boolean);
 
         const result = {
             connected: true,
-            username: username || 'Vercel User',
+            username,
+            teams: teamNames,
+            defaultTeamId,
             totalInvocations,
             totalRequests,
             bandwidthUsedGB,
@@ -882,7 +969,7 @@ app.get('/api/telemetry/stats', handleGetDiagnosticsStats);
 app.get('/api/admin/stats', handleGetDiagnosticsStats);
 
 // Global Server Settings Management (Admin Only)
-const handleUpdateAdminSettings = (req, res) => {
+const handleUpdateAdminSettings = async (req, res) => {
     if (!checkDiagnosticsAuth(req)) {
         return res.status(401).json({ success: false, error: 'Unauthorized' });
     }
@@ -903,11 +990,35 @@ const handleUpdateAdminSettings = (req, res) => {
         globalServerSettings.renderPingUrl = renderPingUrl.trim() || null;
     }
     if (typeof renderApiKey === 'string') {
-        globalServerSettings.renderApiKey = renderApiKey.trim() || null;
+        const cleanRenderKey = renderApiKey.replace(/^Bearer\s+/i, '').trim();
+        if (cleanRenderKey) {
+            const testRender = await fetchOfficialRenderUsage(cleanRenderKey, true);
+            if (!testRender || testRender.connected === false) {
+                return res.status(400).json({
+                    success: false,
+                    error: testRender?.error || 'Invalid Render API Key. Please verify your API Key.'
+                });
+            }
+            globalServerSettings.renderApiKey = cleanRenderKey;
+        } else {
+            globalServerSettings.renderApiKey = null;
+        }
         renderApiUsageCache = { timestamp: 0, data: null };
     }
     if (typeof vercelApiToken === 'string') {
-        globalServerSettings.vercelApiToken = vercelApiToken.trim() || null;
+        const cleanVercelToken = vercelApiToken.replace(/^Bearer\s+/i, '').trim();
+        if (cleanVercelToken) {
+            const testVercel = await fetchOfficialVercelUsage(cleanVercelToken, true);
+            if (!testVercel || testVercel.connected === false) {
+                return res.status(400).json({
+                    success: false,
+                    error: testVercel?.error || 'Invalid Vercel API Token. Please check your token at vercel.com/account/tokens'
+                });
+            }
+            globalServerSettings.vercelApiToken = cleanVercelToken;
+        } else {
+            globalServerSettings.vercelApiToken = null;
+        }
         vercelApiUsageCache = { timestamp: 0, data: null };
     }
     saveAdminSettings();

@@ -3892,10 +3892,11 @@
                                         <input type="password" id="adminRenderApiKey" class="text-input" placeholder="Paste Render API Key (rnd_...)" style="width: 100%; padding-right: 40px;">
                                         <button type="button" onclick="toggleRenderTokenVisibility()" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px;" title="Show/Hide Key">👁️</button>
                                     </div>
-                                    <button type="button" onclick="saveRenderApiKey()" class="pill-btn pill-btn-primary" style="padding: 0 18px; height: 42px; font-weight: 700; white-space: nowrap;">
+                                    <button type="button" id="btn-connect-render-key" onclick="saveRenderApiKey()" class="pill-btn pill-btn-primary" style="padding: 0 18px; height: 42px; font-weight: 700; white-space: nowrap;">
                                         <span>💾</span> Connect Key
                                     </button>
                                 </div>
+                                <div id="render-token-error-msg" style="display: none; margin-top: 6px; font-size: 12px; color: #f87171; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px; padding: 8px 12px;"></div>
                             </div>
 
                             <!-- Connected State (Shown after key is verified & connected) -->
@@ -4062,10 +4063,11 @@
                                         <input type="password" id="adminVercelApiToken" class="text-input" placeholder="Paste Vercel API Token (e.g. vercel_tok_...)" style="width: 100%; padding-right: 40px;">
                                         <button type="button" onclick="toggleVercelTokenVisibility()" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px;" title="Show/Hide Token">👁️</button>
                                     </div>
-                                    <button type="button" onclick="saveVercelApiToken()" class="pill-btn pill-btn-primary" style="padding: 0 18px; height: 42px; font-weight: 700; white-space: nowrap;">
+                                    <button type="button" id="btn-connect-vercel-token" onclick="saveVercelApiToken()" class="pill-btn pill-btn-primary" style="padding: 0 18px; height: 42px; font-weight: 700; white-space: nowrap;">
                                         <span>💾</span> Connect Token
                                     </button>
                                 </div>
+                                <div id="vercel-token-error-msg" style="display: none; margin-top: 6px; font-size: 12px; color: #f87171; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px; padding: 8px 12px;"></div>
                             </div>
 
                             <!-- Connected State (Shown after token is verified & connected) -->
@@ -5378,9 +5380,11 @@
             const rInputBox = document.getElementById('render-token-input-box');
             const rConnectedBox = document.getElementById('render-token-connected-box');
             const rConnectedName = document.getElementById('render-connected-account-name');
+            const rErrorMsg = document.getElementById('render-token-error-msg');
 
             const oRender = d.officialRender;
-            const isRenderConnected = Boolean((oRender && oRender.connected) || (d.globalSettings && d.globalSettings.hasRenderApiKey));
+            const isRenderConnected = Boolean(oRender && oRender.connected === true);
+            const renderError = (oRender && oRender.connected === false && oRender.error) ? oRender.error : null;
 
             if (isRenderConnected) {
                 const sName = oRender?.serviceName || oRender?.ownerName || 'Render Service';
@@ -5393,6 +5397,20 @@
                 if (rInputBox) rInputBox.style.display = 'none';
                 if (rConnectedBox) rConnectedBox.style.display = 'flex';
                 if (rConnectedName) rConnectedName.innerText = `Connected: ${sName} • Live Sync Active`;
+                if (rErrorMsg) { rErrorMsg.style.display = 'none'; rErrorMsg.innerText = ''; }
+            } else if (renderError) {
+                if (rApiBadge) {
+                    rApiBadge.innerText = '🔴 Render Sync Error';
+                    rApiBadge.style.background = 'rgba(239, 68, 68, 0.15)';
+                    rApiBadge.style.borderColor = 'rgba(239, 68, 68, 0.35)';
+                    rApiBadge.style.color = '#f87171';
+                }
+                if (rInputBox) rInputBox.style.display = 'flex';
+                if (rConnectedBox) rConnectedBox.style.display = 'none';
+                if (rErrorMsg) {
+                    rErrorMsg.style.display = 'block';
+                    rErrorMsg.innerText = `⚠️ Sync Error: ${renderError}`;
+                }
             } else {
                 if (rApiBadge) {
                     rApiBadge.innerText = '⚪ Built-In Server Profiler';
@@ -5402,6 +5420,7 @@
                 }
                 if (rInputBox) rInputBox.style.display = 'flex';
                 if (rConnectedBox) rConnectedBox.style.display = 'none';
+                if (rErrorMsg) { rErrorMsg.style.display = 'none'; rErrorMsg.innerText = ''; }
             }
 
             // ==================== VERCEL PANEL METRICS ====================
@@ -5526,11 +5545,14 @@
             const inputBox = document.getElementById('vercel-token-input-box');
             const connectedBox = document.getElementById('vercel-token-connected-box');
             const connectedName = document.getElementById('vercel-connected-account-name');
+            const vErrorMsg = document.getElementById('vercel-token-error-msg');
 
-            const isConnected = Boolean((d.officialVercel && d.officialVercel.connected) || (d.globalSettings && d.globalSettings.hasVercelToken));
+            const isConnected = Boolean(ov && ov.connected === true);
+            const vercelError = (ov && ov.connected === false && ov.error) ? ov.error : null;
 
             if (isConnected) {
-                const username = d.officialVercel?.username || 'Connected User';
+                const username = ov?.username || 'Vercel User';
+                const teamStr = (ov?.teams && ov.teams.length > 0) ? ` • Teams: ${ov.teams.join(', ')}` : '';
                 if (apiBadge) {
                     apiBadge.innerText = `🟢 Connected to @${username} (Live Sync)`;
                     apiBadge.style.background = 'rgba(16, 185, 129, 0.15)';
@@ -5539,7 +5561,21 @@
                 }
                 if (inputBox) inputBox.style.display = 'none';
                 if (connectedBox) connectedBox.style.display = 'flex';
-                if (connectedName) connectedName.innerText = `Connected to @${username} • Live Sync Active`;
+                if (connectedName) connectedName.innerText = `Connected to @${username}${teamStr} • Live Sync Active`;
+                if (vErrorMsg) { vErrorMsg.style.display = 'none'; vErrorMsg.innerText = ''; }
+            } else if (vercelError) {
+                if (apiBadge) {
+                    apiBadge.innerText = '🔴 Vercel Sync Error';
+                    apiBadge.style.background = 'rgba(239, 68, 68, 0.15)';
+                    apiBadge.style.borderColor = 'rgba(239, 68, 68, 0.35)';
+                    apiBadge.style.color = '#f87171';
+                }
+                if (inputBox) inputBox.style.display = 'flex';
+                if (connectedBox) connectedBox.style.display = 'none';
+                if (vErrorMsg) {
+                    vErrorMsg.style.display = 'block';
+                    vErrorMsg.innerText = `⚠️ Sync Error: ${vercelError}`;
+                }
             } else {
                 if (apiBadge) {
                     apiBadge.innerText = '⚪ Built-In Serverless Profiler';
@@ -5549,6 +5585,7 @@
                 }
                 if (inputBox) inputBox.style.display = 'flex';
                 if (connectedBox) connectedBox.style.display = 'none';
+                if (vErrorMsg) { vErrorMsg.style.display = 'none'; vErrorMsg.innerText = ''; }
             }
         }
 
@@ -5595,12 +5632,20 @@
         async function saveRenderApiKey() {
             triggerHaptic('medium');
             const input = document.getElementById('adminRenderApiKey');
+            const connectBtn = document.getElementById('btn-connect-render-key');
+            const errorDiv = document.getElementById('render-token-error-msg');
             const keyVal = input ? input.value.trim() : '';
             if (!keyVal) {
                 showToast("⚠️ <b>Key Empty:</b> Please paste your Render API Key (rnd_...).");
                 return;
             }
-            localStorage.setItem('cb_render_api_key', keyVal);
+            const clean = keyVal.replace(/^Bearer\s+/i, '').trim();
+            const originalBtnHtml = connectBtn ? connectBtn.innerHTML : '<span>💾</span> Connect Key';
+            if (connectBtn) {
+                connectBtn.disabled = true;
+                connectBtn.innerHTML = '<span>⏳</span> Verifying...';
+            }
+            if (errorDiv) { errorDiv.style.display = 'none'; errorDiv.innerText = ''; }
             const adminKey = getAdminKey();
             try {
                 const res = await fetch('/api/admin/settings', {
@@ -5610,20 +5655,32 @@
                         'x-admin-key': adminKey,
                         'x-diagnostic-token': adminKey
                     },
-                    body: JSON.stringify({ renderApiKey: keyVal })
+                    body: JSON.stringify({ renderApiKey: clean })
                 });
                 const data = await res.json();
                 if (data && data.success) {
+                    localStorage.setItem('cb_render_api_key', clean);
                     showToast("✅ <b>Render API Connected:</b> Live official service sync active!");
                     triggerHaptic('success');
                     if (input) input.value = '';
                     fetchAdminStats(true);
                 } else {
-                    showToast("❌ <b>Error:</b> Could not save Render API key.");
+                    const errTxt = data?.error || 'Invalid Render API Key.';
+                    if (errorDiv) {
+                        errorDiv.style.display = 'block';
+                        errorDiv.innerText = `❌ ${errTxt}`;
+                    }
+                    showToast(`❌ <b>Verification Failed:</b> ${errTxt}`);
+                    triggerHaptic('error');
                 }
             } catch (e) {
                 console.error('Failed to save Render API key', e);
                 showToast("❌ <b>Network Error:</b> Failed to connect to server.");
+            } finally {
+                if (connectBtn) {
+                    connectBtn.disabled = false;
+                    connectBtn.innerHTML = originalBtnHtml;
+                }
             }
         }
 
@@ -5677,7 +5734,7 @@
                 if (data && data.success) {
                     showToast("⚪ <b>Disconnected:</b> Switched back to internal serverless profiler.");
                     triggerHaptic('success');
-                    fetchAdminStats();
+                    fetchAdminStats(true);
                 } else {
                     showToast("❌ <b>Error:</b> Could not disconnect Vercel token.");
                 }
@@ -5695,12 +5752,20 @@
         async function saveVercelApiToken() {
             triggerHaptic('medium');
             const input = document.getElementById('adminVercelApiToken');
+            const connectBtn = document.getElementById('btn-connect-vercel-token');
+            const errorDiv = document.getElementById('vercel-token-error-msg');
             const tokenVal = input ? input.value.trim() : '';
             if (!tokenVal) {
                 showToast("⚠️ <b>Token Empty:</b> Please paste your Vercel Personal Access Token.");
                 return;
             }
-            localStorage.setItem('cb_vercel_api_token', tokenVal);
+            const clean = tokenVal.replace(/^Bearer\s+/i, '').trim();
+            const originalBtnHtml = connectBtn ? connectBtn.innerHTML : '<span>💾</span> Connect Token';
+            if (connectBtn) {
+                connectBtn.disabled = true;
+                connectBtn.innerHTML = '<span>⏳</span> Verifying...';
+            }
+            if (errorDiv) { errorDiv.style.display = 'none'; errorDiv.innerText = ''; }
             const adminKey = getAdminKey();
             try {
                 const res = await fetch('/api/admin/settings', {
@@ -5710,20 +5775,32 @@
                         'x-admin-key': adminKey,
                         'x-diagnostic-token': adminKey
                     },
-                    body: JSON.stringify({ vercelApiToken: tokenVal })
+                    body: JSON.stringify({ vercelApiToken: clean })
                 });
                 const data = await res.json();
                 if (data && data.success) {
+                    localStorage.setItem('cb_vercel_api_token', clean);
                     showToast("✅ <b>Vercel API Connected:</b> Live official usage sync active!");
                     triggerHaptic('success');
                     if (input) input.value = '';
                     fetchAdminStats(true);
                 } else {
-                    showToast("❌ <b>Error:</b> Could not save Vercel token.");
+                    const errTxt = data?.error || 'Invalid Vercel API Token. Please check token permissions.';
+                    if (errorDiv) {
+                        errorDiv.style.display = 'block';
+                        errorDiv.innerText = `❌ ${errTxt}`;
+                    }
+                    showToast(`❌ <b>Verification Failed:</b> ${errTxt}`);
+                    triggerHaptic('error');
                 }
             } catch (e) {
                 console.error('Failed to save Vercel token', e);
                 showToast("❌ <b>Network Error:</b> Failed to connect to server.");
+            } finally {
+                if (connectBtn) {
+                    connectBtn.disabled = false;
+                    connectBtn.innerHTML = originalBtnHtml;
+                }
             }
         }
 
@@ -6275,6 +6352,18 @@
                 }
                 const data = await res.json();
                 if (data) {
+                    if (data.officialVercel && data.officialVercel.connected === false && data.officialVercel.error) {
+                        const vErr = String(data.officialVercel.error).toLowerCase();
+                        if (vErr.includes('unauthorized') || vErr.includes('invalid') || vErr.includes('expired')) {
+                            localStorage.removeItem('cb_vercel_api_token');
+                        }
+                    }
+                    if (data.officialRender && data.officialRender.connected === false && data.officialRender.error) {
+                        const rErr = String(data.officialRender.error).toLowerCase();
+                        if (rErr.includes('unauthorized') || rErr.includes('invalid') || rErr.includes('expired')) {
+                            localStorage.removeItem('cb_render_api_key');
+                        }
+                    }
                     const totalEl = document.getElementById('admin-total-configs');
                     const cacheEl = document.getElementById('admin-cache-size');
                     const memEl = document.getElementById('admin-memory-mb');
