@@ -1948,7 +1948,7 @@ function createAddon(config) {
             const isEcoMode = globalServerSettings.globalEcoMode !== undefined 
                 ? Boolean(globalServerSettings.globalEcoMode)
                 : (globalServerSettings.allowClientEcoOverride ? Boolean(isClientEco !== false) : true);
-            const PROVIDER_TIMEOUT_MS = isEcoMode || (typeof process !== 'undefined' && (process.env.RENDER || process.env.VERCEL)) ? 8000 : 15000;
+            const PROVIDER_TIMEOUT_MS = isEcoMode || (typeof process !== 'undefined' && (process.env.RENDER || process.env.VERCEL)) ? 10500 : 18000;
 
             const tgScrapePromise = (async () => {
                 if (Boolean(config.enableTelegram) && (!config.disabled || (!config.disabled.includes('Telegram') && !config.disabled.includes('Telegram (PencariMovie)')))) {
@@ -1970,55 +1970,81 @@ function createAddon(config) {
                 }
             })();
 
-            await Promise.all([
-                tgScrapePromise,
-                ...allProviders.map(async (provider) => {
-                    try {
-                        if (config.enableQuarantine !== false) {
-                            const qRecord = quarantineRegistry.get(provider.name);
-                            if (qRecord && qRecord.quarantineUntil > Date.now()) {
-                                console.log(`[Quarantine] Skipping provider ${provider.name} (Quarantined)`);
-                                return;
-                            }
+            // Concurrency limiter to prevent network exhaustion on Android/mobile networks when running 40+ scrapers
+            const CONCURRENCY_LIMIT = 15;
+            const executing = [];
+            const providerTasks = allProviders.map((provider) => async () => {
+                try {
+                    if (config.enableQuarantine !== false) {
+                        const qRecord = quarantineRegistry.get(provider.name);
+                        if (qRecord && qRecord.quarantineUntil > Date.now()) {
+                            console.log(`[Quarantine] Skipping provider ${provider.name} (Quarantined)`);
+                            return;
                         }
+                    }
 
-                        let nuvioType = type;
-                        if (type === 'series' || type === 'tv') nuvioType = 'tv';
-                        else if (type === 'movie') nuvioType = 'movie';
-                        else if (type === 'anime') nuvioType = (season && episode) ? 'tv' : 'movie';
-                        
-                        const scrapePromise = provider.getStreams(tmdbId, nuvioType, season, episode, config);
-                        
-                        // Timeout promise
-                        const timeoutPromise = new Promise((_, reject) => 
-                            setTimeout(() => reject(new Error('Scrape Timeout')), PROVIDER_TIMEOUT_MS)
-                        );
+                    let nuvioType = type;
+                    if (type === 'series' || type === 'tv') nuvioType = 'tv';
+                    else if (type === 'movie') nuvioType = 'movie';
+                    else if (type === 'anime') nuvioType = (season && episode) ? 'tv' : 'movie';
+                    
+                    const scrapePromise = provider.getStreams(tmdbId, nuvioType, season, episode, config);
+                    
+                    // Timeout promise
+                    const timeoutPromise = new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('Scrape Timeout')), PROVIDER_TIMEOUT_MS)
+                    );
 
-                        const streams = await Promise.race([scrapePromise, timeoutPromise]);
+                    const streams = await Promise.race([scrapePromise, timeoutPromise]);
+                    
+                    if (config.enableQuarantine !== false) {
+                        quarantineRegistry.delete(provider.name);
+                    }
+                    
+                    if (Array.isArray(streams)) {
+                        streams.forEach(s => s.name = s.name || provider.name);
+                        allStreams = allStreams.concat(streams);
+                    }
+                } catch (e) {
+                    const isNetworkError = e.message === 'Scrape Timeout' 
+                        || e.message.toLowerCase().includes('timeout')
+                        || e.message.toLowerCase().includes('network')
+                        || e.message.toLowerCase().includes('econnreset')
+                        || e.message.toLowerCase().includes('etimedout')
+                        || e.message.toLowerCase().includes('socket hang up')
+                        || e.message.toLowerCase().includes('ehostunreach')
+                        || e.message.toLowerCase().includes('fetch failed')
+                        || e.message.toLowerCase().includes('und_err_');
                         
+                    if (!isNetworkError) {
+                        // Only quarantine for actual script/parsing errors, not network issues which are common in parallel scraping
                         if (config.enableQuarantine !== false) {
-                            quarantineRegistry.delete(provider.name);
-                        }
-                        
-                        if (Array.isArray(streams)) {
-                            streams.forEach(s => s.name = s.name || provider.name);
-                            allStreams = allStreams.concat(streams);
-                        }
-                    } catch (err) {
-                        if (config.enableQuarantine !== false && err.message !== 'Scrape Timeout') {
-                            const qRecord = quarantineRegistry.get(provider.name) || { strikes: 0, quarantineUntil: 0 };
-                            qRecord.strikes++;
-                            if (qRecord.strikes >= 5) {
+                            const qRecord = quarantineRegistry.get(provider.name) || { fails: 0 };
+                            qRecord.fails += 1;
+                            if (qRecord.fails >= 2) {
                                 qRecord.quarantineUntil = Date.now() + (10 * 60 * 1000); // 10 minutes
-                                console.error(`[Quarantine] ${provider.name} failed 5 times. Quarantined for 10m.`);
+                                console.warn(`[Quarantine] Provider ${provider.name} quarantined for 10m due to repeated code errors: ${e.message}`);
                             }
                             quarantineRegistry.set(provider.name, qRecord);
                         }
-                        console.error(`[Provider] ${provider.name} failed or timed out:`, err.message);
+                    } else {
+                        console.error(`[Provider] ${provider.name} failed or timed out:`, e.message);
                     }
-                }),
-                tgScrapePromise
-            ]);
+                }
+            });
+
+            const results = [];
+            for (const task of providerTasks) {
+                const p = task();
+                results.push(p);
+                const e = p.then(() => executing.splice(executing.indexOf(e), 1));
+                executing.push(e);
+                if (executing.length >= CONCURRENCY_LIMIT) {
+                    await Promise.race(executing);
+                }
+            }
+
+            await Promise.all([tgScrapePromise, ...results]);
             const scrapeDurationMs = Date.now() - scrapeStartTime;
 
             console.log(`[Stremio] Collected ${allStreams.length} total streams for ${type} ${id}. Testing speeds...`);
