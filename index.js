@@ -1781,7 +1781,7 @@ function createAddon(config) {
     }
 
     // 5. Live TV / IPTV
-    if (config.enableIptv !== false) {
+    if (config.enableIptv) {
         const liveTvGenres = ['All', 'News', 'Music', 'Movies', 'Religious', 'Entertainment', 'Culture', 'Animation', 'Lifestyle', 'Business', 'Sports', 'India'];
         enabledCatalogs.push({
             type: 'tv',
@@ -1802,7 +1802,7 @@ function createAddon(config) {
     if (enabledCatalogs.length > 0) {
         resources.push('catalog');
     }
-    if (config.enableIptv !== false) {
+    if (config.enableIptv) {
         resources.push('meta');
     }
 
@@ -2321,7 +2321,7 @@ function createAddon(config) {
         });
     }
 
-    if (config.enableIptv !== false) {
+    if (config.enableIptv) {
         builder.defineMetaHandler(async ({ type, id }) => {
             if (id && id.startsWith('iptv:')) {
                 const meta = await iptvManager.getChannelMeta(id, config, type);

@@ -4074,7 +4074,7 @@
                             <label class="filter-capsule">
                                 <span class="filter-capsule-text">📡 Live TV</span>
                                 <div class="switch-toggle">
-                                    <input type="checkbox" id="enableIptv" checked
+                                    <input type="checkbox" id="enableIptv"
                                         onchange="onSettingChanged(); toggleIptvSubsections();">
                                     <span class="switch-slider"></span>
                                 </div>
@@ -5884,7 +5884,7 @@
             catalogTrending: true,
             catalogIndian: true,
             catalogAnime: true,
-            enableIptv: true,
+            enableIptv: false,
             enableCuratedIptv: false,
             preferredLanguages: [],
             disabledProviders: []
@@ -6651,7 +6651,7 @@
                 catalogTrending: settings.catalogTrending !== false,
                 catalogIndian: settings.catalogIndian !== false,
                 catalogAnime: settings.catalogAnime !== false,
-                enableIptv: settings.enableIptv !== false,
+                enableIptv: Boolean(settings.enableIptv),
                 enableCuratedIptv: Boolean(settings.enableCuratedIptv),
                 customIptvUrl: settings.customIptvUrl || '',
                 iptvUserAgent: settings.iptvUserAgent || '',
