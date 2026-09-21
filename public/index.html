@@ -5846,11 +5846,7 @@
     <!-- ==================== JAVASCRIPT ENGINE ==================== -->
     <script>
         let configId = null;
-        const DEFAULT_REPOS = [
-            'https://cdn.jsdelivr.net/gh/D3adlyRocket/All-in-One-Nuvio@main/manifest.json',
-            'https://cdn.jsdelivr.net/gh/yoruix/nuvio-providers@main/manifest.json',
-            'https://codeberg.org/eclipsia/nuvio-plugin/raw/branch/main/manifest.json'
-        ];
+        const DEFAULT_REPOS = [];
         let repos = [...DEFAULT_REPOS];
         try {
             const storedRepos = localStorage.getItem('nuvio_repos');
