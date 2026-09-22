@@ -1952,13 +1952,19 @@ function createAddon(config) {
                 : (globalServerSettings.allowClientEcoOverride ? Boolean(isClientEco !== false) : true);
             // Allow up to 28s for maximum links (Vercel maxDuration should be bumped to 60s)
             // Vercel Hobby tier has a hard 10-second timeout. We MUST return results before 10s or Vercel throws a 504 Gateway Timeout
-            // which causes Stremio/Nuvio to show 0 links and fail silently.
-            const PROVIDER_TIMEOUT_MS = isEcoMode ? 8500 : 9200;
+            // If running locally or on Render, allow much longer timeouts.
+            const isVercel = typeof process !== 'undefined' && Boolean(process.env.VERCEL);
+            const PROVIDER_TIMEOUT_MS = isVercel 
+                ? (isEcoMode ? 8500 : 9200) 
+                : (isEcoMode ? 14000 : 28000);
 
             const tgScrapePromise = (async () => {
                 if (Boolean(config.enableTelegram) && (!config.disabled || (!config.disabled.includes('Telegram') && !config.disabled.includes('Telegram (PencariMovie)')))) {
                     try {
-                        const tgStreams = await searchPencariMovie({
+                        const tgTimeout = new Promise((_, reject) => 
+                            setTimeout(() => reject(new Error('Telegram Scrape Timeout')), PROVIDER_TIMEOUT_MS)
+                        );
+                        const searchPromise = searchPencariMovie({
                             title: mediaMeta?.title || '',
                             originalTitle: mediaMeta?.originalTitle || '',
                             year: mediaMeta?.year || null,
@@ -1966,6 +1972,8 @@ function createAddon(config) {
                             season: season,
                             episode: episode
                         }, config);
+
+                        const tgStreams = await Promise.race([searchPromise, tgTimeout]);
                         if (Array.isArray(tgStreams) && tgStreams.length > 0) {
                             allStreams = allStreams.concat(tgStreams);
                         }
@@ -2006,7 +2014,11 @@ function createAddon(config) {
                     }
                     
                     if (Array.isArray(streams)) {
-                        streams.forEach(s => s.name = s.name || provider.name);
+                        const fullProviderName = provider.repoName ? `${provider.repoName} • ${provider.name}` : provider.name;
+                        streams.forEach(s => {
+                            s.name = s.name || provider.name;
+                            s.provider = fullProviderName;
+                        });
                         allStreams = allStreams.concat(streams);
                     }
                 } catch (e) {
@@ -2059,6 +2071,7 @@ function createAddon(config) {
             const isUnreleased = Boolean(type === 'movie' && targetYear && targetYear > currentYear);
 
             const sortedAndTaggedStreams = await sortAndTagStreams(allStreams, {
+                maxTestDuration: isVercel ? Math.max(100, 9600 - scrapeDurationMs) : null, // Force return before 10s Vercel limit
                 target: {
                     title: mediaMeta?.title || '',
                     originalTitle: mediaMeta?.originalTitle || '',

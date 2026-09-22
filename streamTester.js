@@ -1094,9 +1094,27 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
     }
 
     // Run tests concurrently
-    const testedStreams = await Promise.all(
+    const testingPromise = Promise.all(
         uniqueStreams.map(stream => testStream(stream, showSeeders, config))
     );
+
+    let testedStreams;
+    if (config.maxTestDuration) {
+        const globalTimeoutPromise = new Promise(resolve => {
+            setTimeout(() => {
+                console.warn(`[StreamTester] Global testing timeout reached (${config.maxTestDuration}ms). Bailing out to prevent 504.`);
+                const untested = uniqueStreams.map(s => {
+                    const tLatency = config.hideSlow ? 45 : 120;
+                    const labels = formatStreamLabels(s, tLatency, false, false, showSeeders, config);
+                    return { ...s, name: labels.name, title: labels.title, latency: tLatency, isDead: false, statusCategory: 'fast' };
+                });
+                resolve(untested);
+            }, config.maxTestDuration);
+        });
+        testedStreams = await Promise.race([testingPromise, globalTimeoutPromise]);
+    } else {
+        testedStreams = await testingPromise;
+    }
 
     // Record Analytics
     if (providerAnalytics && typeof providerAnalytics.has === 'function') {

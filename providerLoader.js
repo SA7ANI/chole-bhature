@@ -466,6 +466,7 @@ class ProviderLoader {
                                 return {
                                     id: scraper.id,
                                     name: scraper.name,
+                                    repoName: manifest.name || 'Nuvio Repo',
                                     getStreams: async (id, type, season, episode, userConfig = {}) => {
                                         const override = (userConfig.scraperOverrides && userConfig.scraperOverrides[scraper.name]) || globalScraperOverrides[scraper.name] || {};
                                         if (override.disabled || (userConfig.disabledProviders && userConfig.disabledProviders.includes(scraper.name))) {

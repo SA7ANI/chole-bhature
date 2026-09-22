@@ -236,8 +236,11 @@ async function searchPencariMovie(target = {}, config = {}) {
         };
         const payloadB64 = Buffer.from(JSON.stringify(payloadObj)).toString('base64url');
 
-        // Direct stream route served via Telegram Bridge (No Addon Proxy)
-        const streamUrl = `${bridgeUrl}/api/download/${payloadB64}/${encodeURIComponent(fileName)}`;
+        // Direct stream route served via Telegram Bridge (No Addon Proxy) if addonHost is missing.
+        // Otherwise, proxy through Nuvio's /stream/telegram route to prevent Stremio clients on other devices from failing to reach localhost.
+        const streamUrl = config.addonHost
+            ? `${protocol}://${addonHost}/stream/telegram/${payloadB64}/${encodeURIComponent(fileName)}`
+            : `${bridgeUrl}/api/download/${payloadB64}/${encodeURIComponent(fileName)}`;
 
         const sizeGb = fileSize ? (fileSize / (1024 * 1024 * 1024)).toFixed(2) : null;
         const sizeMb = fileSize ? (fileSize / (1024 * 1024)).toFixed(0) : null;

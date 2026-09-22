@@ -223,8 +223,15 @@ function ingestStream(stream, config = {}) {
     }
 
     // 6. Clean provider label
-    const originalProvider = stream.originalProvider || stream.provider || extractCleanProvider(rawName);
-
+    const extractedProvider = extractCleanProvider(rawName);
+    const scraperProvider = stream.originalProvider || stream.provider;
+    
+    let originalProvider = scraperProvider || extractedProvider;
+    
+    // Combine scraper name with internal provider name (e.g., AnimeWorld • UpCloud)
+    if (scraperProvider && extractedProvider && extractedProvider !== 'Stream' && scraperProvider !== extractedProvider && !extractedProvider.includes(scraperProvider)) {
+        originalProvider = `${scraperProvider} • ${extractedProvider}`;
+    }
     return {
         originalStream: stream,
         rawFilename: cleanCand || candidateFilename,
