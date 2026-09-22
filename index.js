@@ -1972,7 +1972,6 @@ function createAddon(config) {
 
             // Concurrency limiter to prevent network exhaustion on Android/mobile networks when running 40+ scrapers
             const CONCURRENCY_LIMIT = 15;
-            const executing = [];
             const providerTasks = allProviders.map((provider) => async () => {
                 try {
                     if (config.enableQuarantine !== false) {
