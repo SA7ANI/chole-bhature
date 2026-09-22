@@ -2034,12 +2034,13 @@ function createAddon(config) {
             });
 
             const results = [];
+            const executing = new Set();
             for (const task of providerTasks) {
                 const p = task();
                 results.push(p);
-                const e = p.then(() => executing.splice(executing.indexOf(e), 1));
-                executing.push(e);
-                if (executing.length >= CONCURRENCY_LIMIT) {
+                const e = p.finally(() => executing.delete(e));
+                executing.add(e);
+                if (executing.size >= CONCURRENCY_LIMIT) {
                     await Promise.race(executing);
                 }
             }
