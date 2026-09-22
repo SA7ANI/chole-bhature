@@ -1640,6 +1640,67 @@ app.get('/debrid/:service/:apiKey/:hash', async (req, res) => {
                     }
                 }
             }
+        } else if (service === 'torbox') {
+            // 1. Add torrent by hash
+            const addRes = await axios.post('https://api.torbox.app/v1/api/torrents/createtorrent', 
+                { magnet: `magnet:?xt=urn:btih:${hash}` },
+                { headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' } }
+            );
+            const torrentId = addRes.data?.data?.torrent_id;
+            
+            if (torrentId) {
+                // 2. Poll for readiness (up to 20s)
+                let downloadLink = null;
+                for (let i = 0; i < 10; i++) {
+                    await new Promise(r => setTimeout(r, 2000));
+                    const infoRes = await axios.get(`https://api.torbox.app/v1/api/torrents/mylist?id=${torrentId}`, {
+                        headers: { 'Authorization': `Bearer ${apiKey}` }
+                    });
+                    const torrent = infoRes.data?.data;
+                    if (torrent && torrent.download_state === 'cached' && torrent.files && torrent.files.length > 0) {
+                        // 3. Request download link for the largest file
+                        const sortedFiles = [...torrent.files].sort((a, b) => (b.size || 0) - (a.size || 0));
+                        const fileId = sortedFiles[0].id;
+                        const linkRes = await axios.get(`https://api.torbox.app/v1/api/torrents/requestdl?token=${apiKey}&torrent_id=${torrentId}&file_id=${fileId}&zip_link=false`);
+                        downloadLink = linkRes.data?.data;
+                        break;
+                    }
+                    if (torrent && torrent.download_state === 'cached') break;
+                }
+                if (downloadLink) {
+                    return res.redirect(302, downloadLink);
+                }
+            }
+        } else if (service === 'premiumize') {
+            // 1. Add transfer
+            const addRes = await axios.post('https://www.premiumize.me/api/transfer/create',
+                new URLSearchParams({ apikey: apiKey, src: `magnet:?xt=urn:btih:${hash}` }),
+                { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+            );
+            const transferId = addRes.data?.id;
+            
+            if (transferId) {
+                // 2. Poll for completion (up to 20s)
+                let directLink = null;
+                for (let i = 0; i < 10; i++) {
+                    await new Promise(r => setTimeout(r, 2000));
+                    const listRes = await axios.get(`https://www.premiumize.me/api/transfer/list?apikey=${apiKey}`);
+                    const transfer = (listRes.data?.transfers || []).find(t => t.id === transferId);
+                    if (transfer && transfer.status === 'finished' && transfer.folder_id) {
+                        // 3. List folder and grab largest file
+                        const folderRes = await axios.get(`https://www.premiumize.me/api/folder/list?apikey=${apiKey}&id=${transfer.folder_id}`);
+                        const files = (folderRes.data?.content || []).filter(f => f.type === 'file');
+                        files.sort((a, b) => (b.size || 0) - (a.size || 0));
+                        if (files.length > 0 && files[0].link) {
+                            directLink = files[0].link;
+                        }
+                        break;
+                    }
+                }
+                if (directLink) {
+                    return res.redirect(302, directLink);
+                }
+            }
         }
     } catch (err) {
         console.error('[Debrid Error]', err.response?.data || err.message);
@@ -1648,6 +1709,7 @@ app.get('/debrid/:service/:apiKey/:hash', async (req, res) => {
     // Fallback: If debrid fails, redirect to a generic error video or just fail
     res.status(500).send('Debrid resolution failed.');
 });
+
 
 // Addon builder factory
 function createAddon(config) {
