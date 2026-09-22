@@ -2016,8 +2016,10 @@ function createAddon(config) {
                     if (Array.isArray(streams)) {
                         const fullProviderName = provider.repoName ? `${provider.repoName} • ${provider.name}` : provider.name;
                         streams.forEach(s => {
-                            s.name = s.name || provider.name;
-                            s.provider = fullProviderName;
+                            if (s && typeof s === 'object') {
+                                s.name = s.name || provider.name;
+                                s.provider = fullProviderName;
+                            }
                         });
                         allStreams = allStreams.concat(streams);
                     }
@@ -2071,7 +2073,7 @@ function createAddon(config) {
             const isUnreleased = Boolean(type === 'movie' && targetYear && targetYear > currentYear);
 
             const sortedAndTaggedStreams = await sortAndTagStreams(allStreams, {
-                maxTestDuration: isVercel ? Math.max(100, 55000 - scrapeDurationMs) : null, // Force return before 60s Vercel limit
+                maxTestDuration: isVercel ? Math.max(100, 9600 - scrapeDurationMs) : null, // Force return before 10s Vercel limit
                 target: {
                     title: mediaMeta?.title || '',
                     originalTitle: mediaMeta?.originalTitle || '',

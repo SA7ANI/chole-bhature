@@ -232,6 +232,17 @@ function ingestStream(stream, config = {}) {
     if (scraperProvider && extractedProvider && extractedProvider !== 'Stream' && scraperProvider !== extractedProvider && !extractedProvider.includes(scraperProvider)) {
         originalProvider = `${scraperProvider} • ${extractedProvider}`;
     }
+
+    let finalProviders = [];
+    if (stream.providers && Array.isArray(stream.providers) && stream.providers.length > 0) {
+        finalProviders = [...stream.providers];
+        if (finalProviders.length === 0 || !finalProviders[0].includes(originalProvider)) {
+            finalProviders.unshift(originalProvider);
+        }
+    } else {
+        finalProviders = [originalProvider];
+    }
+
     return {
         originalStream: stream,
         rawFilename: cleanCand || candidateFilename,
@@ -244,7 +255,7 @@ function ingestStream(stream, config = {}) {
         isP2P: isP2P,
         isDebridCached: isDebridCached,
         originalProvider: originalProvider,
-        providers: stream.providers && Array.isArray(stream.providers) ? stream.providers : [originalProvider],
+        providers: finalProviders,
         behaviorHints: {
             ...(stream.behaviorHints || {}),
             filename: behaviorFilename || cleanCand || candidateFilename
