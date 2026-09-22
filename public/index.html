@@ -6697,6 +6697,7 @@
                     if (data.configId) {
                         configId = data.configId;
                         localStorage.setItem('cb_config_id', configId);
+                        window.history.replaceState(null, '', '/c/' + configId + '/configure');
                     }
                     const saveBtn = document.getElementById('save-btn');
                     if (saveBtn) saveBtn.classList.remove('unsaved');
@@ -7975,7 +7976,7 @@
             if (cfg.xtreamServer !== undefined) settings.xtreamServer = cfg.xtreamServer;
             if (cfg.xtreamUser !== undefined) settings.xtreamUser = cfg.xtreamUser;
             if (cfg.xtreamPassword !== undefined) settings.xtreamPassword = cfg.xtreamPassword;
-            settings.enableTelegram = Boolean(cfg && cfg.enableTelegram === true);
+            if (cfg.enableTelegram !== undefined) settings.enableTelegram = Boolean(cfg.enableTelegram);
             if (cfg.telegramBridgeUrl !== undefined) settings.telegramBridgeUrl = cfg.telegramBridgeUrl;
             const persistedBridgeUrl = localStorage.getItem('cb_telegram_bridge_url');
             if (persistedBridgeUrl && (!cfg.telegramBridgeUrl || cfg.telegramBridgeUrl === 'http://127.0.0.1:8088')) {
