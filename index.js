@@ -82,6 +82,8 @@ app.use((req, res, next) => {
     }
     next();
 });
+const compression = require('compression');
+app.use(compression());
 app.use(express.json());
 
 // Real-Time Request Accounting Middleware
