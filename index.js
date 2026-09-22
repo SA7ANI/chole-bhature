@@ -2011,14 +2011,13 @@ function createAddon(config) {
             const isClientEco = config.renderEcoMode !== undefined ? config.renderEcoMode : config.vercelEcoMode;
             const isEcoMode = globalServerSettings.globalEcoMode !== undefined 
                 ? Boolean(globalServerSettings.globalEcoMode)
-                : (globalServerSettings.allowClientEcoOverride ? Boolean(isClientEco !== false) : true);
-            // Allow up to 28s for maximum links (Vercel maxDuration should be bumped to 60s)
-            // Vercel Hobby tier has a hard 10-second timeout. We MUST return results before 10s or Vercel throws a 504 Gateway Timeout
-            // If running locally or on Render, allow much longer timeouts.
+                : (globalServerSettings.allowClientEcoOverride ? Boolean(isClientEco === true) : false); // Default OFF — let scrapers run fully
+            // Vercel maxDuration is set to 60s in vercel.json. Give scrapers as much time as possible.
+            // We leave ~8s buffer for speed-testing after scraping completes.
             const isVercel = typeof process !== 'undefined' && Boolean(process.env.VERCEL);
             const PROVIDER_TIMEOUT_MS = isVercel 
-                ? (isEcoMode ? 8500 : 9200) 
-                : (isEcoMode ? 14000 : 28000);
+                ? (isEcoMode ? 12000 : 48000)   // Vercel: eco=12s, normal=48s (leaves 12s for sort+test)
+                : (isEcoMode ? 14000 : 60000);  // Render/local: eco=14s, normal=60s
 
             const tgScrapePromise = (async () => {
                 if (Boolean(config.enableTelegram) && (!config.disabled || (!config.disabled.includes('Telegram') && !config.disabled.includes('Telegram (PencariMovie)')))) {
