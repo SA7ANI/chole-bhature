@@ -640,31 +640,56 @@ async function testStream(stream, showSeeders = true, config = {}) {
         };
     }
 
-    // Eco Mode heuristic bypass removed: We now perform real HTTP HEAD checks even in Eco Mode
-    // because the timeout is strictly capped at 800ms on Vercel, which prevents blocking while ensuring dead links are filtered.
+    // Fast Eco Mode (Zero-Blocking CPU / Instant Heuristics)
+    // Active if explicitly enabled in user config, OR if stream is a local proxy on Vercel (where pinging fails)
+    const isEcoModeConfig = Boolean(config && (config.ecoMode === true || config.vercelEcoMode === true || config.renderEcoMode === true));
+    
+    let isLocal = false;
+    try {
+        const urlObj = new URL(stream.url);
+        const hostname = urlObj.hostname;
+        isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.') || hostname.startsWith('10.');
+    } catch(e) {}
+
+    const isVercelEnvironment = typeof process !== 'undefined' && Boolean(process.env.VERCEL);
+    const forceHeuristic = isEcoModeConfig || (isLocal && isVercelEnvironment);
+
+    if (forceHeuristic) {
+        let heuristicLatency = 120;
+        let isDead = false;
+        let statusCategory = 'fast';
+
+        const urlLower = String(stream.url || '').toLowerCase();
+        
+        if (urlLower.includes('hubcloud') || urlLower.includes('pixeldrain') || urlLower.includes('fastdl') || urlLower.includes('drive.google')) {
+            heuristicLatency = 95;
+            statusCategory = 'fast';
+        } else if (urlLower.includes('streamtape') || urlLower.includes('dood') || urlLower.includes('mixdrop')) {
+            heuristicLatency = 420;
+            statusCategory = 'fast';
+        } else if (urlLower.includes('1337x') || urlLower.includes('torrentgalaxy') || urlLower.includes('nyaa')) {
+            heuristicLatency = 110;
+        } else {
+            heuristicLatency = 140;
+            statusCategory = 'fast';
+        }
+
+        const labels = formatStreamLabels(stream, heuristicLatency, false, isDead, showSeeders, config);
+        return {
+            ...stream,
+            name: labels.name,
+            title: labels.title,
+            latency: heuristicLatency,
+            isDead: isDead,
+            statusCategory: statusCategory,
+            originalProvider: providerName,
+            _rawStream: rawSnapshot,
+            _preparsedMeta: initialMeta
+        };
+    }
 
     try {
         const urlObj = new URL(stream.url);
-        
-        // 🚨 Bypass probing for Localhost / LAN / Telegram Bridge URLs
-        // Vercel cannot probe the user's local PC, so we must assume these are alive.
-        const hostname = urlObj.hostname;
-        const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.') || hostname.startsWith('10.');
-        if (isLocal || providerName === 'Telegram') {
-            const labels = formatStreamLabels(stream, 45, false, false, showSeeders, config);
-            return {
-                ...stream,
-                name: labels.name,
-                title: labels.title,
-                latency: 45,
-                isDead: false,
-                statusCategory: 'fast',
-                originalProvider: providerName,
-                _rawStream: rawSnapshot,
-                _preparsedMeta: initialMeta
-            };
-        }
-
         const origin = urlObj.origin;
 
         const probeHeaders = {
@@ -745,7 +770,7 @@ async function testStream(stream, showSeeders = true, config = {}) {
                                 httpsAgent: dohHttpsAgent,
                                 validateStatus: (status) => status >= 200 && status < 400
                             });
-                            latency = Math.max(45, Date.now() - startTime);
+                            latency = Math.max(2, Date.now() - startTime);
                         } catch (oErr) {
                             isDead = true;
                             latency = 99999;
@@ -794,7 +819,7 @@ async function testStream(stream, showSeeders = true, config = {}) {
                         latency = 99999;
                     }
                 } else {
-                    latency = Math.max(45, Date.now() - startTime);
+                    latency = Math.max(2, Date.now() - startTime);
                 }
             } catch (getErr) {
                 if (getErr.code === 'ECONNREFUSED' || getErr.code === 'ENOTFOUND') {
