@@ -1950,7 +1950,10 @@ function createAddon(config) {
             const isEcoMode = globalServerSettings.globalEcoMode !== undefined 
                 ? Boolean(globalServerSettings.globalEcoMode)
                 : (globalServerSettings.allowClientEcoOverride ? Boolean(isClientEco !== false) : true);
-            const PROVIDER_TIMEOUT_MS = isEcoMode || (typeof process !== 'undefined' && (process.env.RENDER || process.env.VERCEL)) ? 10500 : 18000;
+            // Allow up to 28s for maximum links (Vercel maxDuration should be bumped to 60s)
+            // Vercel Hobby tier has a hard 10-second timeout. We MUST return results before 10s or Vercel throws a 504 Gateway Timeout
+            // which causes Stremio/Nuvio to show 0 links and fail silently.
+            const PROVIDER_TIMEOUT_MS = isEcoMode ? 8500 : 9200;
 
             const tgScrapePromise = (async () => {
                 if (Boolean(config.enableTelegram) && (!config.disabled || (!config.disabled.includes('Telegram') && !config.disabled.includes('Telegram (PencariMovie)')))) {

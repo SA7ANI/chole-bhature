@@ -465,7 +465,16 @@ function getAudioScore(stream, preferredLanguages = [], prioritizeHindi = false)
             }
         } else {
             // Match specific languages (e.g. hindi, tamil, telugu, english, japanese, etc.)
-            const matched = langs.includes(pref) || new RegExp(`\\b${pref}\\b`, 'i').test(text);
+            let regexPattern = `\\b${pref}\\b`;
+            if (pref === 'portuguese') {
+                regexPattern = `\\b(portuguese|pt\\-?br|pt)\\b`;
+            } else if (pref === 'japanese') {
+                regexPattern = `\\b(japanese|jap)\\b`;
+            } else if (pref === 'english') {
+                regexPattern = `\\b(english|eng|en)\\b`;
+            }
+
+            const matched = langs.includes(pref) || new RegExp(regexPattern, 'i').test(text);
             if (matched) {
                 score += weight;
                 matchedSpecific = true;
@@ -631,42 +640,31 @@ async function testStream(stream, showSeeders = true, config = {}) {
         };
     }
 
-    // Fast Eco Mode for Vercel Free-Tier (Zero-Blocking CPU / Instant Heuristics < 5ms)
-    // Disabled by default; only active if explicitly enabled in user config
-    const isEcoMode = Boolean(config.ecoMode === true || config.vercelEcoMode === true || config.renderEcoMode === true);
-    if (isEcoMode) {
-        let heuristicLatency = 120;
-        let isDead = false;
-        let statusCategory = 'fast';
-
-        const urlLower = (stream.url || '').toLowerCase();
-        if (urlLower.includes('hubcloud') || urlLower.includes('pixeldrain') || urlLower.includes('fastdl') || urlLower.includes('drive.google')) {
-            heuristicLatency = 95;
-            statusCategory = 'fast';
-        } else if (urlLower.includes('streamtape') || urlLower.includes('dood') || urlLower.includes('mixdrop')) {
-            heuristicLatency = 420;
-            statusCategory = 'fast';
-        } else {
-            heuristicLatency = 140;
-            statusCategory = 'fast';
-        }
-
-        const labels = formatStreamLabels(stream, heuristicLatency, false, isDead, showSeeders, config);
-        return {
-            ...stream,
-            name: labels.name,
-            title: labels.title,
-            latency: heuristicLatency,
-            isDead: isDead,
-            statusCategory: statusCategory,
-            originalProvider: providerName,
-            _rawStream: rawSnapshot,
-            _preparsedMeta: initialMeta
-        };
-    }
+    // Eco Mode heuristic bypass removed: We now perform real HTTP HEAD checks even in Eco Mode
+    // because the timeout is strictly capped at 800ms on Vercel, which prevents blocking while ensuring dead links are filtered.
 
     try {
         const urlObj = new URL(stream.url);
+        
+        // 🚨 Bypass probing for Localhost / LAN / Telegram Bridge URLs
+        // Vercel cannot probe the user's local PC, so we must assume these are alive.
+        const hostname = urlObj.hostname;
+        const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.') || hostname.startsWith('10.');
+        if (isLocal || providerName === 'Telegram') {
+            const labels = formatStreamLabels(stream, 45, false, false, showSeeders, config);
+            return {
+                ...stream,
+                name: labels.name,
+                title: labels.title,
+                latency: 45,
+                isDead: false,
+                statusCategory: 'fast',
+                originalProvider: providerName,
+                _rawStream: rawSnapshot,
+                _preparsedMeta: initialMeta
+            };
+        }
+
         const origin = urlObj.origin;
 
         const probeHeaders = {

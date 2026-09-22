@@ -3378,10 +3378,8 @@
                         <div class="input-bar-group" style="margin-top: 4px; flex-direction: column; gap: 8px;">
                             <div
                                 style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
-                                <label style="font-size: 12px; font-weight: 700; color: var(--text-muted);">Telegram Stream Bridge
-                                    Daemon URL:</label>
-                                <span style="font-size: 11px; color: var(--text-tertiary);">Default:
-                                    <code>http://127.0.0.1:8088</code></span>
+                                <label style="font-size: 12px; font-weight: 700; color: var(--text-muted);">Telegram Bridge URL <span style="color: #10b981;">(Optional)</span>:</label>
+                                <span style="font-size: 11px; color: var(--text-tertiary);">Leave as default if unsure</span>
                             </div>
                             <div style="display: flex; gap: 8px; width: 100%;">
                                 <input type="text" id="telegramBridgeUrl" placeholder="http://127.0.0.1:8088"
@@ -3399,12 +3397,17 @@
                             </div>
                             <div id="telegram-bridge-status"
                                 style="font-size: 12px; display: none; padding: 8px 12px; border-radius: 8px;"></div>
-                            <div style="font-size: 11px; color: #64748b; line-height: 1.5;">
-                                💡 <b>How it works:</b> Direct high-speed MTProto streaming via local daemon
-                                (<code>http://127.0.0.1:8088</code>), Termux Android service, or remote tunnel. If the
-                                daemon is offline, streams automatically play via web player fallback. Need help? Click
-                                <a href="#" onclick="showTelegramTutorialModal(); return false;"
-                                    style="color: #38bdf8; text-decoration: underline;">Setup Guide</a>.
+                            
+                            <!-- Clarification Box -->
+                            <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 8px; padding: 10px 12px; margin-top: 2px;">
+                                <div style="font-size: 12px; color: var(--text-success); font-weight: 700; margin-bottom: 4px;">
+                                    ✅ Zero Setup Required
+                                </div>
+                                <div style="font-size: 11px; color: var(--text-muted); line-height: 1.5;">
+                                    You don't need to configure anything above! Telegram streams will automatically play in your web browser. 
+                                    However, if you want them to play <b>directly inside Stremio</b>, you must run a bridge. 
+                                    <a href="#" onclick="showTelegramTutorialModal(); return false;" style="color: #38bdf8; text-decoration: underline; font-weight: 600;">Read the Guide here.</a>
+                                </div>
                             </div>
                             <div
                                 style="font-size: 11px; color: #64748b; line-height: 1.5; display: flex; align-items: center; gap: 6px;">
@@ -6018,6 +6021,7 @@
             { id: 'French', code: 'FR', label: 'French', desc: 'French Audio' },
             { id: 'German', code: 'DE', label: 'German', desc: 'German Audio' },
             { id: 'Italian', code: 'IT', label: 'Italian', desc: 'Italian Audio' },
+            { id: 'Portuguese', code: 'PT', label: 'Portuguese', desc: 'Portuguese (PT/BR)' },
             { id: 'Russian', code: 'RU', label: 'Russian', desc: 'Russian Audio' }
         ];
 

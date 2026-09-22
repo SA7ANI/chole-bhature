@@ -2,7 +2,7 @@
   "version": 2,
   "functions": {
     "api/index.js": {
-      "maxDuration": 15,
+      "maxDuration": 60,
       "memory": 1024
     }
   },
