@@ -168,7 +168,11 @@ function formatStreamCard(ingested, options = {}) {
         nameLine = `🔴 DEAD • ${providerLabel}${topBadgeStr}`;
     } else if (ingested.isP2P && !debridBadge) {
         nameLine = `🧲 P2P • ${providerLabel}${topBadgeStr}`;
-    } else if (providerLabel.includes('Telegram')) {
+    } else if (
+        providerLabel.includes('Telegram') || 
+        providerLabel.includes('PencariMovie') || 
+        (ingested.originalProvider && ingested.originalProvider.includes('Telegram'))
+    ) {
         nameLine = `${providerLabel}${topBadgeStr}`;
     } else {
         const statusEmoji = latency < 800 ? '🟢' : '🟡';

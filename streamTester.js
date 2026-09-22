@@ -1093,22 +1093,31 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
         }
     }
 
-    // Run tests concurrently
-    const testingPromise = Promise.all(
-        uniqueStreams.map(stream => testStream(stream, showSeeders, config))
-    );
+    // Run tests concurrently, but track which ones finished
+    const testPromises = uniqueStreams.map(async stream => {
+        const result = await testStream(stream, showSeeders, config);
+        stream._testedResult = result;
+        return result;
+    });
+
+    const testingPromise = Promise.all(testPromises);
 
     let testedStreams;
     if (config.maxTestDuration) {
         const globalTimeoutPromise = new Promise(resolve => {
             setTimeout(() => {
                 console.warn(`[StreamTester] Global testing timeout reached (${config.maxTestDuration}ms). Bailing out to prevent 504.`);
-                const untested = uniqueStreams.map(s => {
+                const mixed = uniqueStreams.map(s => {
+                    if (s._testedResult) return s._testedResult; // Use real result if finished
+                    
+                    // Otherwise, provide a fake "untested" result that bypasses speed filters
                     const tLatency = config.hideSlow ? 45 : 120;
                     const labels = formatStreamLabels(s, tLatency, false, false, showSeeders, config);
+                    // Append a tiny indicator that this was untested due to timeout
+                    labels.name = labels.name.replace('ms)', 'ms~)');
                     return { ...s, name: labels.name, title: labels.title, latency: tLatency, isDead: false, statusCategory: 'fast' };
                 });
-                resolve(untested);
+                resolve(mixed);
             }, config.maxTestDuration);
         });
         testedStreams = await Promise.race([testingPromise, globalTimeoutPromise]);
