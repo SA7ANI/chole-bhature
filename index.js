@@ -2073,7 +2073,7 @@ function createAddon(config) {
             const isUnreleased = Boolean(type === 'movie' && targetYear && targetYear > currentYear);
 
             const sortedAndTaggedStreams = await sortAndTagStreams(allStreams, {
-                maxTestDuration: isVercel ? Math.max(100, 9600 - scrapeDurationMs) : null, // Force return before 10s Vercel limit
+                maxTestDuration: isVercel ? Math.max(100, 55000 - scrapeDurationMs) : null, // Force return before 60s Vercel limit
                 target: {
                     title: mediaMeta?.title || '',
                     originalTitle: mediaMeta?.originalTitle || '',
