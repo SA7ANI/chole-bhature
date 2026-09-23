@@ -2960,6 +2960,11 @@
             <span class="nav-brand-name">Chole Bhature</span>
             <span class="nav-brand-version">v4.4.0</span>
         </a>
+        <!-- Sync ID Badge (shown after install/save) -->
+        <span id="sync-badge" onclick="copySyncId()" title="" style="display:none; cursor:pointer; align-items:center; gap:4px; font-size:10.5px; font-weight:700; color:var(--text-muted); background:rgba(var(--overlay-base),0.08); border:1px solid rgba(var(--overlay-base),0.14); border-radius:var(--radius-pill); padding:3px 8px; white-space:nowrap; max-width:110px; overflow:hidden; text-overflow:ellipsis;">
+            <span style="width:6px;height:6px;border-radius:50%;background:#10b981;flex-shrink:0;"></span>
+            <span id="sync-text">cb-live</span>
+        </span>
 
         <!-- Desktop Navigation Tabs -->
         <div class="nav-pill-group">
@@ -3132,11 +3137,11 @@
 
                     <div class="hero-cta-group" id="hero-cta">
                         <button class="pill-btn pill-btn-white" id="hero-btn-primary" onclick="installAddon()">
-                            <span>🚀</span> <span id="hero-btn-primary-text">Install Addon</span>
+                            <span>🚀</span> <span>Install Addon</span>
                         </button>
                         <button class="pill-btn pill-btn-glass" id="hero-btn-secondary"
                             onclick="switchTab('tab-settings', document.querySelectorAll('.nav-pill-item')[1])">
-                            <span>⚙️</span> <span id="hero-btn-secondary-text">Configure Sorter</span>
+                            <span>⚙️</span> <span>Configure Sorter</span>
                         </button>
                     </div>
                 </div>
@@ -4531,8 +4536,8 @@
                             <div>
                                 <div
                                     style="width: 100%; height: 4px; background: rgba(var(--overlay-base), 0.08); border-radius: 2px; overflow: hidden; margin-bottom: 4px;">
-                                    <div
-                                        style="width: 87%; height: 100%; background: var(--accent-secondary); border-radius: 2px;">
+                                    <div id="metric-cache-bar"
+                                        style="width: 87%; height: 100%; background: var(--accent-secondary); border-radius: 2px; transition: width 0.4s ease;">
                                     </div>
                                 </div>
                                 <span style="font-size: 11.5px; color: #67e8f9; font-weight: 600;">💾 Instant
@@ -8859,14 +8864,9 @@
         function toggleAnalytics() {
             triggerHaptic('light');
             const card = document.getElementById('analytics-card');
-            const icon = document.getElementById('analytics-toggle-icon');
-            if (card.style.display === 'none') {
-                card.style.display = 'block';
-                icon.innerText = '▲';
-            } else {
-                card.style.display = 'none';
-                icon.innerText = '▼';
-            }
+            if (!card) return;
+            const isHidden = card.style.display === 'none';
+            card.style.display = isHidden ? 'block' : 'none';
         }
 
         // Theme System (Glass Dark 🌙 ⟷ Pure AMOLED Black 🌑 ⟷ Light ☀️)
@@ -9018,7 +9018,9 @@
                 document.getElementById('metric-uptime').innerText = uptimeNum + '%';
                 document.getElementById('metric-resolve').innerHTML = resolveNum + '<span style="font-size: 14px; color: var(--text-muted);">ms</span>';
                 document.getElementById('metric-cache').innerText = cache + '%';
-                document.getElementById('metric-cache-svg').setAttribute('stroke-dasharray', `${cache}, 100`);
+                // Update cache progress bar width (SVG donut removed, using bar)
+                const cacheFill = document.querySelector('#metric-cache-bar');
+                if (cacheFill) cacheFill.style.width = cache + '%';
 
                 const shieldEl = document.getElementById('metric-shield');
                 if (shieldEl) {
