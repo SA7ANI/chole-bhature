@@ -3182,18 +3182,6 @@
                 </div>
             </div>
 
-            <!-- Fallback Manifest Link -->
-            <div id="fallbackLink" class="section-wrap" style="display: none;">
-                <div class="section-label-bar">
-                    <span class="section-label">🔗 Manual Manifest URL</span>
-                </div>
-                <div class="section-card">
-                    <div class="input-bar-group">
-                        <input type="text" id="generatedUrl" readonly placeholder="Manifest URL will appear here...">
-                        <button type="button" onclick="copyLink()" class="btn-submit-action">📋 Copy Manifest</button>
-                    </div>
-                </div>
-            </div>
 
             <!-- Getting Started Cards -->
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
@@ -5845,6 +5833,52 @@
             <span class="nav-label">Admin</span>
         </a>
     </nav>
+
+    <!-- Global Fallback Manifest Link (Shows on every page after Install) -->
+    <style>
+        .global-manifest-box {
+            position: fixed;
+            z-index: 1005; /* above navbars */
+            left: 50%;
+            transform: translateX(-50%);
+            top: 85px; /* below top-nav-bar */
+            width: min(840px, calc(100% - 32px));
+            box-shadow: 0 24px 60px rgba(0,0,0,0.8), 0 0 24px rgba(139,92,246,0.25);
+            animation: slideInPop 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            background: var(--bg-card);
+            backdrop-filter: blur(24px) saturate(190%);
+            -webkit-backdrop-filter: blur(24px) saturate(190%);
+            border: 1px solid var(--border-highlight);
+            border-radius: var(--radius-card);
+            padding: 16px;
+        }
+        body.theme-light .global-manifest-box {
+            background: rgba(255, 255, 255, 0.95);
+            border-color: rgba(139, 92, 246, 0.3);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15), 0 0 20px rgba(139,92,246,0.15);
+        }
+        @media (max-width: 768px) {
+            .global-manifest-box {
+                top: auto;
+                bottom: 85px; /* above bottom-nav-bar */
+                width: calc(100% - 24px);
+            }
+        }
+        @keyframes slideInPop {
+            0% { opacity: 0; transform: translate(-50%, 15px) scale(0.95); }
+            100% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+        }
+    </style>
+    <div id="fallbackLink" class="global-manifest-box" style="display: none; flex-direction: column; gap: 12px;">
+        <div class="section-label-bar" style="margin-bottom: 0;">
+            <span class="section-label">🔗 Manual Manifest URL</span>
+            <button type="button" onclick="document.getElementById('fallbackLink').style.display='none'" style="background:transparent; border:none; color:var(--text-muted); cursor:pointer; font-size:16px;">✕</button>
+        </div>
+        <div class="input-bar-group">
+            <input type="text" id="generatedUrl" readonly placeholder="Manifest URL will appear here...">
+            <button type="button" onclick="copyLink()" class="btn-submit-action">📋 Copy Manifest</button>
+        </div>
+    </div>
 
     <!-- ==================== JAVASCRIPT ENGINE ==================== -->
     <script>
@@ -8844,9 +8878,6 @@
             const linkInput = document.getElementById('generatedUrl');
             linkInput.value = httpUrl;
             fallbackDiv.style.display = 'flex';
-
-            switchTab('tab-home', document.querySelector('.nav-pill-item'));
-            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function copyLink() {
