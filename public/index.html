@@ -7925,6 +7925,12 @@
 
         function loadConfigIntoUI(cfg) {
             if (!cfg) return;
+            // Strip server-redacted secret placeholders — never overwrite real local keys with '***REDACTED***'
+            const SECRET_UI_FIELDS = ['debridApiKey', 'rdKey', 'adKey', 'tbKey', 'pmKey', 'xtreamPassword', 'xtreamUser', 'xtreamServer'];
+            for (const f of SECRET_UI_FIELDS) {
+                if (cfg[f] === '***REDACTED***') delete cfg[f];
+            }
+
             if (cfg.urls && Array.isArray(cfg.urls)) {
                 repos = cfg.urls;
                 localStorage.setItem('nuvio_repos', JSON.stringify(repos));

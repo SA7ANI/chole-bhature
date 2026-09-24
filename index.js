@@ -149,12 +149,42 @@ function saveUserConfig(configId, configData) {
 }
 loadUserConfigs();
 
+// ============================================================
+// SECRET FIELD DEFINITIONS & MASKING HELPERS
+// These fields contain sensitive credentials that must NEVER
+// be returned to clients via any API endpoint.
+// ============================================================
+const SECRET_FIELDS = [
+    'debridApiKey', 'rdKey', 'adKey', 'tbKey', 'pmKey',
+    'xtreamPassword', 'xtreamUser', 'xtreamServer',
+    'renderApiKey', 'vercelApiToken', 'adminKey'
+];
+
+/**
+ * Returns a copy of a config object with all secret fields redacted.
+ * Used before sending any config object to the client.
+ */
+function redactSecrets(cfg) {
+    if (!cfg || typeof cfg !== 'object') return cfg;
+    const safe = { ...cfg };
+    for (const field of SECRET_FIELDS) {
+        if (safe[field] !== undefined && safe[field] !== null && safe[field] !== '') {
+            safe[field] = '***REDACTED***';
+        }
+    }
+    return safe;
+}
+
 function encodeConfigParam(cfg) {
     try {
         if (!cfg || typeof cfg !== 'object') return '';
         const clean = { ...cfg };
         delete clean.addonHost;
         delete clean.addonProtocol;
+        // Never encode secrets into the URL token
+        for (const field of SECRET_FIELDS) {
+            delete clean[field];
+        }
         if (Object.keys(clean).length === 0) return '';
         return Buffer.from(JSON.stringify(clean), 'utf8').toString('base64url');
     } catch (e) {
@@ -352,7 +382,8 @@ app.post('/api/config/save', (req, res) => {
         }
         
         console.log(`[Config] Configuration saved & synced for configId: ${configId}`);
-        res.json({ success: true, configId, config });
+        // Never echo secrets back — only return the safe masked copy
+        res.json({ success: true, configId, config: redactSecrets(config) });
     } catch (err) {
         console.error('[Config Error]', err);
         res.status(500).json({ success: false, error: err.message });
@@ -360,42 +391,40 @@ app.post('/api/config/save', (req, res) => {
 });
 
 // API to get latest saved configuration on this instance
+// SECURITY: Requires a valid configId — no unauthenticated dump of last config.
 app.get('/api/config/latest', (req, res) => {
-    if (lastSavedConfig) {
-        return res.json({ success: true, configId: lastSavedConfigId, config: lastSavedConfig });
+    const requestedId = req.query.id || req.query.configId || req.query.token;
+    if (!requestedId) {
+        // No ID provided — refuse to dump any config
+        return res.status(400).json({ success: false, error: 'configId required' });
     }
-    if (userConfigs.size > 0) {
-        const lastEntry = Array.from(userConfigs.entries()).pop();
-        return res.json({ success: true, configId: lastEntry[0], config: lastEntry[1] });
+    const cfg = userConfigs.get(requestedId) || null;
+    if (cfg) {
+        return res.json({ success: true, configId: requestedId, config: redactSecrets(cfg) });
     }
     res.json({ success: false, config: null });
 });
 
-// API to get configuration by query param or latest
+// API to get configuration by query param
+// SECURITY: Only returns masked config — secrets are always redacted.
 app.all('/api/config', (req, res) => {
     const targetId = req.query.id || req.query.configId || req.query.token;
-    if (targetId) {
-        const config = resolveConfig(targetId) || null;
-        return res.json({ success: Boolean(config), configId: targetId, config });
+    if (!targetId) {
+        return res.status(400).json({ success: false, error: 'configId required' });
     }
-    if (lastSavedConfig) {
-        return res.json({ success: true, configId: lastSavedConfigId, config: lastSavedConfig });
-    }
-    if (userConfigs.size > 0) {
-        const lastEntry = Array.from(userConfigs.entries()).pop();
-        return res.json({ success: true, configId: lastEntry[0], config: lastEntry[1] });
-    }
-    res.json({ success: false, config: null });
+    const config = resolveConfig(targetId) || null;
+    return res.json({ success: Boolean(config), configId: targetId, config: redactSecrets(config) });
 });
 
 // API to get configuration by configId or token
+// SECURITY: Only returns masked config — secrets are always redacted.
 app.get('/api/config/:configId', (req, res) => {
     let rawId = req.params.configId;
     if (rawId) {
         rawId = rawId.replace(/\/configure\/?$/, '').replace(/\.json$/, '').trim();
     }
     const config = resolveConfig(rawId) || null;
-    res.json({ success: Boolean(config), configId: rawId, config });
+    res.json({ success: Boolean(config), configId: rawId, config: redactSecrets(config) });
 });
 
 // Handle Nuvio/Stremio gear icon clicks which append /configure or / to the addon base URL
