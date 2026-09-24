@@ -1878,7 +1878,7 @@
             border: 1px solid rgba(var(--overlay-base), 0.18);
             border-radius: 20px;
             padding: 18px 20px;
-            width: min(380px, calc(100vw - 32px));
+            width: min(420px, calc(100vw - 32px));
             box-shadow: 0 24px 60px -10px rgba(0, 0, 0, 0.95), 0 0 30px rgba(139, 92, 246, 0.3);
             backdrop-filter: blur(24px);
             -webkit-backdrop-filter: blur(24px);
@@ -1958,7 +1958,9 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            flex-wrap: wrap;
             gap: 8px;
+            row-gap: 12px;
             padding-top: 12px;
             border-top: 1px solid rgba(var(--overlay-base), 0.08);
         }
@@ -1966,7 +1968,7 @@
         .tour-dots-row {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 3px;
         }
 
         .tour-dot {
@@ -8248,8 +8250,13 @@
             const input = document.getElementById('manifestUrl');
             if (input) {
                 input.value = url;
-                input.focus();
-                showToast('✨ <b>Manifest URL loaded!</b> Click Add Repo to connect.');
+                const form = document.getElementById('install-form');
+                if (form) {
+                    form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                } else {
+                    input.focus();
+                    showToast('✨ <b>Manifest URL loaded!</b> Click Add Repo to connect.');
+                }
             }
         }
 
@@ -9326,42 +9333,28 @@
 
         // ==================== INTERACTIVE PAGE-BY-PAGE SPOTLIGHT TOUR ====================
         const tourSteps = [
-            {
-                tab: 'tab-home',
-                target: '#hero-banner-card',
-                icon: '🌶️',
-                title: 'Overview & Scraper Health',
-                desc: 'Welcome to Chole Bhature! This live dashboard monitors your stream aggregators, average stream latency, and live provider scrapers.'
-            },
-            {
-                tab: 'tab-settings',
-                target: '#section-priority',
-                icon: '⚡',
-                title: 'Sorting & Priority Mode',
-                desc: 'Choose between "Speed First" for instant ultra-low latency playback or "Quality First" to prioritize 4K UHD Remux streams.'
-            },
-            {
-                tab: 'tab-settings',
-                target: '#section-debrid',
-                icon: '💎',
-                title: 'Debrid Speed Accelerator',
-                desc: 'Optional: Enter your Real-Debrid or AllDebrid API key to unrestrict torrents into direct 10Gbps buffer-free streams.'
-            },
-            {
-                tab: 'tab-sources',
-                target: '#tab-sources .section-wrap',
-                icon: '📦',
-                title: 'Active Provider Repositories',
-                desc: 'Over 50+ providers (Vega, HubCloud, MoviesDrive, Anime) are active. You can enable, disable, or paste custom community repos here.'
-            },
-            {
-                tab: 'tab-home',
-                target: '#save-btn',
-                icon: '🚀',
-                title: '1-Click Install to Player',
-                desc: 'Click the "Install" button to save your settings profile and immediately load Chole Bhature into Nuvio or Stremio!'
-            }
+            { tab: 'tab-home', target: '#hero-banner-card', icon: '🌶️', title: 'Overview & Health', desc: 'Welcome to Chole Bhature! This dashboard monitors your aggregators, stream latency, and live provider health in real-time.' },
+            { tab: 'tab-settings', target: '#section-cloud-sync', icon: '☁️', title: 'Cloud Profile Sync', desc: 'Your configuration URL works seamlessly across all devices. No need to login—your custom link IS your account.' },
+            { tab: 'tab-settings', target: '#section-debrid', icon: '💎', title: 'Debrid Speed Accelerator', desc: 'Enter your Real-Debrid, AllDebrid, TorBox, or Premiumize API key to unrestrict cached torrents into direct 10Gbps buffer-free streams.' },
+            { tab: 'tab-settings', target: '#section-telegram', icon: '✈️', title: 'Telegram Cloud Streaming', desc: 'Utilize the PencariMovie Telegram bridge to instantly stream direct Telegram uploads of movies and shows without downloading.' },
+            { tab: 'tab-settings', target: '#section-priority', icon: '⚡', title: 'Sorting & Priority Mode', desc: 'Choose between "Speed First" for instant ultra-low latency playback or "Quality First" to prioritize 4K UHD Remux streams.' },
+            { tab: 'tab-settings', target: '#section-filters', icon: '🧹', title: 'Smart Filters & Overrides', desc: 'Use advanced rules to automatically hide Cam rips, filter dead links, force DoH DNS queries, or enable automatic de-duplication.' },
+            { tab: 'tab-settings', target: '#section-languages', icon: '🌍', title: 'Audio & Language Tracks', desc: 'Prioritize streams containing Dual Audio, Multi-Audio, or specific regional dubbed content (like Hindi or Tamil) at the very top of your results.' },
+            { tab: 'tab-settings', target: '#section-catalogs', icon: '🎬', title: 'TMDB & IMDB Catalogs', desc: 'Nuvio includes highly curated meta-catalogs like Netflix, Amazon Prime, and Disney+ directly inside Stremio via TMDB/IMDB integration.' },
+            { tab: 'tab-settings', target: '#section-card-studio', icon: '🎨', title: 'Stremio Card Styling', desc: 'Customize how streams look in your player! Toggle modern minimalist clean cards or keep the legacy detailed view with file sizes and badges.' },
+            { tab: 'tab-sources', target: '#section-add-repo', icon: '📦', title: 'Add Provider Repositories', desc: 'Paste a community repository manifest URL to instantly add dozens of new scraper configurations created by other users.' },
+            { tab: 'tab-sources', target: '#section-scrapers', icon: '⚙️', title: 'Manage Individual Scrapers', desc: 'Toggle specific scrapers (like VegaMovies, MoviesDrive, etc) on or off depending on your personal catalog preferences.' },
+            { tab: 'tab-iptv', target: '#section-iptv-master', icon: '📺', title: 'Live TV & IPTV', desc: 'Paste a custom M3U playlist link or login with Xtream Codes to watch thousands of Live TV channels directly inside Stremio.' },
+            { tab: 'tab-analytics', target: '#section-analytics-card', icon: '📈', title: 'Live Diagnostics', desc: 'Watch the background workers in real-time as they scrape providers. You can see individual provider latencies and isolate failing sites.' },
+            { tab: 'tab-home', target: '#install-btn', icon: '🚀', title: '1-Click Install to Player', desc: 'Click "Install" to save your profile and instantly load the addon into Stremio. Your settings are synced across all your devices automatically!' }
         ];
+
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                startInteractiveTour(false);
+            }, 1000);
+        });
+
 
         let currentTourIndex = 0;
         let tourActive = false;
@@ -9466,11 +9459,6 @@
             let sWidth = rect.width + (pad * 2);
             let sHeight = rect.height + (pad * 2);
 
-            // On mobile, if element is excessively tall, clamp to visible top half
-            if (isMobile && sHeight > viewportHeight * 0.50) {
-                sHeight = Math.min(sHeight, viewportHeight * 0.44);
-            }
-
             spotlight.style.top = `${sTop}px`;
             spotlight.style.left = `${sLeft}px`;
             spotlight.style.width = `${sWidth}px`;
@@ -9490,8 +9478,8 @@
             } else {
                 // Desktop layout: smart floating relative positioning
                 popover.style.transform = `none`;
-                popover.style.width = `min(380px, calc(100vw - 32px))`;
-                popover.style.maxWidth = `380px`;
+                popover.style.width = `min(420px, calc(100vw - 32px))`;
+                popover.style.maxWidth = `420px`;
                 popover.style.bottom = `auto`;
 
                 let top;
