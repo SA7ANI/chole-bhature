@@ -406,25 +406,25 @@ app.get('/api/config/latest', (req, res) => {
 });
 
 // API to get configuration by query param
-// SECURITY: Only returns masked config — secrets are always redacted.
+// SECURITY: configId required — ownership is proven by knowing the ID.
 app.all('/api/config', (req, res) => {
     const targetId = req.query.id || req.query.configId || req.query.token;
     if (!targetId) {
         return res.status(400).json({ success: false, error: 'configId required' });
     }
     const config = resolveConfig(targetId) || null;
-    return res.json({ success: Boolean(config), configId: targetId, config: redactSecrets(config) });
+    return res.json({ success: Boolean(config), configId: targetId, config });
 });
 
 // API to get configuration by configId or token
-// SECURITY: Only returns masked config — secrets are always redacted.
+// SECURITY: Whoever knows the configId IS the owner — return full config.
 app.get('/api/config/:configId', (req, res) => {
     let rawId = req.params.configId;
     if (rawId) {
         rawId = rawId.replace(/\/configure\/?$/, '').replace(/\.json$/, '').trim();
     }
     const config = resolveConfig(rawId) || null;
-    res.json({ success: Boolean(config), configId: rawId, config: redactSecrets(config) });
+    res.json({ success: Boolean(config), configId: rawId, config });
 });
 
 // Handle Nuvio/Stremio gear icon clicks which append /configure or / to the addon base URL
