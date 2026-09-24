@@ -236,9 +236,15 @@ async function searchPencariMovie(target = {}, config = {}) {
         };
         const payloadB64 = Buffer.from(JSON.stringify(payloadObj)).toString('base64url');
 
-        // Direct stream route served via Telegram Bridge (No Addon Proxy) if addonHost is missing.
-        // Otherwise, proxy through Nuvio's /stream/telegram route to prevent Stremio clients on other devices from failing to reach localhost.
-        const streamUrl = config.addonHost
+        const isVercel = typeof process !== 'undefined' && Boolean(process.env.VERCEL);
+        const isLocalBridge = bridgeUrl.includes('127.0.0.1') || bridgeUrl.includes('localhost');
+        const isRemoteNuvio = config.addonHost && !config.addonHost.includes('127.0.0.1') && !config.addonHost.includes('localhost') && !config.addonHost.startsWith('192.168.') && !config.addonHost.startsWith('10.');
+        
+        // Proxy through Nuvio to help LAN devices reach localhost IF Nuvio is also on the LAN.
+        // DO NOT proxy if Nuvio is on Vercel (serverless limits), or if Nuvio is remote but trying to reach a local bridge.
+        const shouldProxy = config.addonHost && !isVercel && !(isRemoteNuvio && isLocalBridge);
+
+        const streamUrl = shouldProxy
             ? `${protocol}://${addonHost}/stream/telegram/${payloadB64}/${encodeURIComponent(fileName)}`
             : `${bridgeUrl}/api/download/${payloadB64}/${encodeURIComponent(fileName)}`;
 

@@ -191,7 +191,8 @@ function formatStreamCard(ingested, options = {}) {
         lines.push(stats.join(' '));
         return {
             name: nameLine,
-            title: lines.join('\n')
+            title: lines.join('\n'),
+            description: lines.join('\n')
         };
     }
 
@@ -205,7 +206,8 @@ function formatStreamCard(ingested, options = {}) {
         lines.push(stats.join(' '));
         return {
             name: nameLine,
-            title: lines.join('\n')
+            title: lines.join('\n'),
+            description: lines.join('\n')
         };
     }
 
@@ -373,7 +375,8 @@ function formatStreamCard(ingested, options = {}) {
 
     return {
         name: nameLine,
-        title: cardLines.join('\n') || ingested.rawFilename
+        title: cardLines.join('\n') || ingested.rawFilename,
+        description: cardLines.join('\n') || ingested.rawFilename
     };
 }
 

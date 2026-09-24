@@ -532,7 +532,7 @@ async function testStream(stream, showSeeders = true, config = {}) {
         return {
             ...stream,
             name: labels.name,
-            title: labels.title,
+            title: labels.title, description: labels.description,
             latency: stream.latency,
             isDead: isDead,
             statusCategory: stream.statusCategory,
@@ -580,7 +580,7 @@ async function testStream(stream, showSeeders = true, config = {}) {
         return {
             ...stream,
             name: labels.name,
-            title: labels.title,
+            title: labels.title, description: labels.description,
             latency: p2pLatency,
             isDead: isDead,
             statusCategory: statusCategory,
@@ -596,7 +596,7 @@ async function testStream(stream, showSeeders = true, config = {}) {
         return {
             ...stream,
             name: labels.name,
-            title: labels.title,
+            title: labels.title, description: labels.description,
             latency: 100,
             isDead: false,
             statusCategory: 'fast',
@@ -611,7 +611,7 @@ async function testStream(stream, showSeeders = true, config = {}) {
         return {
             ...stream,
             name: labels.name,
-            title: labels.title,
+            title: labels.title, description: labels.description,
             latency: 99999,
             isDead: true,
             statusCategory: 'dead',
@@ -630,7 +630,7 @@ async function testStream(stream, showSeeders = true, config = {}) {
         return {
             ...stream,
             name: labels.name,
-            title: labels.title,
+            title: labels.title, description: labels.description,
             latency: tgLatency,
             isDead: false,
             statusCategory: 'fast',
@@ -678,7 +678,7 @@ async function testStream(stream, showSeeders = true, config = {}) {
         return {
             ...stream,
             name: labels.name,
-            title: labels.title,
+            title: labels.title, description: labels.description,
             latency: heuristicLatency,
             isDead: isDead,
             statusCategory: statusCategory,
@@ -714,7 +714,7 @@ async function testStream(stream, showSeeders = true, config = {}) {
                     return {
                         ...stream,
                         name: labels.name,
-                        title: labels.title,
+                        title: labels.title, description: labels.description,
                         latency: 99999,
                         isDead: true,
                         statusCategory: 'dead',
@@ -847,7 +847,7 @@ async function testStream(stream, showSeeders = true, config = {}) {
             return {
                 ...stream,
                 name: labels.name,
-                title: labels.title,
+                title: labels.title, description: labels.description,
                 latency: 99999,
                 isDead: true,
                 statusCategory: 'dead',
@@ -863,7 +863,7 @@ async function testStream(stream, showSeeders = true, config = {}) {
         return {
             ...stream,
             name: labels.name,
-            title: labels.title,
+            title: labels.title, description: labels.description,
             latency: latency,
             isDead: false,
             statusCategory: statusCategory,
@@ -877,7 +877,7 @@ async function testStream(stream, showSeeders = true, config = {}) {
         return {
             ...stream,
             name: labels.name,
-            title: labels.title,
+            title: labels.title, description: labels.description,
             latency: 1200,
             isDead: false,
             statusCategory: 'slow',
@@ -1140,7 +1140,7 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
                     const labels = formatStreamLabels(s, tLatency, false, false, showSeeders, config);
                     // Append a tiny indicator that this was untested due to timeout
                     labels.name = labels.name.replace('ms)', 'ms~)');
-                    return { ...s, name: labels.name, title: labels.title, latency: tLatency, isDead: false, statusCategory: 'fast' };
+                    return { ...s, name: labels.name, title: labels.title, description: labels.description, latency: tLatency, isDead: false, statusCategory: 'fast' };
                 });
                 resolve(mixed);
             }, config.maxTestDuration);

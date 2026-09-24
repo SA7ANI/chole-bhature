@@ -14,6 +14,57 @@ const crypto = require('crypto');
 const dns = require('dns').promises;
 const net = require('net');
 
+// Configuration Encryption Setup (AES-256-GCM)
+let SECRET_ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
+if (SECRET_ENCRYPTION_KEY) {
+    SECRET_ENCRYPTION_KEY = crypto.createHash('sha256').update(String(SECRET_ENCRYPTION_KEY)).digest();
+} else {
+    // Generate a secure random volatile key for this session if ENCRYPTION_KEY is not set.
+    // WARNING: This will break all encrypted configurations if the server/lambda restarts!
+    console.warn('================================================================');
+    console.warn('WARNING: ENCRYPTION_KEY environment variable is NOT set!');
+    console.warn('A volatile encryption key is being used for configuration tokens.');
+    console.warn('All encrypted Stremio install links WILL BREAK on server restart.');
+    console.warn('Please set ENCRYPTION_KEY in your environment to a secure string.');
+    console.warn('================================================================');
+    SECRET_ENCRYPTION_KEY = crypto.randomBytes(32);
+}
+
+function encryptConfigPayload(configObj) {
+    try {
+        const text = JSON.stringify(configObj);
+        const iv = crypto.randomBytes(12);
+        const cipher = crypto.createCipheriv('aes-256-gcm', SECRET_ENCRYPTION_KEY, iv);
+        let encrypted = cipher.update(text, 'utf8', 'base64url');
+        encrypted += cipher.final('base64url');
+        const authTag = cipher.getAuthTag().toString('base64url');
+        return `enc_${iv.toString('base64url')}_${encrypted}_${authTag}`;
+    } catch (e) {
+        console.error('[Encryption Error]', e);
+        return null;
+    }
+}
+
+function decryptConfigPayload(token) {
+    if (!token || !token.startsWith('enc_')) return null;
+    try {
+        const parts = token.split('_');
+        if (parts.length !== 4) return null;
+        const iv = Buffer.from(parts[1], 'base64url');
+        const encrypted = parts[2];
+        const authTag = Buffer.from(parts[3], 'base64url');
+        
+        const decipher = crypto.createDecipheriv('aes-256-gcm', SECRET_ENCRYPTION_KEY, iv);
+        decipher.setAuthTag(authTag);
+        
+        let decrypted = decipher.update(encrypted, 'base64url', 'utf8');
+        decrypted += decipher.final('utf8');
+        return JSON.parse(decrypted);
+    } catch (e) {
+        return null;
+    }
+}
+
 // Live Analytics and Quarantine Registries
 const providerAnalytics = new Map();
 const quarantineRegistry = new Map();
@@ -217,6 +268,13 @@ function resolveConfig(param) {
         return lastSavedConfig;
     }
 
+    // 1.5. Try Encrypted Payload
+    const decrypted = decryptConfigPayload(param);
+    if (decrypted) {
+        activeConfigsTracker.add(param);
+        return decrypted;
+    }
+
     // 2. Try URL-decoded JSON
     try {
         if (param.startsWith('{') || param.startsWith('%7B')) {
@@ -359,14 +417,31 @@ app.get(['/c/:configId', '/c/:configId/configure', '/configure/:configId'], (req
 app.post('/api/config/save', (req, res) => {
     try {
         let { configId, token, config, oldToken } = req.body;
-        if (!configId && token) {
-            configId = token;
-        }
-        if (!configId) {
-            configId = crypto.randomBytes(4).toString('hex');
+        
+        // Restore any redacted secrets from the old configuration
+        let oldConfig = null;
+        if (token || oldToken || configId) {
+            oldConfig = resolveConfig(token || oldToken || configId);
         }
         
+        if (oldConfig) {
+            for (const field of SECRET_FIELDS) {
+                if (config[field] === '***REDACTED***' && oldConfig[field]) {
+                    config[field] = oldConfig[field];
+                }
+            }
+        }
+
+        // Generate an encrypted stateless token instead of trusting client's raw configId
+        const encryptedToken = encryptConfigPayload(config);
+        if (!encryptedToken) {
+            return res.status(500).json({ success: false, error: 'Failed to encrypt configuration' });
+        }
+        
+        configId = encryptedToken;
         saveUserConfig(configId, config);
+        
+        // Map the frontend's original temporary token in-memory to prevent breaking the immediate save cycle
         if (token && token !== configId) {
             saveUserConfig(token, config);
         }
@@ -382,7 +457,7 @@ app.post('/api/config/save', (req, res) => {
         }
         
         console.log(`[Config] Configuration saved & synced for configId: ${configId}`);
-        // Never echo secrets back — only return the safe masked copy
+        // Never echo secrets back - only return the safe masked copy
         res.json({ success: true, configId, config: redactSecrets(config) });
     } catch (err) {
         console.error('[Config Error]', err);
@@ -424,7 +499,7 @@ app.get('/api/config/:configId', (req, res) => {
         rawId = rawId.replace(/\/configure\/?$/, '').replace(/\.json$/, '').trim();
     }
     const config = resolveConfig(rawId) || null;
-    res.json({ success: Boolean(config), configId: rawId, config });
+    res.json({ success: Boolean(config), configId: rawId, config: redactSecrets(config) });
 });
 
 // Handle Nuvio/Stremio gear icon clicks which append /configure or / to the addon base URL
@@ -2045,8 +2120,8 @@ function createAddon(config) {
             // We leave ~8s buffer for speed-testing after scraping completes.
             const isVercel = typeof process !== 'undefined' && Boolean(process.env.VERCEL);
             const PROVIDER_TIMEOUT_MS = isVercel 
-                ? (isEcoMode ? 12000 : 48000)   // Vercel: eco=12s, normal=48s (leaves 12s for sort+test)
-                : (isEcoMode ? 14000 : 60000);  // Render/local: eco=14s, normal=60s
+                ? (isEcoMode ? 8000 : 12000)   // Vercel: eco=8s, normal=12s (Stremio client times out around 15s)
+                : (isEcoMode ? 10000 : 14000); // Render/local: eco=10s, normal=14s
 
             const tgScrapePromise = (async () => {
                 if (Boolean(config.enableTelegram) && (!config.disabled || (!config.disabled.includes('Telegram') && !config.disabled.includes('Telegram (PencariMovie)')))) {
