@@ -164,41 +164,10 @@ const CONFIGS_FILE = process.env.VERCEL
     ? path.join('/tmp', 'user_configs.json')
     : path.join(__dirname, 'user_configs.json');
 const userConfigs = new Map();
-let lastSavedConfig = null;
-let lastSavedConfigId = null;
-
-function loadUserConfigs() {
-    try {
-        if (fs.existsSync(CONFIGS_FILE)) {
-            const raw = fs.readFileSync(CONFIGS_FILE, 'utf8');
-            const data = JSON.parse(raw);
-            for (const [k, v] of Object.entries(data)) {
-                userConfigs.set(k, v);
-                lastSavedConfig = v;
-                lastSavedConfigId = k;
-            }
-            console.log(`[Config] Loaded ${userConfigs.size} user configurations.`);
-        }
-    } catch (e) {
-        console.error('[Config] Failed to load user_configs.json:', e.message);
-    }
-}
 
 function saveUserConfig(configId, configData) {
     userConfigs.set(configId, configData);
-    lastSavedConfig = configData;
-    lastSavedConfigId = configId;
-    try {
-        const obj = {};
-        for (const [k, v] of userConfigs.entries()) {
-            obj[k] = v;
-        }
-        fs.writeFileSync(CONFIGS_FILE, JSON.stringify(obj, null, 2));
-    } catch (e) {
-        // Safe failover for read-only serverless filesystems (e.g. Vercel)
-    }
 }
-loadUserConfigs();
 
 // ============================================================
 // SECRET FIELD DEFINITIONS & MASKING HELPERS
@@ -252,20 +221,12 @@ function resolveConfig(param) {
     param = param.replace(/\/configure\/?$/, '').replace(/\.json$/, '').trim();
     if (!param) return null;
 
-    if (param === 'latest' && lastSavedConfig) {
-        return lastSavedConfig;
-    }
-    
     // 1. Priority 1: Check in-memory & persistent userConfigs map FIRST
     // This ensures any changes saved via the Web UI immediately update the catalog in Nuvio/Stremio
     const stored = userConfigs.get(param);
     if (stored) {
         activeConfigsTracker.add(param);
         return stored;
-    }
-
-    if (lastSavedConfigId === param && lastSavedConfig) {
-        return lastSavedConfig;
     }
 
     // 1.5. Try Encrypted Payload
@@ -309,10 +270,7 @@ function resolveConfig(param) {
         }
     } catch (e) {}
 
-    // 4. Fallback to lastSavedConfig if available on single-user instances
-    if (lastSavedConfig) {
-        return lastSavedConfig;
-    }
+
 
     return null;
 }
@@ -488,7 +446,7 @@ app.all('/api/config', (req, res) => {
         return res.status(400).json({ success: false, error: 'configId required' });
     }
     const config = resolveConfig(targetId) || null;
-    return res.json({ success: Boolean(config), configId: targetId, config });
+    return res.json({ success: Boolean(config), configId: targetId, config: redactSecrets(config) });
 });
 
 // API to get configuration by configId or token
@@ -2823,7 +2781,7 @@ app.use((req, res, next) => {
                 res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
             }
 
-            const activeConfig = lastSavedConfig || {};
+            const activeConfig = {};
             const defaultAddon = createAddon(activeConfig);
             const router = getRouter(defaultAddon);
             return router(req, res, next);
