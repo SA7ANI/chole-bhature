@@ -241,6 +241,9 @@ function resolveConfig(param) {
         if (param.startsWith('{') || param.startsWith('%7B')) {
             const parsed = JSON.parse(decodeURIComponent(param));
             if (parsed && typeof parsed === 'object') {
+                for (const field of SECRET_FIELDS) {
+                    if (parsed[field]) return null;
+                }
                 activeConfigsTracker.add(param);
                 return parsed;
             }
@@ -253,6 +256,9 @@ function resolveConfig(param) {
         if (fromB64Url.startsWith('{')) {
             const parsed = JSON.parse(fromB64Url);
             if (parsed && typeof parsed === 'object') {
+                for (const field of SECRET_FIELDS) {
+                    if (parsed[field]) return null;
+                }
                 activeConfigsTracker.add(param);
                 return parsed;
             }
@@ -264,6 +270,9 @@ function resolveConfig(param) {
         if (fromB64.startsWith('{')) {
             const parsed = JSON.parse(fromB64);
             if (parsed && typeof parsed === 'object') {
+                for (const field of SECRET_FIELDS) {
+                    if (parsed[field]) return null;
+                }
                 activeConfigsTracker.add(param);
                 return parsed;
             }
@@ -414,7 +423,8 @@ app.post('/api/config/save', (req, res) => {
             }
         }
         
-        console.log(`[Config] Configuration saved & synced for configId: ${configId}`);
+        const maskedId = configId.length > 20 ? configId.substring(0, 8) + '...' + configId.substring(configId.length - 8) : '***';
+        console.log(`[Config] Configuration saved & synced for configId: ${maskedId}`);
         // Never echo secrets back - only return the safe masked copy
         res.json({ success: true, configId, config: redactSecrets(config) });
     } catch (err) {
