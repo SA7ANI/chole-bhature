@@ -76,9 +76,9 @@ function formatStreamCard(ingested, options = {}) {
     // Language badge for header line
     let langTopBadge = null;
     const realLangs = (parsed.languages || []).filter(l => l !== 'Dual-Audio' && l !== 'Multi-Audio');
-    if (parsed.isMultiAudio || parsed.languages.includes('Multi-Audio') || realLangs.length >= 3) {
+    if (parsed.isMultiAudio || (parsed.languages && parsed.languages.includes('Multi-Audio')) || realLangs.length >= 3) {
         langTopBadge = 'Multi Audio';
-    } else if (parsed.isDualAudio || parsed.languages.includes('Dual-Audio') || realLangs.length === 2) {
+    } else if (parsed.isDualAudio || (parsed.languages && parsed.languages.includes('Dual-Audio')) || realLangs.length === 2) {
         langTopBadge = 'Dual Audio';
     } else if (realLangs.length === 1) {
         if (realLangs[0] !== 'English') {
@@ -143,22 +143,34 @@ function formatStreamCard(ingested, options = {}) {
         });
     }
 
-    const topBadges = [
-        debridBadge,
-        parsed.resolution === '2160p' ? '4K UHD' : (parsed.resolution === '1080p' ? '1080p FHD' : (parsed.resolution === '720p' ? '720p HD' : parsed.resolution)),
-        ...dvHdrBadges,
-        imaxBadge,
-        is3dBadge,
-        parsed.special.includes('REMUX') ? 'REMUX' : (parsed.quality || null),
-        editionBadge,
-        repackBadge,
-        codecBadge,
-        bitDepthBadge,
-        hfrBadge,
-        audioBadge,
-        sizeTopBadge,
-        langTopBadge
-    ].filter(Boolean);
+    let topBadges = [];
+    if (config.cleanTitles !== false) {
+        // Modern Minimalist Header (Stream Card Presentation Studio)
+        topBadges = [
+            debridBadge,
+            parsed.resolution === '2160p' ? '4K UHD' : (parsed.resolution === '1080p' ? '1080p FHD' : (parsed.resolution === '720p' ? '720p HD' : parsed.resolution)),
+            ...dvHdrBadges,
+            audioBadge
+        ].filter(Boolean);
+    } else {
+        // Legacy Detailed Header
+        topBadges = [
+            debridBadge,
+            parsed.resolution === '2160p' ? '4K UHD' : (parsed.resolution === '1080p' ? '1080p FHD' : (parsed.resolution === '720p' ? '720p HD' : parsed.resolution)),
+            ...dvHdrBadges,
+            imaxBadge,
+            is3dBadge,
+            (parsed.special && parsed.special.includes('REMUX')) ? 'REMUX' : (parsed.quality || null),
+            editionBadge,
+            repackBadge,
+            codecBadge,
+            bitDepthBadge,
+            hfrBadge,
+            audioBadge,
+            sizeTopBadge,
+            langTopBadge
+        ].filter(Boolean);
+    }
 
     const uniqueTopBadges = [...new Set(topBadges)];
     const topBadgeStr = uniqueTopBadges.length > 0 ? ` • ${uniqueTopBadges.slice(0, 10).join(' • ')}` : '';
@@ -240,8 +252,8 @@ function formatStreamCard(ingested, options = {}) {
 
     const qualitySpecs = [
         parsed.resolution ? (parsed.resolution === '2160p' ? '4K UHD' : parsed.resolution === '1080p' ? '1080p FHD' : parsed.resolution === '720p' ? '720p HD' : parsed.resolution) : null,
-        parsed.special.includes('REMUX') ? 'REMUX' : (parsed.quality || null),
-        parsed.special.includes('IMAX Enhanced') ? 'IMAX Enhanced' : (parsed.special.includes('IMAX') ? 'IMAX' : null),
+        (parsed.special && parsed.special.includes('REMUX')) ? 'REMUX' : (parsed.quality || null),
+        (parsed.special && parsed.special.includes('IMAX Enhanced')) ? 'IMAX Enhanced' : ((parsed.special && parsed.special.includes('IMAX')) ? 'IMAX' : null),
         (parsed.special && parsed.special.includes('3D')) ? '3D' : null,
         parsed.edition || null,
         parsed.codec || null,
@@ -299,7 +311,7 @@ function formatStreamCard(ingested, options = {}) {
     const displayLangs = [];
     const nonGenericLangs = (parsed.languages || []).filter(l => l !== 'Dual-Audio' && l !== 'Multi-Audio');
 
-    if (parsed.isMultiAudio || parsed.languages.includes('Multi-Audio') || nonGenericLangs.length >= 3) {
+    if (parsed.isMultiAudio || (parsed.languages && parsed.languages.includes('Multi-Audio')) || nonGenericLangs.length >= 3) {
         const langNames = nonGenericLangs.map(l => {
             if (l === 'English') return '🇬🇧 English';
             if (l === 'Hindi') return '🇮🇳 Hindi';
@@ -313,7 +325,7 @@ function formatStreamCard(ingested, options = {}) {
         });
         const details = langNames.length > 0 ? ` [${[...new Set(langNames)].join(' • ')}]` : '';
         displayLangs.push(`🌐 Multi-Audio${details}`);
-    } else if (parsed.isDualAudio || parsed.languages.includes('Dual-Audio') || nonGenericLangs.length === 2) {
+    } else if (parsed.isDualAudio || (parsed.languages && parsed.languages.includes('Dual-Audio')) || nonGenericLangs.length === 2) {
         const langNames = nonGenericLangs.map(l => {
             if (l === 'English') return '🇬🇧 English';
             if (l === 'Hindi') return '🇮🇳 Hindi';
