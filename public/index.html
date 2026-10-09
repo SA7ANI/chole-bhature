@@ -1655,23 +1655,31 @@
             color: var(--text-purple);
         }
 
+        .glass-card:has(.custom-select-wrap.active),
+        .glass-card.has-active-dropdown,
+        .bench-card:has(.custom-select-wrap.active),
+        .bench-card.has-active-dropdown,
         .section-wrap:has(.custom-select-wrap.active),
-        .section-wrap.has-active-dropdown {
-            position: relative !important;
-            z-index: 99999 !important;
-        }
-
+        .section-wrap.has-active-dropdown,
         .section-card:has(.custom-select-wrap.active),
-        .section-card.has-active-dropdown {
-            overflow: visible !important;
-            position: relative !important;
-            z-index: 99999 !important;
-        }
-
+        .section-card.has-active-dropdown,
+        .upstream-header-actions:has(.custom-select-wrap.active),
+        .upstream-header-actions.has-active-dropdown,
         .has-active-dropdown {
             position: relative !important;
             z-index: 99999 !important;
             overflow: visible !important;
+        }
+
+        .custom-select-wrap.drop-up .custom-select-menu {
+            top: auto !important;
+            bottom: calc(100% + 6px) !important;
+            transform: translateY(8px) scale(0.98);
+            transform-origin: bottom center !important;
+        }
+
+        .custom-select-wrap.active.drop-up .custom-select-menu {
+            transform: translateY(0) scale(1) !important;
         }
 
         body.theme-amoled .custom-select-trigger {
@@ -8602,12 +8610,10 @@
             if (!w) return;
             let el = w.parentElement;
             while (el && el !== document.body) {
-                if (el.classList.contains('tab-content') || el.classList.contains('section-card') || el.classList.contains('section-wrap') || el.classList.contains('setting-item-row') || el.classList.contains('input-bar-group') || el.classList.contains('container') || el.classList.contains('content-wrapper') || el.classList.contains('bench-card') || el.classList.contains('studio-top-bar') || el.classList.contains('bench-query-grid') || el.id === 'admin-main-providers-hub' || el.id === 'admin-sub-editor' || el.id === 'admin-sub-tester') {
-                    if (isActive) {
-                        el.classList.add('has-active-dropdown');
-                    } else {
-                        el.classList.remove('has-active-dropdown');
-                    }
+                if (isActive) {
+                    el.classList.add('has-active-dropdown');
+                } else {
+                    el.classList.remove('has-active-dropdown');
                 }
                 el = el.parentElement;
             }
@@ -8740,6 +8746,7 @@
                 const isOpen = wrap.classList.contains('active');
                 document.querySelectorAll('.custom-select-wrap.active').forEach(w => {
                     w.classList.remove('active');
+                    w.classList.remove('drop-up');
                     w.querySelector('.custom-select-trigger')?.setAttribute('aria-expanded', 'false');
                     setDropdownActiveAncestors(w, false);
                 });
@@ -8747,6 +8754,16 @@
                     wrap.classList.add('active');
                     trigger.setAttribute('aria-expanded', 'true');
                     setDropdownActiveAncestors(wrap, true);
+
+                    const rect = trigger.getBoundingClientRect();
+                    const spaceBelow = window.innerHeight - rect.bottom;
+                    const estimatedMenuHeight = Math.min(menu.scrollHeight || 260, 320);
+                    if (spaceBelow < estimatedMenuHeight && rect.top > estimatedMenuHeight) {
+                        wrap.classList.add('drop-up');
+                    } else {
+                        wrap.classList.remove('drop-up');
+                    }
+
                     const sInput = menu.querySelector('.custom-select-search-input');
                     if (sInput) {
                         sInput.value = '';
@@ -8758,6 +8775,7 @@
 
             function closeDropdown() {
                 wrap.classList.remove('active');
+                wrap.classList.remove('drop-up');
                 trigger.setAttribute('aria-expanded', 'false');
                 setDropdownActiveAncestors(wrap, false);
             }
@@ -8813,6 +8831,7 @@
             if (!e.target.closest('.custom-select-wrap')) {
                 document.querySelectorAll('.custom-select-wrap.active').forEach(w => {
                     w.classList.remove('active');
+                    w.classList.remove('drop-up');
                     w.querySelector('.custom-select-trigger')?.setAttribute('aria-expanded', 'false');
                     setDropdownActiveAncestors(w, false);
                 });
@@ -8823,6 +8842,7 @@
             if (e.key === 'Escape') {
                 document.querySelectorAll('.custom-select-wrap.active').forEach(w => {
                     w.classList.remove('active');
+                    w.classList.remove('drop-up');
                     w.querySelector('.custom-select-trigger')?.setAttribute('aria-expanded', 'false');
                     setDropdownActiveAncestors(w, false);
                 });
@@ -14070,7 +14090,7 @@
             runBtn.disabled = true;
             runBtn.innerHTML = '<span>⏳</span> Probing in Progress...';
 
-            term.innerHTML = `[BENCHMARK] Target: ${providerName} | Media: ${mediaType} (ID: ${mediaId})\n[INFO] Loading provider module into Node.js VM sandbox...\n[INFO] Resolving TMDB metadata & verifying DNS-over-HTTPS tunnel...`;
+            term.innerHTML = `[BENCHMARK] Target: ${providerName} | Media: ${mediaType} (ID: ${mediaId})${mediaType === 'tv' ? ` | Season ${season} Episode ${episode}` : ''}\n[INFO] Loading provider module into Node.js VM sandbox...\n[INFO] Resolving TMDB metadata & verifying DNS-over-HTTPS tunnel...`;
 
             try {
                 const res = await fetch('/api/test-scraper', {

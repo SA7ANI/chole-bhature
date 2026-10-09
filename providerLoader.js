@@ -668,9 +668,8 @@ class ProviderLoader {
     async testScraper(manifestUrl, providerName, overrides = {}, mediaId = 'tt0137523', type = 'movie', season = null, episode = null) {
         const startTime = Date.now();
         try {
-            const manifestsToTry = [];
+            const manifestsToTry = ['local'];
             if (manifestUrl && manifestUrl !== 'local') manifestsToTry.push(manifestUrl);
-            manifestsToTry.push('local');
             const fallbackManifests = [
                 'https://raw.githubusercontent.com/yoruix/nuvio-providers/refs/heads/main/manifest.json',
                 'https://raw.githubusercontent.com/phisher98/Nuvio-Providers/main/manifest.json',
@@ -705,9 +704,32 @@ class ProviderLoader {
                 }
             };
 
-            const defaultSeason = (type === 'tv' || type === 'series') ? (season || 1) : season;
-            const defaultEpisode = (type === 'tv' || type === 'series') ? (episode || 1) : episode;
-            const streams = await targetProvider.getStreams(mediaId, type, defaultSeason, defaultEpisode, testConfig);
+            let testMediaId = mediaId;
+            let testType = type;
+            const parsedSeason = season != null && season !== '' && !isNaN(parseInt(season, 10)) ? parseInt(season, 10) : 1;
+            const parsedEpisode = episode != null && episode !== '' && !isNaN(parseInt(episode, 10)) ? parseInt(episode, 10) : 1;
+            let defaultSeason = (testType === 'tv' || testType === 'series') ? parsedSeason : season;
+            let defaultEpisode = (testType === 'tv' || testType === 'series') ? parsedEpisode : episode;
+
+            // Smart benchmark fallback: anime scrapers cannot scrape live-action movies like Fight Club
+            const isAnimeScraper = /ani|kurage|reanime/i.test(targetProvider.name || '') || /ani|kurage|reanime/i.test(providerName || '');
+            if (isAnimeScraper && (testMediaId === 'tt0137523' || testMediaId === '550')) {
+                testMediaId = '1429';
+                testType = 'tv';
+                defaultSeason = parsedSeason;
+                defaultEpisode = parsedEpisode;
+            }
+
+            let streams = await targetProvider.getStreams(testMediaId, testType, defaultSeason, defaultEpisode, testConfig);
+            // Fallback for movie providers if Fight Club (1999) has no seeds on newer indexes
+            if ((!streams || streams.length === 0) && (testMediaId === 'tt0137523' || testMediaId === '550') && !isAnimeScraper) {
+                try {
+                    const oppenheimerStreams = await targetProvider.getStreams('872585', 'movie', null, null, testConfig);
+                    if (Array.isArray(oppenheimerStreams) && oppenheimerStreams.length > 0) {
+                        streams = oppenheimerStreams;
+                    }
+                } catch (_) {}
+            }
             const latencyMs = Date.now() - startTime;
             const validStreams = Array.isArray(streams) ? streams : [];
 

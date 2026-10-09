@@ -2302,7 +2302,7 @@ app.post('/api/admin/upstream-import', async (req, res) => {
 // Live Scraper Domain & Override Probing / Test Route
 app.post('/api/test-scraper', async (req, res) => {
     try {
-        const { providerName, manifestUrl, domain, fallbackMirrors, headers, mediaId, type } = req.body || {};
+        const { providerName, manifestUrl, domain, fallbackMirrors, headers, mediaId, type, season, episode } = req.body || {};
         if (!providerName) {
             return res.status(400).json({ success: false, error: 'providerName is required' });
         }
@@ -2314,7 +2314,9 @@ app.post('/api/test-scraper', async (req, res) => {
                 : (fallbackMirrors ? String(fallbackMirrors).split(/[\n,]+/).map(s => s.trim()).filter(Boolean) : []),
             headers: headers && typeof headers === 'object' ? headers : {}
         };
-        const result = await providerLoader.testScraper(targetManifest, providerName, overrides, mediaId || 'tt0137523', type || 'movie');
+        const parsedSeason = season != null && season !== '' ? parseInt(season, 10) : null;
+        const parsedEpisode = episode != null && episode !== '' ? parseInt(episode, 10) : null;
+        const result = await providerLoader.testScraper(targetManifest, providerName, overrides, mediaId || 'tt0137523', type || 'movie', parsedSeason, parsedEpisode);
         return res.json(result);
     } catch (err) {
         return res.status(500).json({ success: false, error: err.message });
