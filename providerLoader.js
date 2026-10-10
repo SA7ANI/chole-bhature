@@ -425,7 +425,8 @@ class ProviderLoader {
                                 if (urlStr.includes('themoviedb.org') || urlStr.includes('tmdb.org')) {
                                     const cached = await fetchTmdbWithFallback(urlStr);
                                     if (cached) {
-                                        return new fetch.Response(JSON.stringify(cached), {
+                                        const RespClass = globalThis.Response || fetch.Response;
+                                        return new RespClass(JSON.stringify(cached), {
                                             status: 200,
                                             headers: { 'content-type': 'application/json' }
                                         });
