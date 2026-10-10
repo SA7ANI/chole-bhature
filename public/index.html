@@ -14130,6 +14130,10 @@
                     } else {
                         streamList.innerHTML = streams.map(s => {
                             const isFast = !s.latency || s.latency < 800;
+                            const hasHeaders = s.headers && Object.keys(s.headers).length > 0;
+                            const playUrl = hasHeaders
+                                ? `/proxy/stream?url=${encodeURIComponent(s.url)}&headers=${encodeURIComponent(JSON.stringify(s.headers))}`
+                                : s.url;
                             return `
                             <div class="bench-stream-item">
                                 <div class="bench-stream-info">
@@ -14138,7 +14142,7 @@
                                 </div>
                                 <div class="bench-stream-actions" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                                     <span class="tag-pill-badge" style="background: rgba(16,185,129,0.12); color: #34d399; font-weight: 700; font-size: 11px;">🟢 FAST</span>
-                                    <a href="${s.url}" target="_blank" rel="noopener noreferrer" class="pill-btn pill-btn-glass" style="padding: 4px 10px; font-size: 11px; text-decoration: none;">▶️ Open / Test</a>
+                                    <a href="${playUrl}" target="_blank" rel="noopener noreferrer" class="pill-btn pill-btn-glass" style="padding: 4px 10px; font-size: 11px; text-decoration: none;" title="${hasHeaders ? 'Streams via Header Proxy' : 'Direct Stream'}">▶️ Open / Test</a>
                                 </div>
                             </div>`;
                         }).join('');

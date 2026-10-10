@@ -57,9 +57,9 @@ router.get('/', async (req, res) => {
         }
         res.setHeader('Access-Control-Allow-Origin', '*');
 
-        if (process.env.VERCEL) {
-            // Vercel Serverless limits execution time (10s-60s) which breaks streaming media.
-            // Redirect immediately to prevent abrupt cutoffs.
+        if (process.env.VERCEL && !customHeaders['Referer'] && !customHeaders['referer'] && !customHeaders['Origin'] && !customHeaders['origin']) {
+            // Vercel Serverless limits execution time (10s-60s) for unbounded media.
+            // Only redirect directly when custom referer/origin headers are NOT required.
             return res.redirect(302, targetUrl);
         }
 
