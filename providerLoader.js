@@ -581,13 +581,13 @@ class ProviderLoader {
                                 CryptoJS: CryptoJS,
                                 cheerio: cw,
                                 crypto: crypto,
-                                Headers: fetch.Headers || class {},
-                                Request: fetch.Request || class {},
-                                Response: fetch.Response || class {},
+                                Headers: globalThis.Headers || fetch.Headers || class {},
+                                Request: globalThis.Request || fetch.Request || class {},
+                                Response: globalThis.Response || fetch.Response || class {},
                                 require: (moduleName) => {
                                     if (moduleName === 'axios') return customAxios;
                                     if (moduleName === 'crypto-js') return CryptoJS;
-                                    if (moduleName === 'cheerio-without-node-native' || moduleName === 'cheerio') return Object.assign(cw, { default: cw, __esModule: false });
+                                    if (moduleName === 'cheerio-without-node-native' || moduleName === 'cheerio') return cw;
                                     if (moduleName === 'querystring' || moduleName === 'qs') return querystring;
                                     if (moduleName === 'crypto') return crypto;
                                     if (moduleName === 'url') return urlMod;
