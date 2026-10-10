@@ -551,7 +551,7 @@ class ProviderLoader {
                             customAxios.defaults = axiosInstance.defaults;
                             customAxios.interceptors = axiosInstance.interceptors;
 
-                            const cw = Object.assign(cheerio, { default: cheerio });
+                            const cw = createCheerioWrapper();
 
                             const sandbox = {
                                 console: console,
@@ -587,7 +587,7 @@ class ProviderLoader {
                                 require: (moduleName) => {
                                     if (moduleName === 'axios') return customAxios;
                                     if (moduleName === 'crypto-js') return CryptoJS;
-                                    if (moduleName === 'cheerio-without-node-native' || moduleName === 'cheerio') return cw;
+                                    if (moduleName === 'cheerio-without-node-native' || moduleName === 'cheerio') return Object.assign(cw, { default: cw, __esModule: false });
                                     if (moduleName === 'querystring' || moduleName === 'qs') return querystring;
                                     if (moduleName === 'crypto') return crypto;
                                     if (moduleName === 'url') return urlMod;
