@@ -13943,6 +13943,11 @@
                             const domainInput = document.getElementById('studio-override-domain');
                             if (domainInput && !domainInput.value) {
                                 domainInput.placeholder = `Default: ${info.defaultDomain}`;
+                                const note = document.getElementById('studio-override-domain-note');
+                                if (note) {
+                                    note.textContent = `⚡ Active Default: ${info.defaultDomain} (Override optional)`;
+                                    note.style.color = '#38bdf8';
+                                }
                             }
                             if (defaultBtn) defaultBtn.style.display = 'inline';
                         }
@@ -13956,6 +13961,11 @@
         function useDetectedStudioDefaultDomain() {
             if (currentStudioScraper && currentStudioScraper.detectedDefaultDomain) {
                 document.getElementById('studio-override-domain').value = currentStudioScraper.detectedDefaultDomain;
+                const note = document.getElementById('studio-override-domain-note');
+                if (note) {
+                    note.textContent = '✏️ Default domain applied (Click Commit Code & Overrides to save)';
+                    note.style.color = '#a78bfa';
+                }
                 showToast(`Applied default domain: ${currentStudioScraper.detectedDefaultDomain}`);
             }
         }
