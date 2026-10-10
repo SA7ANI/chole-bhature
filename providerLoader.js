@@ -292,7 +292,7 @@ class ProviderLoader {
         if (manifestUrl) {
             this.providerCache.delete(manifestUrl);
             for (const key of this.scriptCache.keys()) {
-                if (key.includes(manifestUrl) || key.startsWith('local://')) {
+                if (key.includes(manifestUrl) || key.startsWith('local://') || manifestUrl === 'local' || key.includes('SA7ANI/cb-providers')) {
                     this.scriptCache.delete(key);
                 }
             }
@@ -669,6 +669,7 @@ class ProviderLoader {
     async testScraper(manifestUrl, providerName, overrides = {}, mediaId = 'tt0137523', type = 'movie', season = null, episode = null) {
         const startTime = Date.now();
         try {
+            this.clearCache(manifestUrl || 'local');
             const manifestsToTry = ['local'];
             if (manifestUrl && manifestUrl !== 'local') manifestsToTry.push(manifestUrl);
             const fallbackManifests = [
