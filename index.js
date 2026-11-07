@@ -2534,7 +2534,13 @@ function createAddon(config) {
         });
     }
 
-    const resources = ['stream'];
+    const resources = [
+        {
+            name: 'stream',
+            types: ['movie', 'series', 'anime', 'tv', 'channel', 'other'],
+            idPrefixes: ['tt', 'tmdb', 'tmdb:', 'kitsu', 'kitsu:', 'iptv', 'iptv:']
+        }
+    ];
     if (enabledCatalogs.length > 0) {
         resources.push('catalog');
     }
@@ -2580,14 +2586,14 @@ function createAddon(config) {
 
     const builder = new addonBuilder({
         id: addonId,
-        version: '4.5.0',
+        version: '4.5.2',
         name: addonName,
         description: 'High-Performance Stream Meta-Sorter & Discovery Hub for Nuvio & Stremio. Scrapes, verifies, filters dead links, organizes streams by speed/quality/audio, and provides curated Live TV, Indian Cinema, Trending & Anime feeds.',
         logo: addonLogo,
         catalogs: enabledCatalogs,
         resources: resources,
         types: ['movie', 'series', 'anime', 'tv', 'channel', 'other'],
-        idPrefixes: ['tt', 'tmdb:', 'kitsu:', 'iptv:'],
+        idPrefixes: ['tt', 'tmdb', 'tmdb:', 'kitsu', 'kitsu:', 'iptv', 'iptv:'],
         behaviorHints: behaviorHints
     });
 
