@@ -2595,7 +2595,7 @@ function createAddon(config) {
 
     const builder = new addonBuilder({
         id: addonId,
-        version: '4.5.3',
+        version: '4.5.4',
         name: addonName,
         description: 'High-Performance Stream Meta-Sorter & Discovery Hub for Nuvio & Stremio. Scrapes, verifies, filters dead links, organizes streams by speed/quality/audio, and provides curated Live TV, Indian Cinema, Trending & Anime feeds.',
         logo: addonLogo,
@@ -2775,11 +2775,11 @@ function createAddon(config) {
             // We leave ~8s buffer for speed-testing after scraping completes.
             const isVercel = typeof process !== 'undefined' && Boolean(process.env.VERCEL);
             const PROVIDER_TIMEOUT_MS = isVercel 
-                ? (isEcoMode ? 4000 : 5500)   // 5.5s allows multi-step scrapers (MoviesDrive, 4KHDHub) to finish
-                : (isEcoMode ? 4500 : 5800); // 5.8s on desktop/server
+                ? (isEcoMode ? 4500 : 7500)   // 7.5s allows full parallel scraping across all 28 providers
+                : (isEcoMode ? 5500 : 8000); 
             const SCRAPE_DEADLINE_MS = isVercel 
-                ? (isEcoMode ? 4500 : 6000) 
-                : (isEcoMode ? 5000 : 6200);
+                ? (isEcoMode ? 5500 : 8500) 
+                : (isEcoMode ? 6500 : 9000);
 
             const tgScrapePromise = (async () => {
                 if (Boolean(config.enableTelegram) && (!config.disabled || (!config.disabled.includes('Telegram') && !config.disabled.includes('Telegram (PencariMovie)')))) {
@@ -2810,7 +2810,7 @@ function createAddon(config) {
             const CONCURRENCY_LIMIT = isVercel ? 60 : 250; // High concurrency for desktop/server to process all in a single batch
             const providerTasks = allProviders.map((provider) => async () => {
                 try {
-                    if (config.enableQuarantine !== false) {
+                    if (config.enableQuarantine === true) {
                         const qRecord = quarantineRegistry.get(provider.name);
                         if (qRecord && qRecord.quarantineUntil > Date.now()) {
                             console.log(`[Quarantine] Skipping provider ${provider.name} (Quarantined)`);
@@ -2859,7 +2859,7 @@ function createAddon(config) {
                         
                     if (!isNetworkError) {
                         // Only quarantine for actual script/parsing errors, not network issues which are common in parallel scraping
-                        if (config.enableQuarantine !== false) {
+                        if (config.enableQuarantine === true) {
                             const qRecord = quarantineRegistry.get(provider.name) || { fails: 0 };
                             qRecord.fails += 1;
                             if (qRecord.fails >= 2) {
@@ -2892,7 +2892,7 @@ function createAddon(config) {
             const earlyCheckPromise = new Promise(resolve => {
                 const interval = setInterval(() => {
                     if ((allStreams.length >= 25 && (Date.now() - scrapeStartTime) >= 2500) ||
-                        (allStreams.length >= 15 && (Date.now() - scrapeStartTime) >= 3800)) {
+                        (allStreams.length >= 18 && (Date.now() - scrapeStartTime) >= 4000)) {
                         clearInterval(interval);
                         resolve();
                     }
@@ -2962,14 +2962,14 @@ function createAddon(config) {
                 telemetryMetrics.servedBandwidthBytes += Buffer.byteLength(JSON.stringify(sortedAndTaggedStreams), 'utf8');
             } catch (e) {}
 
-            // Save to in-memory cache
-            streamCache.set(cacheKey, { timestamp: Date.now(), streams: sortedAndTaggedStreams });
-
-            // Persist to Upstash KV (Redis) with 30 minutes TTL (1800 seconds)
-            if (isKVEnabledGlobal && Array.isArray(sortedAndTaggedStreams) && sortedAndTaggedStreams.length > 0) {
-                kv.set(kvCacheKey, { timestamp: Date.now(), streams: sortedAndTaggedStreams }, { ex: 1800 })
-                    .then(() => console.log(`[KV] Cached ${sortedAndTaggedStreams.length} streams in Upstash Redis for ${type} ${id} (30m TTL)`))
-                    .catch(err => console.warn('[KV Stream Cache Save Warning]', err.message));
+            // Save to in-memory cache ONLY if valid streams found
+            if (Array.isArray(sortedAndTaggedStreams) && sortedAndTaggedStreams.length > 0) {
+                streamCache.set(cacheKey, { timestamp: Date.now(), streams: sortedAndTaggedStreams });
+                if (isKVEnabledGlobal) {
+                    kv.set(kvCacheKey, { timestamp: Date.now(), streams: sortedAndTaggedStreams }, { ex: 1800 })
+                        .then(() => console.log(`[KV] Cached ${sortedAndTaggedStreams.length} streams in Upstash Redis for ${type} ${id} (30m TTL)`))
+                        .catch(err => console.warn('[KV Stream Cache Save Warning]', err.message));
+                }
             }
 
             return sortedAndTaggedStreams;
@@ -3022,7 +3022,7 @@ function createAddon(config) {
             return list;
         };
 
-        if (cached && Date.now() - cached.timestamp < STALE_TTL_MS) {
+        if (cached && Array.isArray(cached.streams) && cached.streams.length > 0 && Date.now() - cached.timestamp < STALE_TTL_MS) {
             console.log(`[Stremio] Serving cached results for ${type} ${id}`);
             
             telemetryMetrics.cacheHits++;

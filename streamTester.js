@@ -1657,6 +1657,9 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
         delete stremioStream._rawStream;
         delete stremioStream._preparsedMeta;
         delete stremioStream._rawFilename;
+        if (stremioStream.url) {
+            delete stremioStream.externalUrl;
+        }
 
         return stremioStream;
     });
