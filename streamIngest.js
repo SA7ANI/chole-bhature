@@ -45,7 +45,7 @@ function formatBytesToSize(bytes) {
     if (typeof bytes !== 'number' || isNaN(bytes) || bytes <= 0) return null;
     const gb = bytes / (1024 * 1024 * 1024);
     if (gb >= 0.9) {
-        return `${gb.toFixed(2)} GB`;
+        return `${parseFloat(gb.toFixed(1))} GB`;
     }
     const mb = bytes / (1024 * 1024);
     return `${Math.round(mb)} MB`;
