@@ -2667,11 +2667,7 @@ function createAddon(config) {
                 name: '🔄 FORCE REFRESH',
                 title: '⚡ Click to clear cache & fetch fresh streams on reload!',
                 description: 'Clear cache and fetch real-time fresh streams from all providers.',
-                url: targetUrl,
-                externalUrl: targetUrl,
-                behaviorHints: {
-                    notWebReady: true
-                }
+                externalUrl: targetUrl
             };
         };
 
