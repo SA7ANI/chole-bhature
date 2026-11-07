@@ -2668,14 +2668,18 @@ function createAddon(config) {
         
         // Helper to generate the force refresh stream
         const getForceRefreshStream = () => {
-            if (!config.addonHost) return null;
+            if (config.hideForceRefresh === true || config.showForceRefresh === false) return null;
+            const host = config.addonHost || (typeof process !== 'undefined' && process.env.VERCEL_URL ? process.env.VERCEL_URL : 'cholebhature.vercel.app');
+            if (!host) return null;
+            const protocol = config.addonProtocol || (host.includes('localhost') || host.includes('127.0.0.1') ? 'http' : 'https');
             const baseUrl = config.configId
-                ? `${config.addonProtocol || 'http'}://${config.addonHost}/c/${config.configId}`
-                : `${config.addonProtocol || 'http'}://${config.addonHost}/${encodeURIComponent(JSON.stringify(config))}`;
+                ? `${protocol}://${host}/c/${config.configId}`
+                : `${protocol}://${host}`;
             const targetUrl = `${baseUrl}/clear-cache/${type}/${encodeURIComponent(id)}`;
             return {
                 name: '🔄 FORCE REFRESH',
                 title: '⚡ Click to clear cache & fetch fresh streams on reload!',
+                description: 'Clear cache and fetch real-time fresh streams from all providers.',
                 externalUrl: targetUrl
             };
         };
@@ -3060,7 +3064,8 @@ function createAddon(config) {
             }
             
             const filteredCached = filterRuntimeStreams(cached.streams);
-            return { streams: filteredCached };
+            const frStream = getForceRefreshStream();
+            return { streams: frStream ? [frStream, ...filteredCached] : filteredCached };
         }
 
         // Deduplicate in-flight requests for the exact same stream
@@ -3068,14 +3073,16 @@ function createAddon(config) {
             console.log(`[Stremio] Awaiting in-flight fetch for ${type} ${id}`);
             const inFlightResult = await inFlightStreamFetches.get(cacheKey);
             const filteredInFlight = filterRuntimeStreams(inFlightResult);
-            return { streams: filteredInFlight };
+            const frStream = getForceRefreshStream();
+            return { streams: frStream ? [frStream, ...filteredInFlight] : filteredInFlight };
         }
 
         const fetchPromise = fetchAndCacheStreams();
         inFlightStreamFetches.set(cacheKey, fetchPromise);
         try {
             const sortedAndTaggedStreams = await fetchPromise;
-            return { streams: sortedAndTaggedStreams };
+            const frStream = getForceRefreshStream();
+            return { streams: frStream ? [frStream, ...sortedAndTaggedStreams] : sortedAndTaggedStreams };
         } catch (streamErr) {
             console.error(`[Stremio Stream Handler Error] for ${type} ${id}:`, streamErr.stack || streamErr.message);
             return { streams: [] };
