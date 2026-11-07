@@ -425,8 +425,20 @@ if (fs.existsSync(cbProviderDir)) {
     app.use('/my-repo', express.static(cbProviderDir));
 }
 
+function isBrowserHtmlRequest(req) {
+    const userAgent = (req.headers['user-agent'] || '').toLowerCase();
+    const accept = (req.headers['accept'] || '').toLowerCase();
+    if (userAgent.includes('okhttp') || userAgent.includes('nuvio') || userAgent.includes('stremio') || userAgent.includes('exoplayer')) {
+        return false;
+    }
+    if (accept.includes('application/json')) {
+        return false;
+    }
+    return accept.includes('text/html');
+}
+
 app.get(['/', '/configure', '/index.html'], (req, res) => {
-    if (req.path === '/' && (req.headers.accept && req.headers.accept.includes('application/json'))) {
+    if (req.path === '/' && !isBrowserHtmlRequest(req)) {
         return res.redirect(307, '/manifest.json');
     }
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -436,6 +448,9 @@ app.get(['/', '/configure', '/index.html'], (req, res) => {
 
 // Serve configure page on configId routes
 app.get(['/c/:configId', '/c/:configId/configure', '/configure/:configId'], (req, res) => {
+    if (req.path.startsWith('/c/') && !req.path.endsWith('/configure') && !isBrowserHtmlRequest(req)) {
+        return res.redirect(307, `/c/${req.params.configId}/manifest.json`);
+    }
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
@@ -2534,13 +2549,7 @@ function createAddon(config) {
         });
     }
 
-    const resources = [
-        {
-            name: 'stream',
-            types: ['movie', 'series', 'anime', 'tv', 'channel', 'other'],
-            idPrefixes: ['tt', 'tmdb', 'tmdb:', 'kitsu', 'kitsu:', 'iptv', 'iptv:']
-        }
-    ];
+    const resources = ['stream'];
     if (enabledCatalogs.length > 0) {
         resources.push('catalog');
     }
@@ -2586,14 +2595,13 @@ function createAddon(config) {
 
     const builder = new addonBuilder({
         id: addonId,
-        version: '4.5.2',
+        version: '4.5.3',
         name: addonName,
         description: 'High-Performance Stream Meta-Sorter & Discovery Hub for Nuvio & Stremio. Scrapes, verifies, filters dead links, organizes streams by speed/quality/audio, and provides curated Live TV, Indian Cinema, Trending & Anime feeds.',
         logo: addonLogo,
         catalogs: enabledCatalogs,
         resources: resources,
         types: ['movie', 'series', 'anime', 'tv', 'channel', 'other'],
-        idPrefixes: ['tt', 'tmdb', 'tmdb:', 'kitsu', 'kitsu:', 'iptv', 'iptv:'],
         behaviorHints: behaviorHints
     });
 
@@ -3029,26 +3037,23 @@ function createAddon(config) {
                 fetchAndCacheStreams().catch(e => console.error('[Background Fetch Error]', e));
             }
             
-            const frStream = getForceRefreshStream();
             const filteredCached = filterRuntimeStreams(cached.streams);
-            return { streams: (frStream && filteredCached.length > 0) ? [frStream, ...filteredCached] : filteredCached };
+            return { streams: filteredCached };
         }
 
         // Deduplicate in-flight requests for the exact same stream
         if (inFlightStreamFetches.has(cacheKey)) {
             console.log(`[Stremio] Awaiting in-flight fetch for ${type} ${id}`);
             const inFlightResult = await inFlightStreamFetches.get(cacheKey);
-            const frStream = getForceRefreshStream();
             const filteredInFlight = filterRuntimeStreams(inFlightResult);
-            return { streams: (frStream && filteredInFlight.length > 0) ? [frStream, ...filteredInFlight] : filteredInFlight };
+            return { streams: filteredInFlight };
         }
 
         const fetchPromise = fetchAndCacheStreams();
         inFlightStreamFetches.set(cacheKey, fetchPromise);
         try {
             const sortedAndTaggedStreams = await fetchPromise;
-            const frStream = getForceRefreshStream();
-            return { streams: (frStream && sortedAndTaggedStreams.length > 0) ? [frStream, ...sortedAndTaggedStreams] : sortedAndTaggedStreams };
+            return { streams: sortedAndTaggedStreams };
         } catch (streamErr) {
             console.error(`[Stremio Stream Handler Error] for ${type} ${id}:`, streamErr.stack || streamErr.message);
             return { streams: [] };
