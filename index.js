@@ -426,6 +426,9 @@ if (fs.existsSync(cbProviderDir)) {
 }
 
 app.get(['/', '/configure', '/index.html'], (req, res) => {
+    if (req.path === '/' && (req.headers.accept && req.headers.accept.includes('application/json'))) {
+        return res.redirect(307, '/manifest.json');
+    }
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
