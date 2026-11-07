@@ -5,9 +5,9 @@
   # Chole Bhature
   ### High-Performance Stream Meta-Sorter & Discovery Hub for Nuvio & Stremio
 
-  [![Version](https://img.shields.io/badge/version-4.5.0-indigo.svg?style=for-the-badge)](https://github.com/SA7ANI/chole-bhature)
+  [![Version](https://img.shields.io/badge/version-4.5.4-indigo.svg?style=for-the-badge)](https://github.com/SA7ANI/chole-bhature)
   [![Platform](https://img.shields.io/badge/Platform-Nuvio%20%7C%20Stremio-purple.svg?style=for-the-badge)](https://github.com/SA7ANI/chole-bhature)
-  [![Changelog](https://img.shields.io/badge/Changelog-v4.5.0-teal.svg?style=for-the-badge)](CHANGELOG.md)
+  [![Changelog](https://img.shields.io/badge/Changelog-v4.5.4-teal.svg?style=for-the-badge)](CHANGELOG.md)
   [![License](https://img.shields.io/badge/License-GNU%20AGPLv3-amber.svg?style=for-the-badge)](LICENSE)
   [![Author](https://img.shields.io/badge/Author-SA7ANI-blue.svg?style=for-the-badge)](https://github.com/SA7ANI)
   [![Telegram](https://img.shields.io/badge/Telegram-Chat-0088cc.svg?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/cholebhature_chat)

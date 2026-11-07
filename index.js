@@ -3641,7 +3641,7 @@ if (!process.env.VERCEL) {
     const server = app.listen(PORT, '0.0.0.0', () => {
         console.log(`
 ========================================================================
-  🌶️  CHOLE BHATURE • Meta-Sorter & Priority Engine v4.5.0
+  🌶️  CHOLE BHATURE • Meta-Sorter & Priority Engine v4.5.4
   ⚡  Created by SA7ANI | https://github.com/SA7ANI/chole-bhature
   🛡️  Licensed under GNU AGPL-3.0 • Attribution Required
 ========================================================================

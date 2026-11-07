@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.5.4] - 2026-11-08
+### Fixed & Improved
+- **Full Nuvio & Android TV Compatibility**: Homogenized manifest resources to standard string array `["stream", "catalog"]` and removed restrictive top-level `idPrefixes` so all media types and numeric TMDB IDs load seamlessly without dropping the addon.
+- **Provider Scraping Deadlines**: Extended scrape timeouts from 4.5s/6.0s to 7.5s/8.5s across all 28 providers to consistently yield 30+ playable streams instead of getting aborted early.
+- **Empty Result Cache Protection**: Prevented empty `{ streams: [] }` results from ever locking into memory or Redis cache.
+- **Disabled Scraper Auto-Quarantine**: Removed automatic 10-minute bans on providers that fail to find streams on niche or untouched media.
+- **Playable Stream URL Sanitization**: Automatically removed redundant `externalUrl` attributes from streams that already feature direct playback URLs.
+
 ## [4.5.0] - 2026-10-16
 
 ### ⚡ Speed, Stream Resilience & Instant Playback Innovations
