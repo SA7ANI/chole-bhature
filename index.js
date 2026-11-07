@@ -2640,11 +2640,24 @@ function createAddon(config) {
             let season = null;
             let episode = null;
 
-            if (type === 'series' || type === 'tv' || type === 'anime' || (id && id.includes(':') && !id.startsWith('iptv:') && !id.startsWith('kitsu:'))) {
+            if (id && id.startsWith('tmdb:')) {
+                // Support Nuvio TMDB prefix: tmdb:872585 (movie) or tmdb:1396:1:1 (series)
+                const parts = id.split(':');
+                imdbId = parts[0] + ':' + parts[1];
+                season = parts[2] ? parseInt(parts[2], 10) : null;
+                episode = parts[3] ? parseInt(parts[3], 10) : null;
+            } else if (id && id.startsWith('kitsu:')) {
+                const parts = id.split(':');
+                imdbId = parts[0] + ':' + parts[1];
+                episode = parts[2] ? parseInt(parts[2], 10) : null;
+                season = 1;
+            } else if (id && id.startsWith('iptv:')) {
+                imdbId = id;
+            } else if (type === 'series' || type === 'tv' || type === 'anime' || (id && id.includes(':'))) {
                 const parts = id.split(':');
                 imdbId = parts[0];
-                season = parts[1];
-                episode = parts[2];
+                season = parts[1] ? parseInt(parts[1], 10) : null;
+                episode = parts[2] ? parseInt(parts[2], 10) : null;
             }
 
             const mediaMeta = await getMediaMetadata(imdbId, type);
@@ -3596,6 +3609,9 @@ app.use((req, res, next) => {
             }
 
             const activeConfig = {};
+            activeConfig.addonHost = req.headers.host;
+            const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+            activeConfig.addonProtocol = protocol.split(',')[0].trim();
             const defaultAddon = createAddon(activeConfig);
             const router = getRouter(defaultAddon);
             return router(req, res, next);

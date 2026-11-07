@@ -16,57 +16,92 @@ const metadataMemoryCache = new Map();
  * Resolves media metadata (TMDB ID, title, original title, and year)
  * using TMDB find/search with fallback to Cinemeta.
  */
-async function getMediaMetadata(imdbId, type) {
-    if (!imdbId) return { tmdbId: null, title: null, originalTitle: null, year: null };
-    const rawId = imdbId.split(':')[0];
-    const cacheKey = `${type || 'movie'}:${rawId}`;
+async function getMediaMetadata(rawInputId, type) {
+    if (!rawInputId) return { tmdbId: null, title: null, originalTitle: null, year: null };
+    const strId = String(rawInputId).trim();
+    let cleanId = strId;
+    let tmdbId = null;
+
+    if (strId.startsWith('tmdb:')) {
+        const parts = strId.split(':');
+        tmdbId = parts[1] || null;
+        cleanId = tmdbId ? `tmdb:${tmdbId}` : strId;
+    } else if (strId.startsWith('tt')) {
+        cleanId = strId.split(':')[0];
+    } else if (/^\d+$/.test(strId)) {
+        tmdbId = strId;
+        cleanId = `tmdb:${tmdbId}`;
+    } else if (strId.startsWith('kitsu:')) {
+        cleanId = strId.split(':')[0] + ':' + strId.split(':')[1];
+    } else if (strId.includes(':')) {
+        cleanId = strId.split(':')[0];
+    }
+
+    const cacheKey = `${type || 'movie'}:${cleanId}`;
     const cached = metadataMemoryCache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < 24 * 60 * 60 * 1000) {
         return cached.data;
     }
 
-    let tmdbId = null;
     let title = null;
     let originalTitle = null;
     let year = null;
 
-    if (rawId.startsWith('tmdb:')) {
-        tmdbId = rawId.split(':')[1];
-    } else if (/^\d+$/.test(rawId)) {
-        tmdbId = rawId;
-    }
-
     // 1. If TMDB ID is directly provided, fetch details from TMDB
     if (tmdbId) {
-        const tmdbType = (type === 'series' || type === 'tv') ? 'tv' : 'movie';
-        for (const domain of tmdbDomains) {
-            for (const key of TMDB_API_KEYS) {
-                try {
-                    const res = await axios.get(`${domain}/3/${tmdbType}/${tmdbId}?api_key=${key}`, {
-                        timeout: 2500,
-                        httpsAgent: dohHttpsAgent,
-                        headers: { 'Accept': 'application/json' }
-                    });
-                    if (res.data) {
-                        title = res.data.title || res.data.name;
-                        originalTitle = res.data.original_title || res.data.original_name;
-                        const dateStr = res.data.release_date || res.data.first_air_date;
-                        year = dateStr ? dateStr.split('-')[0] : null;
-                        const result = { tmdbId, title, originalTitle, year };
-                        metadataMemoryCache.set(cacheKey, { timestamp: Date.now(), data: result });
-                        return result;
-                    }
-                } catch (err) {}
+        const primaryType = (type === 'series' || type === 'tv') ? 'tv' : 'movie';
+        const fallbackType = primaryType === 'tv' ? 'movie' : 'tv';
+        const tryTypes = [primaryType, fallbackType];
+
+        for (const tmdbType of tryTypes) {
+            for (const domain of tmdbDomains) {
+                for (const key of TMDB_API_KEYS) {
+                    try {
+                        const res = await axios.get(`${domain}/3/${tmdbType}/${tmdbId}?api_key=${key}`, {
+                            timeout: 2500,
+                            httpsAgent: dohHttpsAgent,
+                            headers: { 'Accept': 'application/json' }
+                        });
+                        if (res.data) {
+                            title = res.data.title || res.data.name;
+                            originalTitle = res.data.original_title || res.data.original_name;
+                            const dateStr = res.data.release_date || res.data.first_air_date;
+                            year = dateStr ? dateStr.split('-')[0] : null;
+                            const result = { tmdbId, title, originalTitle, year, type: tmdbType };
+                            metadataMemoryCache.set(cacheKey, { timestamp: Date.now(), data: result });
+                            return result;
+                        }
+                    } catch (err) {}
+                }
             }
         }
     }
 
-    // 2. If IMDb ID (tt...), search TMDB by external_source=imdb_id
-    if (rawId.startsWith('tt')) {
+    // 2. If Kitsu ID (kitsu:1429), resolve via Kitsu API
+    if (cleanId.startsWith('kitsu:')) {
+        const kitsuId = cleanId.split(':')[1];
+        if (kitsuId) {
+            try {
+                const kRes = await axios.get(`https://kitsu.io/api/edge/anime/${kitsuId}`, {
+                    timeout: 3000,
+                    headers: { 'Accept': 'application/vnd.api+json' }
+                });
+                if (kRes.data && kRes.data.data && kRes.data.data.attributes) {
+                    const attrs = kRes.data.data.attributes;
+                    title = attrs.canonicalTitle || (attrs.titles && (attrs.titles.en || attrs.titles.en_jp));
+                    originalTitle = attrs.titles ? attrs.titles.ja_jp : title;
+                    year = attrs.startDate ? attrs.startDate.split('-')[0] : null;
+                }
+            } catch (_) {}
+        }
+    }
+
+    // 3. If IMDb ID (tt...), search TMDB by external_source=imdb_id
+    if (cleanId.startsWith('tt')) {
         for (const domain of tmdbDomains) {
             for (const key of TMDB_API_KEYS) {
                 try {
-                    const res = await axios.get(`${domain}/3/find/${rawId}?api_key=${key}&external_source=imdb_id`, {
+                    const res = await axios.get(`${domain}/3/find/${cleanId}?api_key=${key}&external_source=imdb_id`, {
                         timeout: 2500,
                         httpsAgent: dohHttpsAgent,
                         headers: { 'Accept': 'application/json' }
@@ -100,7 +135,7 @@ async function getMediaMetadata(imdbId, type) {
     // 3. Cinemeta Fallback (with automatic title-to-TMDB resolution)
     try {
         const cinemetaType = (type === 'tv' ? 'series' : type);
-        const cRes = await axios.get(`https://v3-cinemeta.strem.io/meta/${cinemetaType}/${rawId}.json`, { timeout: 2500, httpsAgent: dohHttpsAgent });
+        const cRes = await axios.get(`https://v3-cinemeta.strem.io/meta/${cinemetaType}/${cleanId}.json`, { timeout: 2500, httpsAgent: dohHttpsAgent });
         if (cRes.data && cRes.data.meta) {
             title = cRes.data.meta.name;
             originalTitle = cRes.data.meta.name;
