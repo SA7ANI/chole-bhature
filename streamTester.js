@@ -1653,15 +1653,33 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
             }
         };
 
-        // Clean up internal properties so they never leak into the response
-        delete stremioStream._rawStream;
-        delete stremioStream._preparsedMeta;
-        delete stremioStream._rawFilename;
+        // Clean strictly compliant Stremio/Nuvio stream object
+        const cleanStream = {
+            name: stremioStream.name || 'Chole Bhature',
+            title: stremioStream.title || ''
+        };
+
         if (stremioStream.url) {
-            delete stremioStream.externalUrl;
+            cleanStream.url = stremioStream.url;
+        } else if (stremioStream.infoHash) {
+            cleanStream.infoHash = stremioStream.infoHash;
+            if (stremioStream.fileIdx !== undefined) {
+                cleanStream.fileIdx = stremioStream.fileIdx;
+            }
         }
 
-        return stremioStream;
+        cleanStream.behaviorHints = {
+            filename: synthFilename,
+            bingeGroup: `cholebhature|${meta.resolution || '1080p'}|${meta.quality || 'WEB-DL'}`
+        };
+
+        if (hasCustomHeaders) {
+            cleanStream.behaviorHints.proxyHeaders = {
+                request: customHeaders
+            };
+        }
+
+        return cleanStream;
     });
 }
 

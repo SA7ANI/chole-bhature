@@ -419,7 +419,7 @@ app.use((req, res, next) => {
 });
 
 // Serve static assets
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 const cbProviderDir = path.join(__dirname, '..', 'cb-providers');
 if (fs.existsSync(cbProviderDir)) {
     app.use('/my-repo', express.static(cbProviderDir));
@@ -437,9 +437,16 @@ function isBrowserHtmlRequest(req) {
     return accept.includes('text/html');
 }
 
-app.get(['/', '/configure', '/index.html'], (req, res) => {
+app.get(['/', '/configure', '/index.html'], async (req, res) => {
     if (req.path === '/' && !isBrowserHtmlRequest(req)) {
-        return res.redirect(307, '/manifest.json');
+        const activeConfig = {};
+        activeConfig.addonHost = req.headers.host;
+        const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+        activeConfig.addonProtocol = protocol.split(',')[0].trim();
+        const defaultAddon = createAddon(activeConfig);
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+        return res.json(defaultAddon.getInterface().manifest);
     }
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -447,9 +454,19 @@ app.get(['/', '/configure', '/index.html'], (req, res) => {
 });
 
 // Serve configure page on configId routes
-app.get(['/c/:configId', '/c/:configId/configure', '/configure/:configId'], (req, res) => {
+app.get(['/c/:configId', '/c/:configId/configure', '/configure/:configId'], async (req, res) => {
     if (req.path.startsWith('/c/') && !req.path.endsWith('/configure') && !isBrowserHtmlRequest(req)) {
-        return res.redirect(307, `/c/${req.params.configId}/manifest.json`);
+        let config = await resolveConfig(req.params.configId);
+        if (!config) config = {};
+        config = JSON.parse(JSON.stringify(config));
+        config.configId = req.params.configId;
+        config.addonHost = req.headers.host;
+        const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+        config.addonProtocol = protocol.split(',')[0].trim();
+        const configuredAddon = createAddon(config);
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+        return res.json(configuredAddon.getInterface().manifest);
     }
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -2549,12 +2566,26 @@ function createAddon(config) {
         });
     }
 
-    const resources = ['stream'];
+    const resources = [
+        {
+            name: 'stream',
+            types: ['movie', 'series', 'anime', 'tv', 'channel', 'other'],
+            idPrefixes: ['tt', 'tmdb', 'kitsu', 'iptv']
+        }
+    ];
     if (enabledCatalogs.length > 0) {
-        resources.push('catalog');
+        resources.push({
+            name: 'catalog',
+            types: ['movie', 'series', 'anime'],
+            idPrefixes: ['cb_']
+        });
     }
     if (config.enableIptv) {
-        resources.push('meta');
+        resources.push({
+            name: 'meta',
+            types: ['channel'],
+            idPrefixes: ['iptv:']
+        });
     }
 
     const isConfigured = Boolean(
