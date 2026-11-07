@@ -1581,10 +1581,9 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
             };
         }
 
-        // If stream has custom headers (Referer, Origin, etc.) OR multiple fallback mirrors:
-        // ExoPlayer & mobile players drop custom headers when hitting remote CDNs directly, resulting in 403 Forbidden buffering loops.
-        // Route through /proxy/stream to forward headers, rewrite HLS playlists, and enable seamless fallback failover.
-        if (config.addonHost && stremioStream.url && stremioStream.url.startsWith('http') && (hasCustomHeaders || hasFallbacks)) {
+        // Only route through /proxy/stream if explicitly enabled in user config (e.g. for restricted environments)
+        // By default, direct CDN video streaming is preserved so ExoPlayer/VLC stream directly at full speed
+        if (config.enableStreamProxy === true && config.addonHost && stremioStream.url && stremioStream.url.startsWith('http') && (hasCustomHeaders || hasFallbacks)) {
             const protocol = config.addonProtocol || 'https';
             const params = new URLSearchParams();
             params.set('url', stremioStream.url);

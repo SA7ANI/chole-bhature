@@ -2566,26 +2566,12 @@ function createAddon(config) {
         });
     }
 
-    const resources = [
-        {
-            name: 'stream',
-            types: ['movie', 'series', 'anime', 'tv', 'channel', 'other'],
-            idPrefixes: ['tt', 'tmdb', 'kitsu', 'iptv']
-        }
-    ];
+    const resources = ['stream'];
     if (enabledCatalogs.length > 0) {
-        resources.push({
-            name: 'catalog',
-            types: ['movie', 'series', 'anime'],
-            idPrefixes: ['cb_']
-        });
+        resources.push('catalog');
     }
     if (config.enableIptv) {
-        resources.push({
-            name: 'meta',
-            types: ['channel'],
-            idPrefixes: ['iptv:']
-        });
+        resources.push('meta');
     }
 
     const isConfigured = Boolean(
@@ -2633,6 +2619,7 @@ function createAddon(config) {
         catalogs: enabledCatalogs,
         resources: resources,
         types: ['movie', 'series', 'anime', 'tv', 'channel', 'other'],
+        idPrefixes: ['tt', 'tmdb:', 'kitsu:', 'iptv:'],
         behaviorHints: behaviorHints
     });
 
@@ -2680,7 +2667,11 @@ function createAddon(config) {
                 name: '🔄 FORCE REFRESH',
                 title: '⚡ Click to clear cache & fetch fresh streams on reload!',
                 description: 'Clear cache and fetch real-time fresh streams from all providers.',
-                externalUrl: targetUrl
+                url: targetUrl,
+                externalUrl: targetUrl,
+                behaviorHints: {
+                    notWebReady: true
+                }
             };
         };
 
