@@ -446,7 +446,7 @@ app.get(['/', '/configure', '/index.html'], async (req, res) => {
         const defaultAddon = createAddon(activeConfig);
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
         res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
-        return res.json(defaultAddon.getInterface().manifest);
+        return res.json(defaultAddon.manifest);
     }
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -466,7 +466,7 @@ app.get(['/c/:configId', '/c/:configId/configure', '/configure/:configId'], asyn
         const configuredAddon = createAddon(config);
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
         res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
-        return res.json(configuredAddon.getInterface().manifest);
+        return res.json(configuredAddon.manifest);
     }
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
