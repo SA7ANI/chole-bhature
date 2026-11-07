@@ -2919,21 +2919,8 @@ function createAddon(config) {
 
             const scrapeTimeoutPromise = new Promise(resolve => setTimeout(resolve, SCRAPE_DEADLINE_MS));
             
-            // Fast early exit: return snappy response to Android TV once sufficient streams arrive
-            const earlyCheckPromise = new Promise(resolve => {
-                const interval = setInterval(() => {
-                    if ((allStreams.length >= 25 && (Date.now() - scrapeStartTime) >= 2500) ||
-                        (allStreams.length >= 18 && (Date.now() - scrapeStartTime) >= 4000)) {
-                        clearInterval(interval);
-                        resolve();
-                    }
-                }, 150);
-                setTimeout(() => clearInterval(interval), SCRAPE_DEADLINE_MS);
-            });
-
             await Promise.race([
                 Promise.all([tgScrapePromise, ...results]),
-                earlyCheckPromise,
                 scrapeTimeoutPromise
             ]);
             const scrapeDurationMs = Date.now() - scrapeStartTime;
@@ -2944,8 +2931,12 @@ function createAddon(config) {
             const currentYear = new Date().getFullYear();
             const isUnreleased = Boolean(type === 'movie' && targetYear && targetYear > currentYear);
 
+            const maxTestingDuration = isVercel
+                ? Math.min(3500, Math.max(1500, 9500 - scrapeDurationMs))
+                : Math.min(5000, Math.max(2500, 15000 - scrapeDurationMs));
+
             const sortedAndTaggedStreams = await sortAndTagStreams(allStreams, {
-                maxTestDuration: Math.min(1000, Math.max(500, 7200 - scrapeDurationMs)), // Fast speed testing: max 1.0s probe duration
+                maxTestDuration: maxTestingDuration,
                 target: {
                     title: mediaMeta?.title || '',
                     originalTitle: mediaMeta?.originalTitle || '',

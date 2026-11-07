@@ -891,15 +891,22 @@ class ProviderLoader {
                 if (!mUrl) continue;
                 try {
                     const providers = await this.loadProviders(mUrl);
+                    // Check exact match first
                     targetProvider = providers.find(p => {
                         const pName = (p.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
                         const pId = (p.id || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-                        if (pName === cleanInput || pId === cleanInput) return true;
-                        if (cleanInput === 'topcartoon' && pName === 'topcartoons') return true;
-                        if (cleanInput === 'puretones' && pName === 'puretoons') return true;
-                        if (cleanInput.length >= 5 && (pName.startsWith(cleanInput) || cleanInput.startsWith(pName))) return true;
-                        return false;
+                        return pName === cleanInput || pId === cleanInput;
                     });
+                    if (!targetProvider) {
+                        targetProvider = providers.find(p => {
+                            const pName = (p.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                            const pId = (p.id || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                            if (cleanInput === 'topcartoon' && pName === 'topcartoons') return true;
+                            if (cleanInput === 'puretones' && pName === 'puretoons') return true;
+                            if (cleanInput.length >= 5 && (pName.startsWith(cleanInput) || cleanInput.startsWith(pName))) return true;
+                            return false;
+                        });
+                    }
                     if (targetProvider) break;
                 } catch (e) {}
             }

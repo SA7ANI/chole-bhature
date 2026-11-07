@@ -346,6 +346,8 @@ function deduplicateAndMergeStreams(streams, enabled = true) {
         if (!fingerprint) {
             const copy = { 
                 ...stream, 
+                provider: stream.provider || pName || 'Stream',
+                originalProvider: stream.originalProvider || pName || 'Stream',
                 providers: pName ? [pName] : ['Stream'],
                 mirrors: stream.url ? [{ url: stream.url, provider: pName, headers: stream.headers }] : [],
                 mirrorCount: 1
@@ -363,6 +365,12 @@ function deduplicateAndMergeStreams(streams, enabled = true) {
             }
             if (pName && !existing.providers.includes(pName)) {
                 existing.providers.push(pName);
+            }
+            if (!existing.provider) {
+                existing.provider = existing.providers[0];
+            }
+            if (!existing.originalProvider) {
+                existing.originalProvider = existing.providers[0];
             }
 
             // Maintain stacked mirror list for Smart Mirror Stacking & Failover
@@ -401,6 +409,8 @@ function deduplicateAndMergeStreams(streams, enabled = true) {
         } else {
             const copy = { 
                 ...stream, 
+                provider: stream.provider || pName || 'Stream',
+                originalProvider: stream.originalProvider || pName || 'Stream',
                 providers: pName ? [pName] : ['Stream'],
                 mirrors: stream.url ? [{ url: stream.url, provider: pName, headers: stream.headers }] : [],
                 mirrorCount: 1
@@ -648,8 +658,8 @@ async function testStream(stream, showSeeders = true, config = {}) {
         };
     }
 
-    // Handle external links or YouTube links
-    if (stream.externalUrl || stream.ytId) {
+    // Handle YouTube links or external links without playable stream.url
+    if (stream.ytId || (!stream.url && stream.externalUrl)) {
         if (!stream.url && stream.externalUrl) {
             stream.url = stream.externalUrl;
         }
@@ -658,11 +668,13 @@ async function testStream(stream, showSeeders = true, config = {}) {
             ...stream,
             url: stream.url,
             name: labels.name,
-            title: labels.title, description: labels.description,
+            title: labels.title,
+            description: labels.description,
             latency: 100,
             isDead: false,
             statusCategory: 'fast',
             originalProvider: providerName,
+            provider: stream.provider || providerName.toLowerCase().replace(/[^a-z0-9]/g, ''),
             _rawStream: rawSnapshot,
             _preparsedMeta: initialMeta
         };
@@ -1259,7 +1271,7 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
             return !rawDisabled.some(d => {
                 if (!d) return false;
                 const cleanD = d.replace(/[^a-z0-9]/g, '');
-                return textToCheck.includes(d) || (cleanD && (cleanText.includes(cleanD) || cleanD.includes(cleanText)));
+                return textToCheck.includes(d) || (cleanD && cleanText.includes(cleanD));
             });
         });
     }
@@ -1496,35 +1508,18 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
                 }
             }
 
-            // 3. Resolution Tier grouping:
-            // 4K & 1080p FHD = tier 3, 720p HD = tier 2, 480p/SD = tier 1
-            // Guarantees high quality streams are at the top and never overtaken by 480p streams
-            const getSpeedResTier = (s) => {
-                const r = getResolutionTier(s);
-                if (r >= 3) return 3; // 4K & 1080p
-                if (r === 2) return 2; // 720p
-                return 1;              // 480p / SD / Unknown
-            };
-
-            const sTierA = getSpeedResTier(a);
-            const sTierB = getSpeedResTier(b);
-            if (sTierA !== sTierB) {
-                return sTierB - sTierA;
-            }
-
-            // 4. Exact latency (lowest ms first) — STRICT PRIMARY sort within each resolution tier!
+            // 3. Exact latency (lowest ms first) — STRICT PRIMARY sort in speed mode
             if (latA !== latB) {
                 return latA - latB;
             }
 
-            // 5. Higher resolution (e.g. 4K vs 1080p if both have exact same latency)
+            // 4. Higher resolution & quality as tie-breaker
             const resA = getResolutionTier(a);
             const resB = getResolutionTier(b);
             if (resA !== resB) {
                 return resB - resA;
             }
 
-            // 6. Quality score as tie-breaker
             const scoreA = getQualityScore(a);
             const scoreB = getQualityScore(b);
             if (scoreA !== scoreB) {
@@ -1653,33 +1648,41 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
             }
         };
 
-        // Clean strictly compliant Stremio/Nuvio stream object
-        const cleanStream = {
-            name: stremioStream.name || 'Chole Bhature',
-            title: stremioStream.title || ''
-        };
-
-        if (stremioStream.url) {
-            cleanStream.url = stremioStream.url;
-        } else if (stremioStream.infoHash) {
-            cleanStream.infoHash = stremioStream.infoHash;
-            if (stremioStream.fileIdx !== undefined) {
-                cleanStream.fileIdx = stremioStream.fileIdx;
-            }
-        }
-
-        cleanStream.behaviorHints = {
+        stremioStream.behaviorHints = {
+            ...(stremioStream.behaviorHints || {}),
             filename: synthFilename,
             bingeGroup: `cholebhature|${meta.resolution || '1080p'}|${meta.quality || 'WEB-DL'}`
         };
 
         if (hasCustomHeaders) {
-            cleanStream.behaviorHints.proxyHeaders = {
+            stremioStream.behaviorHints.proxyHeaders = {
+                ...(stremioStream.behaviorHints?.proxyHeaders || {}),
                 request: customHeaders
             };
         }
 
-        return cleanStream;
+        if (!stremioStream.quality && meta.resolution) {
+            stremioStream.quality = meta.resolution;
+        }
+        if (!stremioStream.size && (meta.size || meta.sizeBytes)) {
+            stremioStream.size = meta.size || meta.sizeBytes;
+        }
+        if (!stremioStream.provider) {
+            stremioStream.provider = (Array.isArray(stremioStream.providers) && stremioStream.providers.length > 0)
+                ? stremioStream.providers[0]
+                : (stremioStream.originalProvider || cleanProviderName(stremioStream.name || 'Stream'));
+        }
+
+        // Clean up internal temporary engine properties so they never leak into the response
+        delete stremioStream._rawStream;
+        delete stremioStream._preparsedMeta;
+        delete stremioStream._rawFilename;
+        delete stremioStream._testedResult;
+        if (stremioStream.url) {
+            delete stremioStream.externalUrl;
+        }
+
+        return stremioStream;
     });
 }
 
