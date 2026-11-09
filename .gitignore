@@ -20,4 +20,7 @@ apply*.js
 animedekho_app.js
 hide_translate_dropdown.js
 make_patch.js
+chole-pc-tester/
+*CholeDiagnostic*
+*.exe
 
