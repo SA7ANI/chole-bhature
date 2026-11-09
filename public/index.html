@@ -20,7 +20,7 @@
     <link rel="apple-touch-icon" sizes="182x182" href="/icon-192.png?v=4">
     <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png?v=4">
     <link rel="apple-touch-icon" sizes="512x512" href="/icon-512.png?v=4">
-    <title>Chole Bhature • Nuvio & Stremio Meta-Sorter v4.4.0</title>
+    <title>Chole Bhature • Nuvio & Stremio Meta-Sorter v4.5.4</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -3184,6 +3184,163 @@
         body { top: 0 !important; margin-top: 0 !important; position: static !important; }
         html { top: 0 !important; margin-top: 0 !important; position: static !important; }
 
+        /* ===== STREAM CARD PRESENTATION STUDIO (REDESIGNED) ===== */
+        .studio-pulse-dot {
+            display: inline-block;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 10px #10b981;
+            animation: studioPulse 1.8s infinite cubic-bezier(0.4, 0, 0.6, 1);
+            margin-right: 4px;
+        }
+
+        @keyframes studioPulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.4;
+                transform: scale(1.35);
+            }
+        }
+
+        .studio-preset-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 4px 2px 10px 2px;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .studio-preset-bar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .studio-preset-chip {
+            background: rgba(var(--overlay-base), 0.05);
+            border: 1px solid rgba(var(--overlay-base), 0.12);
+            color: var(--text-secondary);
+            border-radius: var(--radius-pill);
+            padding: 5px 12px;
+            font-size: 11.5px;
+            font-weight: 600;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .studio-preset-chip:hover {
+            background: rgba(139, 92, 246, 0.15);
+            border-color: rgba(139, 92, 246, 0.4);
+            color: #ffffff;
+            transform: translateY(-1px);
+        }
+
+        .studio-preset-chip.active {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.28) 0%, rgba(56, 189, 248, 0.22) 100%);
+            border-color: rgba(139, 92, 246, 0.6);
+            color: #ffffff;
+            box-shadow: 0 4px 16px rgba(139, 92, 246, 0.25);
+        }
+
+        .studio-preview-card-wrap {
+            position: relative;
+            background: radial-gradient(circle at 90% 10%, rgba(139, 92, 246, 0.12) 0%, transparent 60%),
+                        radial-gradient(circle at 10% 90%, rgba(56, 189, 248, 0.08) 0%, transparent 50%),
+                        var(--bg-input);
+            border: 1px solid rgba(139, 92, 246, 0.35);
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.6), 0 0 24px rgba(139, 92, 246, 0.12);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .studio-preview-card-wrap:hover {
+            border-color: rgba(139, 92, 246, 0.55);
+            box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.7), 0 0 32px rgba(139, 92, 246, 0.2);
+        }
+
+        .studio-stream-item {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 12.5px;
+            line-height: 1.45;
+        }
+
+        .studio-header-strip {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            flex-wrap: wrap;
+            border-bottom: 1px solid rgba(var(--overlay-base), 0.08);
+            padding-bottom: 8px;
+        }
+
+        .studio-raw-box {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(var(--overlay-base), 0.08);
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 11px;
+            line-height: 1.4;
+            color: var(--text-muted);
+            word-break: break-all;
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+        }
+
+        .studio-raw-icon {
+            flex-shrink: 0;
+            opacity: 0.8;
+            margin-top: 1px;
+        }
+
+        .studio-action-pill {
+            background: rgba(var(--overlay-base), 0.06);
+            border: 1px solid rgba(var(--overlay-base), 0.12);
+            color: var(--text-secondary);
+            border-radius: var(--radius-pill);
+            padding: 4px 10px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.2s ease;
+        }
+
+        .studio-action-pill:hover {
+            background: rgba(139, 92, 246, 0.2);
+            border-color: rgba(139, 92, 246, 0.4);
+            color: #ffffff;
+            transform: translateY(-1px);
+        }
+
+        .studio-meta-chip {
+            background: rgba(var(--overlay-base), 0.04);
+            padding: 3px 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(var(--overlay-base), 0.08);
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-muted);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
     </style>
 </head>
 
@@ -3201,7 +3358,7 @@
             <img src="/icon-192.png?v=4" alt="Chole Bhature Logo" class="nav-brand-logo"
                 onerror="this.onerror=null; this.src='/icon-192.png';">
             <span class="nav-brand-name">Chole Bhature</span>
-            <span class="nav-brand-version">v4.4.0</span>
+            <span class="nav-brand-version">v4.5.4</span>
         </a>
         <!-- Sync ID Badge (shown after install/save) -->
         <span id="sync-badge" onclick="copySyncId()" title=""
@@ -3818,6 +3975,27 @@
                         </div>
                     </div>
 
+                    <!-- Block Uncached P2P Torrents -->
+                    <div class="setting-item-row" id="section-p2p">
+                        <div class="setting-text-block">
+                            <div class="setting-headline">
+                                Block Uncached P2P Torrents
+                                <span class="tag-pill-badge"
+                                    style="background: rgba(234, 88, 12, 0.12); border-color: rgba(234, 88, 12, 0.35); color: #fb923c;">🧲 Direct Only</span>
+                            </div>
+                            <div class="setting-description">Hide raw peer-to-peer torrent magnet links. Only high-speed direct HTTP streams and cached Debrid streams will be shown.</div>
+                        </div>
+                        <div class="dual-filter-group">
+                            <label class="filter-capsule">
+                                <span class="filter-capsule-text">🧲 Block P2P</span>
+                                <div class="switch-toggle">
+                                    <input type="checkbox" id="hideP2P" onchange="onSettingChanged()">
+                                    <span class="switch-slider"></span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
                     <!-- Provider Auto-Quarantine -->
                     <div class="setting-item-row" id="section-quarantine">
                         <div class="setting-text-block">
@@ -3857,7 +4035,7 @@
                             <label class="filter-capsule">
                                 <span class="filter-capsule-text">🧲 Seeder Badges</span>
                                 <div class="switch-toggle">
-                                    <input type="checkbox" id="showSeeders" checked onchange="onSettingChanged()">
+                                    <input type="checkbox" id="showSeeders" checked onchange="onSettingChanged(); if (typeof updateCardPreview === 'function') updateCardPreview();">
                                     <span class="switch-slider"></span>
                                 </div>
                             </label>
@@ -4102,18 +4280,19 @@
                 <div class="section-label-bar">
                     <span class="section-label">🎨 Stream Card Presentation Studio</span>
                     <span class="tag-pill-badge"
-                        style="background: rgba(139, 92, 246, 0.15); border-color: rgba(139, 92, 246, 0.35); color: var(--text-purple);">✨
-                        AI Scene Parser</span>
+                        style="background: rgba(139, 92, 246, 0.15); border-color: rgba(139, 92, 246, 0.35); color: var(--text-purple);">
+                        <span class="studio-pulse-dot"></span>✨ AI Scene Parser
+                    </span>
                 </div>
                 <div class="section-card">
                     <!-- Master Ultra-Clean Formatted Cards Toggle -->
                     <div class="setting-item-row" id="section-clean-cards-master"
-                        style="padding-bottom: 4px; border-bottom: none;">
+                        style="padding-bottom: 6px; border-bottom: none;">
                         <div class="setting-text-block">
                             <div class="setting-headline">
                                 ✨ Ultra-Clean Formatted Cards
                                 <span class="tag-pill-badge"
-                                    style="background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.35); color: var(--text-success);">🎯
+                                    style="background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.35); color: var(--text-success);">🟣
                                     Stremio / Nuvio</span>
                             </div>
                             <div class="setting-description">Converts messy raw scene filenames into high-contrast,
@@ -4132,7 +4311,7 @@
                         </div>
                     </div>
 
-                    <!-- Sub-Preferences: File Size & Release Group (Auto-Hidden when Clean Cards is Disabled) -->
+                    <!-- Sub-Preferences: File Size & Release Group (Auto-Dimmed when Clean Cards is Disabled) -->
                     <div id="clean-cards-sub-options" style="display: block; transition: all 0.25s ease;">
                         <div class="setting-item-row"
                             style="border-top: 1px solid rgba(var(--overlay-base), 0.08); border-bottom: 1px solid rgba(var(--overlay-base), 0.08); padding-top: 16px; padding-bottom: 16px; margin-top: 12px;">
@@ -4171,19 +4350,36 @@
                         </div>
                     </div>
 
-                    <!-- Interactive Real-Time Live Preview Widget (Always Visible) -->
-                    <div style="margin-top: 14px;">
+                    <!-- Interactive Real-Time Live Preview Widget -->
+                    <div style="margin-top: 16px;">
                         <div
-                            style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                            <span
-                                style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Live
-                                Card Preview</span>
-                            <span
-                                style="font-size: 11px; color: #a78bfa; background: rgba(139, 92, 246, 0.12); padding: 2px 8px; border-radius: 9999px; border: 1px solid rgba(139, 92, 246, 0.25);">Real-Time
-                                Render</span>
+                            style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span
+                                    style="font-size: 12px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px;">LIVE
+                                    CARD PREVIEW</span>
+                                <span class="tag-pill-badge"
+                                    style="font-size: 10.5px; color: #38bdf8; background: rgba(56, 189, 248, 0.12); border-color: rgba(56, 189, 248, 0.28);">
+                                    <span class="studio-pulse-dot" style="background: #38bdf8; box-shadow: 0 0 8px #38bdf8;"></span>Live Preview
+                                </span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <button type="button" class="studio-action-pill" onclick="cycleStudioPreset();" title="Cycle through sample presets">
+                                    <span>🔄 Shuffle Sample</span>
+                                </button>
+                                <button type="button" class="studio-action-pill" onclick="copyCardPreviewText();" title="Copy card preview text to clipboard">
+                                    <span>📋 Copy Card</span>
+                                </button>
+                                <span
+                                    style="font-size: 11px; font-weight: 700; color: #a78bfa; background: rgba(139, 92, 246, 0.12); padding: 3px 10px; border-radius: 9999px; border: 1px solid rgba(139, 92, 246, 0.25);">Real-Time
+                                    Render</span>
+                            </div>
                         </div>
-                        <div id="live-card-preview"
-                            style="background: var(--bg-input); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 8px;">
+
+                        <!-- Sample Preset Selector Chips -->
+                        <div class="studio-preset-bar" id="studio-presets-container"></div>
+
+                        <div id="live-card-preview" class="studio-preview-card-wrap">
                             <!-- Dynamically generated by JS -->
                         </div>
                     </div>
@@ -5386,14 +5582,20 @@
                         border-color: rgba(139, 92, 246, 0.6);
                         box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.18);
                     }
-                    .bench-presets-row {
-                        display: flex;
-                        gap: 8px;
-                        flex-wrap: wrap;
-                        align-items: center;
+                    .bench-presets-container {
                         padding-top: 14px;
-                        border-top: 1px solid rgba(255, 255, 255, 0.05);
+                        border-top: 1px solid rgba(255, 255, 255, 0.06);
                         margin-bottom: 18px;
+                        display: flex;
+                        flex-direction: column;
+                        gap: 10px;
+                    }
+                    .bench-presets-header {
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                        flex-wrap: wrap;
+                        gap: 8px;
                     }
                     .bench-preset-label {
                         font-size: 11px;
@@ -5405,36 +5607,111 @@
                         gap: 5px;
                         user-select: none;
                     }
+                    .bench-cat-tabs {
+                        display: flex;
+                        gap: 4px;
+                        flex-wrap: wrap;
+                        align-items: center;
+                    }
+                    .bench-cat-tab {
+                        cursor: pointer;
+                        background: rgba(255, 255, 255, 0.04);
+                        border: 1px solid rgba(255, 255, 255, 0.08);
+                        border-radius: 8px;
+                        padding: 3px 9px;
+                        font-size: 11px;
+                        font-weight: 700;
+                        color: var(--text-muted);
+                        transition: all 0.18s ease;
+                        user-select: none;
+                    }
+                    .bench-cat-tab:hover {
+                        color: #ffffff;
+                        background: rgba(255, 255, 255, 0.08);
+                        border-color: rgba(255, 255, 255, 0.16);
+                    }
+                    .bench-cat-tab.active {
+                        background: rgba(139, 92, 246, 0.22);
+                        color: #c084fc;
+                        border-color: rgba(139, 92, 246, 0.45);
+                    }
+                    .bench-chips-wrapper {
+                        display: flex;
+                        gap: 7px;
+                        flex-wrap: wrap;
+                        align-items: center;
+                    }
                     .bench-preset-chip {
                         cursor: pointer;
-                        background: rgba(0, 0, 0, 0.3);
+                        background: rgba(0, 0, 0, 0.35);
                         color: var(--text-secondary);
                         border: 1px solid rgba(255, 255, 255, 0.08);
                         border-radius: 10px;
-                        padding: 6px 14px;
-                        font-size: 12px;
+                        padding: 6px 12px;
+                        font-size: 11.5px;
                         font-weight: 700;
                         transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
                         user-select: none;
                         outline: none;
                         display: inline-flex;
                         align-items: center;
-                        gap: 5px;
+                        gap: 6px;
+                    }
+                    .bench-preset-chip .preset-type-badge {
+                        font-size: 9px;
+                        font-weight: 800;
+                        padding: 1px 5px;
+                        border-radius: 5px;
+                        background: rgba(255, 255, 255, 0.06);
+                        color: var(--text-muted);
+                        letter-spacing: 0.3px;
+                    }
+                    .bench-preset-chip.active .preset-type-badge {
+                        background: rgba(139, 92, 246, 0.35);
+                        color: #f3e8ff;
                     }
                     .bench-preset-chip:hover:not(.active) {
                         color: #ffffff;
-                        background: rgba(255, 255, 255, 0.06);
+                        background: rgba(255, 255, 255, 0.07);
                         border-color: rgba(255, 255, 255, 0.18);
                         transform: translateY(-1px);
                     }
                     .bench-preset-chip.active {
-                        background: rgba(139, 92, 246, 0.2);
+                        background: rgba(139, 92, 246, 0.22);
                         color: #c084fc;
-                        border-color: rgba(139, 92, 246, 0.45);
+                        border-color: rgba(139, 92, 246, 0.5);
                         box-shadow: 0 0 12px rgba(139, 92, 246, 0.25);
                     }
                     .bench-preset-chip:active {
                         transform: scale(0.96);
+                    }
+                    .bench-recommendation-bar {
+                        display: none;
+                        align-items: center;
+                        justify-content: space-between;
+                        flex-wrap: wrap;
+                        gap: 8px;
+                        font-size: 11.5px;
+                        padding: 8px 12px;
+                        background: rgba(139, 92, 246, 0.08);
+                        border: 1px solid rgba(139, 92, 246, 0.2);
+                        border-radius: 10px;
+                        color: var(--text-secondary);
+                    }
+                    .bench-rec-scraper-btn {
+                        background: rgba(139, 92, 246, 0.25);
+                        border: 1px solid rgba(139, 92, 246, 0.4);
+                        color: #fff;
+                        padding: 3px 10px;
+                        border-radius: 6px;
+                        font-size: 11px;
+                        font-weight: 700;
+                        cursor: pointer;
+                        transition: all 0.15s ease;
+                    }
+                    .bench-rec-scraper-btn:hover {
+                        background: rgba(139, 92, 246, 0.45);
+                        transform: scale(1.03);
                     }
                     .bench-run-wrapper {
                         display: flex;
@@ -7498,14 +7775,103 @@
                             </div>
                         </div>
 
-                        <!-- Quick Presets Row (Matches Site Filter Aesthetics) -->
-                        <div class="bench-presets-row">
-                            <span class="bench-preset-label"><span style="color: #fbbf24;">⚡</span> QUICK PRESETS:</span>
-                            <button type="button" class="bench-preset-chip active" onclick="setBenchPreset('550', 'movie', 'Fight Club', this)">🥊 Fight Club (550)</button>
-                            <button type="button" class="bench-preset-chip" onclick="setBenchPreset('872585', 'movie', 'Oppenheimer', this)">💣 Oppenheimer (872585)</button>
-                            <button type="button" class="bench-preset-chip" onclick="setBenchPreset('66732', 'tv', 'Stranger Things', this)">👾 Stranger Things (66732)</button>
-                            <button type="button" class="bench-preset-chip" onclick="setBenchPreset('872906', 'movie', 'Jawan', this)">🔥 Jawan (872906)</button>
-                            <button type="button" class="bench-preset-chip" onclick="setBenchPreset('1429', 'tv', 'Attack on Titan', this)">🌸 Attack on Titan (1429)</button>
+                        <!-- Quick Presets Categorized Container -->
+                        <div class="bench-presets-container">
+                            <div class="bench-presets-header">
+                                <span class="bench-preset-label">
+                                    <span style="color: #fbbf24;">⚡</span> QUICK PRESETS:
+                                </span>
+                                <div class="bench-cat-tabs">
+                                    <button type="button" class="bench-cat-tab active" onclick="filterBenchCategory('all', this)">⚡ All</button>
+                                    <button type="button" class="bench-cat-tab" onclick="filterBenchCategory('movie', this)">🎬 Movies</button>
+                                    <button type="button" class="bench-cat-tab" onclick="filterBenchCategory('tv', this)">📺 TV Series</button>
+                                    <button type="button" class="bench-cat-tab" onclick="filterBenchCategory('indian', this)">🇮🇳 Indian</button>
+                                    <button type="button" class="bench-cat-tab" onclick="filterBenchCategory('anime', this)">🌸 Anime</button>
+                                    <button type="button" class="bench-cat-tab" onclick="filterBenchCategory('cartoon', this)">🧀 Cartoons</button>
+                                    <button type="button" class="bench-cat-tab" onclick="filterBenchCategory('kdrama', this)">🥢 K-Drama</button>
+                                </div>
+                            </div>
+
+                            <!-- Preset Chips -->
+                            <div class="bench-chips-wrapper" id="bench-chips-wrapper">
+                                <!-- Movies -->
+                                <button type="button" class="bench-preset-chip active" data-category="movie" onclick="setBenchPreset('550', 'movie', 'Fight Club', this, 1, 1, ['moviebox', 'vidrock', 'redflix', 'moviesmod', 'netmirror', 'dahmermovies'])">
+                                    <span>🥊</span> Fight Club <span class="preset-type-badge">Movie • 550</span>
+                                </button>
+                                <button type="button" class="bench-preset-chip" data-category="movie" onclick="setBenchPreset('872585', 'movie', 'Oppenheimer', this, 1, 1, ['multimovies', 'moviebox', 'moviesmod', 'vegamovies', 'netmirror'])">
+                                    <span>💣</span> Oppenheimer <span class="preset-type-badge">Movie • 872585</span>
+                                </button>
+                                <button type="button" class="bench-preset-chip" data-category="movie" onclick="setBenchPreset('155', 'movie', 'The Dark Knight', this, 1, 1, ['4khdhub', 'movix', 'playimdb', 'moviebox'])">
+                                    <span>🦇</span> The Dark Knight <span class="preset-type-badge">Movie • 155</span>
+                                </button>
+                                <button type="button" class="bench-preset-chip" data-category="movie" onclick="setBenchPreset('157336', 'movie', 'Interstellar', this, 1, 1, ['moviebox', 'moviesmod', 'vegamovies', 'netmirror'])">
+                                    <span>🌌</span> Interstellar <span class="preset-type-badge">Movie • 157336</span>
+                                </button>
+
+                                <!-- TV Series -->
+                                <button type="button" class="bench-preset-chip" data-category="tv" onclick="setBenchPreset('66732', 'tv', 'Stranger Things', this, 1, 1, ['castle', 'moviebox', 'netmirror', 'torrentio'])">
+                                    <span>👾</span> Stranger Things <span class="preset-type-badge">TV S1E1 • 66732</span>
+                                </button>
+                                <button type="button" class="bench-preset-chip" data-category="tv" onclick="setBenchPreset('1396', 'tv', 'Breaking Bad', this, 1, 1, ['castle', 'moviebox', '4khdhub'])">
+                                    <span>🧪</span> Breaking Bad <span class="preset-type-badge">TV S1E1 • 1396</span>
+                                </button>
+                                <button type="button" class="bench-preset-chip" data-category="tv" onclick="setBenchPreset('76479', 'tv', 'The Boys', this, 1, 1, ['castle', 'netmirror', 'moviebox'])">
+                                    <span>⚡</span> The Boys <span class="preset-type-badge">TV S1E1 • 76479</span>
+                                </button>
+
+                                <!-- Indian -->
+                                <button type="button" class="bench-preset-chip" data-category="indian" onclick="setBenchPreset('872906', 'movie', 'Jawan', this, 1, 1, ['einthusan', 'hdhub4u', 'moviesdrive', 'vegamovies', 'desiflix'])">
+                                    <span>🔥</span> Jawan <span class="preset-type-badge">Movie • 872906</span>
+                                </button>
+                                <button type="button" class="bench-preset-chip" data-category="indian" onclick="setBenchPreset('1022789', 'movie', 'Stree 2', this, 1, 1, ['hdhub4u', 'vegamovies', 'moviesdrive', 'multimovies'])">
+                                    <span>👻</span> Stree 2 <span class="preset-type-badge">Movie • 1022789</span>
+                                </button>
+                                <button type="button" class="bench-preset-chip" data-category="indian" onclick="setBenchPreset('579974', 'movie', 'RRR', this, 1, 1, ['einthusan', 'multimovies', 'desiflix'])">
+                                    <span>🐅</span> RRR <span class="preset-type-badge">Movie • 579974</span>
+                                </button>
+                                <button type="button" class="bench-preset-chip" data-category="indian" onclick="setBenchPreset('801688', 'movie', 'Kalki 2898 AD', this, 1, 1, ['hdhub4u', 'moviesdrive', 'vegamovies'])">
+                                    <span>🤖</span> Kalki 2898 AD <span class="preset-type-badge">Movie • 801688</span>
+                                </button>
+
+                                <!-- Anime -->
+                                <button type="button" class="bench-preset-chip" data-category="anime" onclick="setBenchPreset('1429', 'tv', 'Attack on Titan', this, 1, 1, ['animesalt', 'animeworld', 'anizone', 'anikage', 'reanime', 'anizen', 'kurage'])">
+                                    <span>🌸</span> Attack on Titan <span class="preset-type-badge">TV S1E1 • 1429</span>
+                                </button>
+                                <button type="button" class="bench-preset-chip" data-category="anime" onclick="setBenchPreset('85937', 'tv', 'Demon Slayer', this, 1, 1, ['animesalt', 'animeworld', 'anizone', 'anikage', 'reanime'])">
+                                    <span>⚔️</span> Demon Slayer <span class="preset-type-badge">TV S1E1 • 85937</span>
+                                </button>
+                                <button type="button" class="bench-preset-chip" data-category="anime" onclick="setBenchPreset('95479', 'tv', 'Jujutsu Kaisen', this, 1, 1, ['animesalt', 'animeworld', 'anizone', 'reanime'])">
+                                    <span>👁️</span> Jujutsu Kaisen <span class="preset-type-badge">TV S1E1 • 95479</span>
+                                </button>
+                                <button type="button" class="bench-preset-chip" data-category="anime" onclick="setBenchPreset('129', 'movie', 'Spirited Away', this, 1, 1, ['animesalt', 'anizone', 'animeworld'])">
+                                    <span>🏮</span> Spirited Away <span class="preset-type-badge">Movie • 129</span>
+                                </button>
+
+                                <!-- Cartoons -->
+                                <button type="button" class="bench-preset-chip" data-category="cartoon" onclick="setBenchPreset('217288', 'tv', 'Tom & Jerry', this, 1, 1, ['topcartoons'])">
+                                    <span>🧀</span> Tom & Jerry <span class="preset-type-badge">TV S1E1 • 217288</span>
+                                </button>
+                                <button type="button" class="bench-preset-chip" data-category="cartoon" onclick="setBenchPreset('1338692', 'movie', 'Doraemon: Nobita', this, 1, 1, ['puretoons', 'toonstream'])">
+                                    <span>🐱</span> Doraemon <span class="preset-type-badge">Movie • 1338692</span>
+                                </button>
+                                <button type="button" class="bench-preset-chip" data-category="cartoon" onclick="setBenchPreset('4686', 'tv', 'Ben 10', this, 1, 1, ['topcartoons', 'puretoons', 'toonstream'])">
+                                    <span>⌚</span> Ben 10 <span class="preset-type-badge">TV S1E1 • 4686</span>
+                                </button>
+                                <button type="button" class="bench-preset-chip" data-category="cartoon" onclick="setBenchPreset('38734', 'tv', 'Shinchan', this, 1, 1, ['puretoons', 'toonstream'])">
+                                    <span>🍫</span> Shinchan <span class="preset-type-badge">TV S1E1 • 38734</span>
+                                </button>
+
+                                <!-- K-Drama -->
+                                <button type="button" class="bench-preset-chip" data-category="kdrama" onclick="setBenchPreset('93405', 'tv', 'Squid Game', this, 1, 1, ['moviebox', 'castle', 'netmirror'])">
+                                    <span>🦑</span> Squid Game <span class="preset-type-badge">TV S1E1 • 93405</span>
+                                </button>
+                                <button type="button" class="bench-preset-chip" data-category="kdrama" onclick="setBenchPreset('99966', 'tv', 'All of Us Are Dead', this, 1, 1, ['moviebox', 'castle', 'netmirror'])">
+                                    <span>🧟</span> All of Us Are Dead <span class="preset-type-badge">TV S1E1 • 99966</span>
+                                </button>
+                            </div>
+
+                            <!-- Smart Compatibility Advice -->
+                            <div id="bench-recommendation-bar" class="bench-recommendation-bar"></div>
                         </div>
 
                         <!-- Run Test Button (Centered & Beautifully Proportioned) -->
@@ -7683,7 +8049,7 @@
         <!-- Persistent App Footer -->
         <footer class="app-footer">
             <div class="footer-content">
-                <span>🌶️ <strong>Chole Bhature</strong> v4.4.0</span>
+                <span>🌶️ <strong>Chole Bhature</strong> v4.5.4</span>
                 <span class="footer-dot">•</span>
                 <button type="button" class="footer-tour-btn" onclick="startInteractiveTour(true)"
                     title="Start Interactive Step-by-Step Tour">
@@ -8173,6 +8539,7 @@
             hideDead: false,
             hideSlow: false,
             hideCam: true,
+            hideP2P: false,
             enableQuarantine: true,
             sortBy: "speed",
             prioritizeHindi: false,
@@ -8243,28 +8610,174 @@
             } catch (e) { }
         }
 
+        // ===== STREAM CARD PRESENTATION STUDIO (REDESIGNED) =====
+        const STUDIO_PRESETS = [
+            {
+                id: 'movie-4k',
+                name: '🎬 4K Remux (Oppenheimer)',
+                headerLatency: '🟢 FAST (142ms)',
+                headerProvider: 'Torrentio',
+                headerTags: '4K UHD • DV • Atmos',
+                title: '🎬 Oppenheimer (2023)',
+                codecTags: ['4K UHD', 'REMUX', 'HEVC', '10-bit'],
+                raw: 'Oppenheimer.2023.2160p.UHD.BluRay.x265.10bit.TrueHD.7.1.Atmos.DV.HDR10+.REMUX-FraMeSToR.mkv',
+                hdrBadges: ['Dolby Vision Profile 8', 'HDR10+', 'Dolby Atmos TrueHD 7.1'],
+                audioLangs: ['🇮🇳 Hindi Dub', '🇬🇧 English', '🌐 Multi-Audio'],
+                fileSize: '48.2 GB',
+                seeders: '🟢 145 Seeders',
+                releaseGroup: 'FraMeSToR',
+                provider: 'Torrentio',
+                accentColor: '#38bdf8'
+            },
+            {
+                id: 'tv-show',
+                name: '📺 TV Episode (Stranger Things)',
+                headerLatency: '🟢 FAST (95ms)',
+                headerProvider: 'MediaFusion',
+                headerTags: '1080p FHD • DDP 5.1',
+                title: '📺 Stranger Things (S04E09) The Piggyback',
+                codecTags: ['1080p FHD', 'WEB-DL', 'H.264', '8-bit'],
+                raw: 'Stranger.Things.S04E09.The.Piggyback.1080p.NF.WEB-DL.DDP5.1.Atmos.H.264-FLUX.mkv',
+                hdrBadges: ['HDR10', 'Dolby Digital Plus 5.1 Atmos'],
+                audioLangs: ['🇮🇳 Hindi Dub', '🇬🇧 English [Original]', '🇯🇵 Japanese Dub'],
+                fileSize: '4.6 GB',
+                seeders: '🟢 312 Seeders',
+                releaseGroup: 'FLUX',
+                provider: 'MediaFusion',
+                accentColor: '#c084fc'
+            },
+            {
+                id: 'anime-subdub',
+                name: '🌸 Anime (Demon Slayer)',
+                headerLatency: '⚡ INSTANT (0ms)',
+                headerProvider: 'Torbox',
+                headerTags: '1080p • Dual-Audio • FLAC',
+                title: '🌸 Demon Slayer: Kimetsu no Yaiba (S04E01)',
+                codecTags: ['1080p FHD', 'WEB-DL', 'HEVC', '10-bit'],
+                raw: '[SubsPlease] Kimetsu no Yaiba - Hashira Geiko-hen - 01 (1080p) [x265 10bit] [Dual-Audio Multi-Sub].mkv',
+                hdrBadges: ['10-bit Color', 'FLAC 2.0 Lossless'],
+                audioLangs: ['🇯🇵 Japanese [Original]', '🇮🇳 Hindi Dub', '🇬🇧 English Dub'],
+                fileSize: '1.4 GB',
+                seeders: '⚡ Torbox Debrid Cached',
+                releaseGroup: 'SubsPlease',
+                provider: 'Torbox',
+                accentColor: '#f43f5e'
+            },
+            {
+                id: 'debrid-dune',
+                name: '⚡ RealDebrid (Dune: Part Two)',
+                headerLatency: '⚡ INSTANT (14ms)',
+                headerProvider: 'Comet',
+                headerTags: '4K UHD • DV • Instant Play',
+                title: '🎬 Dune: Part Two (2024)',
+                codecTags: ['4K UHD', 'WEB-DL', 'HEVC', 'Dolby Vision'],
+                raw: 'Dune.Part.Two.2024.2160p.MA.WEB-DL.DDP5.1.Atmos.DV.HDR.H.265-BYNDR.mkv',
+                hdrBadges: ['Dolby Vision Profile 5', 'Dolby Digital Plus 5.1 Atmos'],
+                audioLangs: ['🇬🇧 English [Original]', '🇮🇳 Hindi Dub', '🇪🇸 Spanish'],
+                fileSize: '22.8 GB',
+                seeders: '⚡ RealDebrid Instant Play',
+                releaseGroup: 'BYNDR',
+                provider: 'Comet',
+                accentColor: '#10b981'
+            }
+        ];
+
+        let activeStudioPresetIndex = 0;
+
+        function setStudioPreset(index) {
+            activeStudioPresetIndex = (index + STUDIO_PRESETS.length) % STUDIO_PRESETS.length;
+            renderStudioPresetChips();
+            updateCardPreview();
+            triggerHaptic('light');
+        }
+
+        function cycleStudioPreset() {
+            setStudioPreset(activeStudioPresetIndex + 1);
+            showToast('🎲 Sample: ' + STUDIO_PRESETS[activeStudioPresetIndex].name);
+        }
+
+        function renderStudioPresetChips() {
+            const container = document.getElementById('studio-presets-container');
+            if (!container) return;
+            container.innerHTML = STUDIO_PRESETS.map((p, idx) => `
+                <button type="button" class="studio-preset-chip ${idx === activeStudioPresetIndex ? 'active' : ''}" onclick="setStudioPreset(${idx});">
+                    ${p.name}
+                </button>
+            `).join('');
+        }
+
+        function copyCardPreviewText() {
+            const preset = STUDIO_PRESETS[activeStudioPresetIndex] || STUDIO_PRESETS[0];
+            const isClean = document.getElementById('cleanTitles')?.checked !== false;
+            let textToCopy = '';
+            if (!isClean) {
+                textToCopy = `${preset.headerLatency} • ${preset.headerProvider} | ${preset.codecTags.join(' • ')}\n${preset.raw}`;
+            } else {
+                const showSize = document.getElementById('showFileSize')?.checked !== false;
+                const showGroup = document.getElementById('showReleaseGroup')?.checked !== false;
+                const showSeeds = document.getElementById('showSeeders')?.checked !== false;
+                const showOrig = document.getElementById('includeOriginalTitle')?.checked !== false;
+
+                const meta = [];
+                if (showSize) meta.push(`📦 ${preset.fileSize}`);
+                if (showSeeds) meta.push(preset.seeders);
+                if (showGroup) meta.push(`🏷️ ${preset.releaseGroup}`);
+                meta.push(`🔗 ${preset.provider}`);
+
+                textToCopy = `${preset.headerLatency} • ${preset.headerProvider} • ${preset.headerTags}\n` +
+                             `${preset.title} [${preset.codecTags.join(' • ')}]\n` +
+                             (showOrig ? `📄 ${preset.raw}\n` : '') +
+                             `💎 ${preset.hdrBadges.join(' • ')}\n` +
+                             `🌐 ${preset.audioLangs.join(' • ')}\n` +
+                             meta.join(' • ');
+            }
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    showToast('📋 <b>Stream Card Copied</b> to clipboard!');
+                    triggerHaptic('success');
+                }).catch(() => {
+                    showToast('📋 Copied!');
+                });
+            } else {
+                showToast('📋 Stream card text ready!');
+            }
+        }
+
         // Live Real-Time Stream Card Preview Renderer
         function updateCardPreview() {
             const subOptions = document.getElementById('clean-cards-sub-options');
             const isClean = document.getElementById('cleanTitles')?.checked !== false;
 
             if (subOptions) {
-                subOptions.style.display = isClean ? 'block' : 'none';
+                subOptions.style.opacity = isClean ? '1' : '0.45';
+                subOptions.style.pointerEvents = isClean ? 'auto' : 'none';
             }
+
+            renderStudioPresetChips();
 
             const container = document.getElementById('live-card-preview');
             if (!container) return;
 
+            const preset = STUDIO_PRESETS[activeStudioPresetIndex] || STUDIO_PRESETS[0];
+
             if (!isClean) {
                 container.innerHTML = `
-                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; border-bottom: 1px solid rgba(var(--overlay-base), 0.08); padding-bottom: 6px;">
-                        <div style="font-size: 12px; font-weight: 700; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
-                            <span>🟢 FAST (142ms) • Torrentio | 2160p • BluRay • REMUX</span>
+                    <div style="border-left: 3px solid #f43f5e; padding-left: 12px; display: flex; flex-direction: column; gap: 8px;">
+                        <div class="studio-header-strip">
+                            <div style="font-size: 12px; font-weight: 700; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
+                                <span>${preset.headerLatency} • ${preset.headerProvider} | ${preset.codecTags.join(' • ')}</span>
+                            </div>
+                            <span style="font-size: 10px; font-weight: 700; color: #f43f5e; background: rgba(244, 63, 94, 0.15); padding: 3px 8px; border-radius: 6px; border: 1px solid rgba(244, 63, 94, 0.35);">
+                                ⚠️ Raw Unformatted Scene Name
+                            </span>
                         </div>
-                        <span style="font-size: 10px; font-weight: 700; color: var(--text-muted); background: rgba(var(--overlay-base), 0.08); padding: 2px 6px; border-radius: 6px; border: 1px solid rgba(var(--overlay-base), 0.12);">Raw Scene Name</span>
-                    </div>
-                    <div style="font-size: 12px; color: var(--text-muted); font-family: monospace; line-height: 1.45; word-break: break-all; margin-top: 4px;">
-                        Oppenheimer.2023.2160p.UHD.BluRay.x265.10bit.TrueHD.7.1.Atmos.DV.HDR10+.REMUX-FraMeSToR.mkv
+                        <div class="studio-raw-box" style="margin-top: 4px; color: #fca5a5;">
+                            <span class="studio-raw-icon">📄</span>
+                            <span style="word-break: break-all;">${preset.raw}</span>
+                        </div>
+                        <div style="font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; margin-top: 2px;">
+                            <span>⚠️ Parsing disabled: Stremio will display the raw release torrent string without audio or quality badges.</span>
+                        </div>
                     </div>
                 `;
                 return;
@@ -8275,39 +8788,38 @@
             const showSeeds = document.getElementById('showSeeders')?.checked !== false;
             const showOrig = document.getElementById('includeOriginalTitle')?.checked !== false;
 
-            const line1Tags = ['4K UHD', 'REMUX', 'HEVC', '10-bit'];
-            const line2Badges = ['Dolby Vision Profile 8', 'HDR10+', 'Dolby Atmos TrueHD 7.1'];
-            const line3Langs = ['🇮🇳 Hindi Dub', '🇬🇧 English', '🌐 Multi-Audio'];
-
             const line4Meta = [];
-            if (showSize) line4Meta.push('📦 48.2 GB');
-            if (showSeeds) line4Meta.push('🟢 145 Seeders');
-            if (showGroup) line4Meta.push('🏷️ FraMeSToR');
-            line4Meta.push('🔗 Torrentio');
+            if (showSize) line4Meta.push(`📦 ${preset.fileSize}`);
+            if (showSeeds) line4Meta.push(preset.seeders);
+            if (showGroup) line4Meta.push(`🏷️ ${preset.releaseGroup}`);
+            line4Meta.push(`🔗 ${preset.provider}`);
 
             container.innerHTML = `
-                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; border-bottom: 1px solid rgba(var(--overlay-base), 0.08); padding-bottom: 6px;">
-                    <div style="font-size: 12px; font-weight: 700; color: #4ade80; display: flex; align-items: center; gap: 6px;">
-                        <span>🟢 FAST (142ms) • Torrentio • 4K UHD • DV • Atmos</span>
+                <div style="border-left: 3px solid ${preset.accentColor}; padding-left: 12px; display: flex; flex-direction: column; gap: 8px;">
+                    <div class="studio-header-strip">
+                        <div style="font-size: 12.5px; font-weight: 700; color: #4ade80; display: flex; align-items: center; gap: 6px;">
+                            <span>${preset.headerLatency} • ${preset.headerProvider} • ${preset.headerTags}</span>
+                        </div>
+                        <span style="font-size: 10px; font-weight: 700; color: var(--text-purple); background: rgba(139, 92, 246, 0.2); padding: 3px 8px; border-radius: 6px; border: 1px solid rgba(139, 92, 246, 0.35); letter-spacing: 0.3px;">Stream Header</span>
                     </div>
-                    <span style="font-size: 10px; font-weight: 700; color: var(--text-purple); background: rgba(139, 92, 246, 0.2); padding: 2px 6px; border-radius: 6px; border: 1px solid rgba(139, 92, 246, 0.35);">Stream Header</span>
-                </div>
-                <div style="display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; line-height: 1.45;">
-                    <div style="font-weight: 700; color: var(--text-primary);">
-                        🎬 Oppenheimer (2023) <span style="color: var(--text-muted); font-weight: 600;">[${line1Tags.join(' • ')}]</span>
-                    </div>
-                    ${showOrig ? `
-                    <div style="color: var(--text-muted); font-size: 11px; font-family: monospace; word-break: break-all; opacity: 0.9;">
-                        📄 Oppenheimer.2023.2160p.UHD.BluRay.x265.10bit.TrueHD.7.1.Atmos.DV.HDR10+.REMUX-FraMeSToR.mkv
-                    </div>` : ''}
-                    <div style="color: #38bdf8; font-size: 12px; font-weight: 600;">
-                        💎 ${line2Badges.join(' • ')}
-                    </div>
-                    <div style="color: #c084fc; font-size: 11.5px; font-weight: 500;">
-                        🌐 ${line3Langs.join(' • ')}
-                    </div>
-                    <div style="color: var(--text-muted); font-size: 11px; margin-top: 2px;">
-                        ${line4Meta.join(' • ')}
+                    <div class="studio-stream-item">
+                        <div style="font-weight: 800; font-size: 13.5px; color: var(--text-primary); letter-spacing: -0.2px;">
+                            ${preset.title} <span style="color: var(--text-muted); font-weight: 600; font-size: 12px;">[${preset.codecTags.join(' • ')}]</span>
+                        </div>
+                        ${showOrig ? `
+                        <div class="studio-raw-box" title="Original Scene Release File">
+                            <span class="studio-raw-icon">📄</span>
+                            <span style="word-break: break-all;">${preset.raw}</span>
+                        </div>` : ''}
+                        <div style="color: #38bdf8; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px; text-shadow: 0 0 12px rgba(56, 189, 248, 0.3);">
+                            <span>💎</span> <span>${preset.hdrBadges.join(' • ')}</span>
+                        </div>
+                        <div style="color: #c084fc; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                            <span>🌐</span> <span>${preset.audioLangs.join(' • ')}</span>
+                        </div>
+                        <div style="color: var(--text-muted); font-size: 11.5px; font-weight: 500; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 2px;">
+                            ${line4Meta.map(m => `<span class="studio-meta-chip">${m}</span>`).join('')}
+                        </div>
                     </div>
                 </div>
             `;
@@ -8936,6 +9448,7 @@
             const hideDeadEl = document.getElementById('hideDead');
             const hideSlowEl = document.getElementById('hideSlow');
             const hideCamEl = document.getElementById('hideCam');
+            const hideP2PEl = document.getElementById('hideP2P');
             const showSeedersEl = document.getElementById('showSeeders');
             const deduplicateStreamsEl = document.getElementById('deduplicateStreams');
             const cleanTitlesEl = document.getElementById('cleanTitles');
@@ -8957,6 +9470,7 @@
             if (hideDeadEl) settings.hideDead = hideDeadEl.checked;
             if (hideSlowEl) settings.hideSlow = hideSlowEl.checked;
             if (hideCamEl) settings.hideCam = hideCamEl.checked;
+            if (hideP2PEl) settings.hideP2P = hideP2PEl.checked;
             const enableQuarantineEl = document.getElementById('enableQuarantine');
             if (enableQuarantineEl) settings.enableQuarantine = enableQuarantineEl.checked;
             if (showSeedersEl) settings.showSeeders = showSeedersEl.checked;
@@ -9030,6 +9544,7 @@
                 if (settings.hideDead) activeCount++;
                 if (settings.hideSlow) activeCount++;
                 if (settings.hideCam) activeCount++;
+                if (settings.hideP2P) activeCount++;
                 if (settings.enableQuarantine !== false) activeCount++;
                 if (settings.deduplicateStreams !== false) activeCount++;
                 if (settings.cleanTitles !== false) activeCount++;
@@ -9056,6 +9571,7 @@
                 hideDead: settings.hideDead,
                 hideSlow: settings.hideSlow,
                 hideCam: settings.hideCam,
+                hideP2P: Boolean(settings.hideP2P),
                 enableQuarantine: settings.enableQuarantine !== false,
                 showSeeders: settings.showSeeders !== false,
                 deduplicateStreams: settings.deduplicateStreams !== false,
@@ -9091,6 +9607,7 @@
                 prioritizeHindi: settings.prioritizeHindi,
                 preferredLanguages: settings.preferredLanguages || [],
                 disabled: settings.disabledProviders || [],
+                disabledProviders: settings.disabledProviders || [],
                 scraperOverrides: settings.scraperOverrides || {}
             };
         }
@@ -10360,6 +10877,7 @@
             if (cfg.hideDead !== undefined) settings.hideDead = Boolean(cfg.hideDead);
             if (cfg.hideSlow !== undefined) settings.hideSlow = Boolean(cfg.hideSlow);
             if (cfg.hideCam !== undefined) settings.hideCam = Boolean(cfg.hideCam);
+            if (cfg.hideP2P !== undefined) settings.hideP2P = Boolean(cfg.hideP2P);
             if (cfg.enableQuarantine !== undefined) settings.enableQuarantine = Boolean(cfg.enableQuarantine);
             if (cfg.showSeeders !== undefined) settings.showSeeders = Boolean(cfg.showSeeders);
             if (cfg.deduplicateStreams !== undefined) settings.deduplicateStreams = Boolean(cfg.deduplicateStreams);
@@ -10428,6 +10946,7 @@
             setCheck('hideDead', settings.hideDead);
             setCheck('hideSlow', settings.hideSlow);
             setCheck('hideCam', settings.hideCam !== false);
+            setCheck('hideP2P', Boolean(settings.hideP2P));
             setCheck('enableQuarantine', settings.enableQuarantine !== false);
             setCheck('showSeeders', settings.showSeeders !== false);
             setCheck('deduplicateStreams', settings.deduplicateStreams !== false);
@@ -10758,7 +11277,16 @@
                         p.version = p.version || '1.0.0';
                         p.supportedTypes = p.supportedTypes || ['movie', 'tv'];
                         p.hasSettings = p.hasSettings || false;
-                        allProvidersData.push(p);
+
+                        // Deduplicate: If another repo already added the exact same scraper ID, don't show duplicate card
+                        const key = (p.id || p.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                        const existingIdx = allProvidersData.findIndex(ep => {
+                            const epKey = (ep.id || ep.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                            return epKey === key;
+                        });
+                        if (existingIdx === -1) {
+                            allProvidersData.push(p);
+                        }
                     });
 
                     reposHtml += `
@@ -10807,8 +11335,22 @@
             const providersContainer = document.getElementById('providers-list');
             const providerCountBadge = document.getElementById('provider-count-badge');
 
+            const isProviderDisabled = (p) => {
+                if (!settings.disabledProviders || !Array.isArray(settings.disabledProviders)) return false;
+                const nameLow = (p.name || '').toLowerCase().trim();
+                const idLow = (p.id || '').toLowerCase().trim();
+                const cleanName = nameLow.replace(/[^a-z0-9]/g, '');
+                const cleanId = idLow.replace(/[^a-z0-9]/g, '');
+                return settings.disabledProviders.some(d => {
+                    const dl = String(d || '').toLowerCase().trim();
+                    const cleanD = dl.replace(/[^a-z0-9]/g, '');
+                    return dl === nameLow || (idLow && dl === idLow) ||
+                        (cleanD && (cleanD === cleanName || cleanD === cleanId || cleanName.includes(cleanD) || cleanId.includes(cleanD) || cleanD.includes(cleanName) || cleanD.includes(cleanId)));
+                });
+            };
+
             if (providerCountBadge) {
-                const activeCount = allProvidersData.filter(p => !settings.disabledProviders?.includes(p.name)).length;
+                const activeCount = allProvidersData.filter(p => !isProviderDisabled(p)).length;
                 providerCountBadge.innerText = `${activeCount} / ${allProvidersData.length} Active`;
             }
 
@@ -10823,19 +11365,20 @@
             allProvidersData.forEach((p) => {
                 const iconHtml = p.logo ? `<img src="${p.logo}" alt="logo" onerror="this.outerHTML='🧩'">` : '🧩';
                 const typesStr = p.supportedTypes.map(t => t === 'movie' ? '🎬 Movie' : t === 'tv' ? '📺 TV' : t).join(' • ');
-                const isDisabled = settings.disabledProviders && settings.disabledProviders.includes(p.name);
+                const isDisabled = isProviderDisabled(p);
                 const override = settings.scraperOverrides[p.name];
                 const hasCustomDomain = Boolean(override && override.domain);
                 const safeName = p.name.replace(/'/g, "\\'");
+                const safeId = (p.id || '').replace(/'/g, "\\'");
 
                 html += `
                     <div class="provider-item-card" style="opacity: ${isDisabled ? '0.45' : '1'};">
                         <div class="provider-switch-pos" style="display: flex; align-items: center; gap: 8px;">
                             <label class="switch-toggle">
-                                <input type="checkbox" onchange="toggleProvider('${safeName}', this.checked)" ${!isDisabled ? 'checked' : ''}>
+                                <input type="checkbox" onchange="toggleProvider('${safeName}', this.checked, '${safeId}')" ${!isDisabled ? 'checked' : ''}>
                                 <span class="switch-slider"></span>
                             </label>
-                            <button class="btn-delete-icon" style="width: 28px; height: 28px; font-size: 11px;" title="Disable Provider" onclick="removeProvider('${safeName}')">✕</button>
+                            <button class="btn-delete-icon" style="width: 28px; height: 28px; font-size: 11px;" title="Disable Provider" onclick="removeProvider('${safeName}', '${safeId}')">✕</button>
                         </div>
                         <div class="provider-header-row">
                             <div class="provider-avatar">${iconHtml}</div>
@@ -11071,16 +11614,44 @@
                         `).join('');
                     }
 
+                    const diag = data.diagnostics || {};
+                    const isZeroStreams = data.streamCount === 0;
+                    const statusColor = isZeroStreams ? (diag.cfBlocked ? '#f87171' : '#fbbf24') : 'var(--text-success)';
+                    const statusBg = isZeroStreams ? (diag.cfBlocked ? 'rgba(239, 68, 68, 0.12)' : 'rgba(245, 158, 11, 0.12)') : 'rgba(16, 185, 129, 0.12)';
+                    const statusBorder = isZeroStreams ? (diag.cfBlocked ? 'rgba(239, 68, 68, 0.3)' : 'rgba(245, 158, 11, 0.3)') : 'rgba(16, 185, 129, 0.3)';
+                    const statusTitle = isZeroStreams 
+                        ? (diag.cfBlocked ? '🔴 Cloudflare Datacenter Block' : (diag.timeoutError ? '🟡 Network Timeout' : '🟡 0 Streams Found'))
+                        : '🟢 Scraper Online';
+
+                    let probesHtml = '';
+                    if (Array.isArray(diag.probes) && diag.probes.length > 0) {
+                        probesHtml = `
+                            <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed rgba(var(--overlay-base), 0.1); font-size: 11px;">
+                                <div style="color: var(--text-muted); font-weight: 600; margin-bottom: 4px;">📡 Probed Network Calls:</div>
+                                ${diag.probes.map(p => `
+                                    <div style="display: flex; align-items: center; justify-content: space-between; font-family: monospace; font-size: 10px; background: rgba(0,0,0,0.25); padding: 3px 6px; border-radius: 4px; margin-bottom: 2px;">
+                                        <span style="color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 75%;">${p.url}</span>
+                                        <span style="color: ${p.status === 200 ? '#34d399' : (p.status === 403 ? '#f87171' : '#f59e0b')}; font-weight: 700;">${p.status || p.error || 'ERR'}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `;
+                    }
+
                     resultBox.innerHTML = `
-                        <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px; padding: 10px;">
+                        <div style="background: ${statusBg}; border: 1px solid ${statusBorder}; border-radius: 10px; padding: 10px;">
                             <div style="display: flex; align-items: center; justify-content: space-between;">
-                                <span style="color: var(--text-success); font-weight: 700;">🟢 Scraper Online</span>
-                                <span style="font-size: 11px; color: #a78bfa; background: rgba(139,92,246,0.15); padding: 2px 8px; border-radius: 9999px;">${data.latencyMs}ms</span>
+                                <span style="color: ${statusColor}; font-weight: 700;">${statusTitle}</span>
+                                <div style="display: flex; gap: 4px; align-items: center;">
+                                    <span style="font-size: 10px; color: var(--text-muted); background: rgba(var(--overlay-base),0.06); padding: 2px 6px; border-radius: 9999px;">${diag.environment || data.environment || 'Host'}</span>
+                                    <span style="font-size: 11px; color: #a78bfa; background: rgba(139,92,246,0.15); padding: 2px 8px; border-radius: 9999px;">${data.latencyMs}ms</span>
+                                </div>
                             </div>
                             <div style="font-size: 11.5px; color: var(--text-secondary); margin-top: 4px;">
-                                📦 Probed <b>${data.streamCount}</b> stream(s) for benchmark title.
+                                📦 Probed <b>${data.streamCount}</b> stream(s). ${diag.reason || data.message || ''}
                             </div>
                             ${streamsHtml ? `<div style="margin-top: 6px; max-height: 120px; overflow-y: auto;">${streamsHtml}</div>` : ''}
+                            ${probesHtml}
                         </div>
                     `;
                 } else {
@@ -11199,14 +11770,27 @@
             showToast(`🔄 <b>Restored defaults for:</b> ${currentEditingScraper}`);
         }
 
-        function toggleProvider(name, isEnabled) {
+        function toggleProvider(name, isEnabled, id = null) {
             settings.disabledProviders = settings.disabledProviders || [];
+            const rawTargets = [name, id].filter(Boolean).map(t => String(t).toLowerCase().trim());
+            const cleanTargets = rawTargets.map(t => t.replace(/[^a-z0-9]/g, '')).filter(Boolean);
             if (isEnabled) {
-                settings.disabledProviders = settings.disabledProviders.filter(p => p !== name);
+                settings.disabledProviders = settings.disabledProviders.filter(p => {
+                    const pl = String(p).toLowerCase().trim();
+                    const cleanP = pl.replace(/[^a-z0-9]/g, '');
+                    return !rawTargets.includes(pl) && !(cleanP && cleanTargets.includes(cleanP));
+                });
             } else {
-                if (!settings.disabledProviders.includes(name)) {
-                    settings.disabledProviders.push(name);
-                }
+                [name, id].filter(Boolean).forEach(t => {
+                    const tl = String(t).toLowerCase().trim();
+                    const cleanT = tl.replace(/[^a-z0-9]/g, '');
+                    if (!settings.disabledProviders.some(p => String(p).toLowerCase().trim() === tl)) {
+                        settings.disabledProviders.push(t);
+                    }
+                    if (cleanT && !settings.disabledProviders.some(p => String(p).toLowerCase().trim() === cleanT)) {
+                        settings.disabledProviders.push(cleanT);
+                    }
+                });
             }
             saveSettingsLocal();
             saveConfigurationToServer(false);
@@ -11240,16 +11824,17 @@
                 if (selectedType === 'all') {
                     settings.disabledProviders = [];
                 } else {
-                    const targetNames = targetProviders.map(p => p.name);
-                    settings.disabledProviders = settings.disabledProviders.filter(name => !targetNames.includes(name));
+                    const targetNames = targetProviders.flatMap(p => [p.name, p.id].filter(Boolean).map(n => n.toLowerCase()));
+                    settings.disabledProviders = settings.disabledProviders.filter(name => !targetNames.includes(String(name).toLowerCase()));
                 }
             } else {
                 if (selectedType === 'all') {
-                    settings.disabledProviders = allProvidersData.map(p => p.name);
+                    settings.disabledProviders = allProvidersData.flatMap(p => [p.name, p.id].filter(Boolean));
                 } else {
-                    const targetNames = targetProviders.map(p => p.name);
+                    const targetNames = targetProviders.flatMap(p => [p.name, p.id].filter(Boolean));
                     targetNames.forEach(name => {
-                        if (!settings.disabledProviders.includes(name)) {
+                        const nl = String(name).toLowerCase();
+                        if (!settings.disabledProviders.some(d => String(d).toLowerCase() === nl)) {
                             settings.disabledProviders.push(name);
                         }
                     });
@@ -11261,12 +11846,19 @@
             renderProviders();
         }
 
-        function removeProvider(name) {
+        function removeProvider(name, id = null) {
             triggerHaptic('medium');
             settings.disabledProviders = settings.disabledProviders || [];
-            if (!settings.disabledProviders.includes(name)) {
-                settings.disabledProviders.push(name);
-            }
+            [name, id].filter(Boolean).forEach(t => {
+                const tl = String(t).toLowerCase().trim();
+                const cleanT = tl.replace(/[^a-z0-9]/g, '');
+                if (!settings.disabledProviders.some(p => String(p).toLowerCase().trim() === tl)) {
+                    settings.disabledProviders.push(t);
+                }
+                if (cleanT && !settings.disabledProviders.some(p => String(p).toLowerCase().trim() === cleanT)) {
+                    settings.disabledProviders.push(cleanT);
+                }
+            });
             saveSettingsLocal();
             saveConfigurationToServer(true);
             updateStatsBar();
@@ -14040,11 +14632,177 @@
             if (!sel) return;
             sel.innerHTML = adminLocalScrapers.map(s => `<option value="${s.name}">${s.name} (${s.filename})</option>`).join('');
             if (currentStudioScraper) sel.value = currentStudioScraper.name;
+            sel.onchange = () => applyOptimalBenchPreset(sel.value);
             if (sel.dataset.customized === 'true') {
                 if (typeof sel._rebuildCustomSelect === 'function') sel._rebuildCustomSelect();
             } else {
                 initCustomSelect(sel);
             }
+            if (sel.value) applyOptimalBenchPreset(sel.value);
+        }
+
+        function filterBenchCategory(category, btn) {
+            triggerHaptic('light');
+            document.querySelectorAll('.bench-cat-tab').forEach(t => t.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+            const chips = document.querySelectorAll('.bench-preset-chip');
+            chips.forEach(chip => {
+                const cat = chip.dataset.category || 'all';
+                if (category === 'all' || cat === category) {
+                    chip.style.display = 'inline-flex';
+                } else {
+                    chip.style.display = 'none';
+                }
+            });
+        }
+
+        function selectBenchScraper(scraperName) {
+            const sel = document.getElementById('bench-scraper-select');
+            if (!sel) return;
+            const cleanTarget = (scraperName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+            const opt = Array.from(sel.options).find(o => {
+                const cleanVal = (o.value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                return cleanVal === cleanTarget || cleanVal.includes(cleanTarget) || cleanTarget.includes(cleanVal);
+            });
+            if (opt) {
+                sel.value = opt.value;
+                if (typeof sel._syncCustomSelect === 'function') sel._syncCustomSelect();
+                applyOptimalBenchPreset(opt.value);
+                showToast(`Switched Target Scraper to: ${opt.value}`);
+                const recBar = document.getElementById('bench-recommendation-bar');
+                if (recBar) recBar.style.display = 'none';
+            }
+        }
+
+        function setBenchPreset(id, type, name, btn, season = 1, episode = 1, recScrapers = []) {
+            triggerHaptic('light');
+            document.getElementById('bench-media-id').value = id;
+            const typeSel = document.getElementById('bench-media-type');
+            if (typeSel) {
+                typeSel.value = type;
+                if (typeof typeSel._syncCustomSelect === 'function') typeSel._syncCustomSelect();
+                toggleBenchTvFields(type);
+            }
+            if (type === 'tv') {
+                const sInput = document.getElementById('bench-season');
+                const eInput = document.getElementById('bench-episode');
+                if (sInput) sInput.value = season || 1;
+                if (eInput) eInput.value = episode || 1;
+            }
+            if (btn) {
+                document.querySelectorAll('.bench-preset-chip').forEach(c => c.classList.remove('active'));
+                btn.classList.add('active');
+            }
+
+            // Sync Category Tab Highlight
+            if (btn && btn.dataset.category) {
+                const cat = btn.dataset.category;
+                document.querySelectorAll('.bench-cat-tab').forEach(t => {
+                    const tOnclick = t.getAttribute('onclick') || '';
+                    if (tOnclick.includes(`'${cat}'`)) {
+                        t.classList.add('active');
+                    } else if (!tOnclick.includes("'all'")) {
+                        t.classList.remove('active');
+                    }
+                });
+            }
+
+            // Recommended Scrapers Guidance Bar
+            const recBar = document.getElementById('bench-recommendation-bar');
+            if (recBar && Array.isArray(recScrapers) && recScrapers.length > 0) {
+                const curScraper = (document.getElementById('bench-scraper-select')?.value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                const isMatched = recScrapers.some(s => {
+                    const cleanS = s.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    return curScraper.includes(cleanS) || cleanS.includes(curScraper);
+                });
+                if (!isMatched) {
+                    const firstRec = recScrapers[0];
+                    recBar.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span>💡</span>
+                            <span><b>${name}</b> catalog is best tested on: <b style="color: #c084fc;">${recScrapers.slice(0, 3).join(', ')}</b></span>
+                        </div>
+                        <button type="button" class="bench-rec-scraper-btn" onclick="selectBenchScraper('${firstRec}')">
+                            Switch to ${firstRec}
+                        </button>
+                    `;
+                    recBar.style.display = 'flex';
+                } else {
+                    recBar.style.display = 'none';
+                }
+            } else if (recBar) {
+                recBar.style.display = 'none';
+            }
+
+            showToast(`Loaded preset: ${name}`);
+        }
+
+        function applyOptimalBenchPreset(scraperName) {
+            const name = (scraperName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+            const idInput = document.getElementById('bench-media-id');
+            const typeSel = document.getElementById('bench-media-type');
+            if (!idInput || !typeSel) return;
+
+            // Detect Genre
+            const isAnime = /ani|kurage|reanime/i.test(name);
+            const isCartoon = /cartoon|puretoon|puretone|toon/i.test(name);
+            const isIndian = /einthus|hdhub|moviesdrive|desiflix/i.test(name);
+            const isKDrama = /squid|drama|asian/i.test(name);
+
+            let optimalId = '872585';
+            let optimalType = 'movie';
+            let optimalCat = 'movie';
+
+            if (isAnime) {
+                optimalId = '1429';
+                optimalType = 'tv';
+                optimalCat = 'anime';
+            } else if (/topcartoon/i.test(name)) {
+                optimalId = '217288';
+                optimalType = 'tv';
+                optimalCat = 'cartoon';
+            } else if (isCartoon) {
+                optimalId = '1338692';
+                optimalType = 'movie';
+                optimalCat = 'cartoon';
+            } else if (isIndian) {
+                optimalId = '872906';
+                optimalType = 'movie';
+                optimalCat = 'indian';
+            } else if (isKDrama) {
+                optimalId = '93405';
+                optimalType = 'tv';
+                optimalCat = 'kdrama';
+            }
+
+            idInput.value = optimalId;
+            typeSel.value = optimalType;
+            if (typeof typeSel._syncCustomSelect === 'function') typeSel._syncCustomSelect();
+            toggleBenchTvFields(optimalType);
+
+            if (optimalType === 'tv') {
+                const sInput = document.getElementById('bench-season');
+                const eInput = document.getElementById('bench-episode');
+                if (sInput) sInput.value = 1;
+                if (eInput) eInput.value = 1;
+            }
+
+            // Sync category tabs and chips
+            document.querySelectorAll('.bench-cat-tab').forEach(t => {
+                const tOnclick = t.getAttribute('onclick') || '';
+                t.classList.toggle('active', tOnclick.includes(`'${optimalCat}'`));
+            });
+            const chips = document.querySelectorAll('.bench-preset-chip');
+            chips.forEach(chip => {
+                const cat = chip.dataset.category || 'all';
+                chip.style.display = (optimalCat === 'all' || cat === optimalCat) ? 'inline-flex' : 'none';
+                const cOnclick = chip.getAttribute('onclick') || '';
+                chip.classList.toggle('active', cOnclick.includes(`'${optimalId}'`));
+            });
+
+            // Hide recommendation bar because scraper was selected directly
+            const recBar = document.getElementById('bench-recommendation-bar');
+            if (recBar) recBar.style.display = 'none';
         }
 
         function openScraperInLab(name) {
@@ -14055,6 +14813,7 @@
                 sel.value = name;
                 if (typeof sel._syncCustomSelect === 'function') sel._syncCustomSelect();
             }
+            applyOptimalBenchPreset(name);
         }
 
         function toggleBenchTvFields(type) {
@@ -14063,22 +14822,6 @@
             const isTv = type === 'tv';
             if (tvFields) tvFields.style.display = isTv ? 'block' : 'none';
             if (grid) grid.classList.toggle('has-tv', isTv);
-        }
-
-        function setBenchPreset(id, type, name, btn) {
-            triggerHaptic('light');
-            document.getElementById('bench-media-id').value = id;
-            const typeSel = document.getElementById('bench-media-type');
-            if (typeSel) {
-                typeSel.value = type;
-                if (typeof typeSel._syncCustomSelect === 'function') typeSel._syncCustomSelect();
-                toggleBenchTvFields(type);
-            }
-            if (btn) {
-                document.querySelectorAll('.bench-preset-chip').forEach(c => c.classList.remove('active'));
-                btn.classList.add('active');
-            }
-            showToast(`Loaded preset: ${name}`);
         }
 
         async function runBenchmarkTest() {
@@ -14130,19 +14873,20 @@
                     } else {
                         streamList.innerHTML = streams.map(s => {
                             const isFast = !s.latency || s.latency < 800;
+                            const actualUrl = s.url || s.externalUrl || '';
                             const hasHeaders = s.headers && Object.keys(s.headers).length > 0;
-                            const playUrl = hasHeaders
-                                ? `/proxy/stream?url=${encodeURIComponent(s.url)}&headers=${encodeURIComponent(JSON.stringify(s.headers))}`
-                                : s.url;
+                            const playUrl = hasHeaders && actualUrl
+                                ? `/proxy/stream?url=${encodeURIComponent(actualUrl)}&headers=${encodeURIComponent(JSON.stringify(s.headers))}`
+                                : (actualUrl || '#');
                             return `
                             <div class="bench-stream-item">
                                 <div class="bench-stream-info">
                                     <div style="font-size: 13px; font-weight: 700; color: #fff; line-height: 1.3;">${s.title || s.name || 'Stream'}</div>
-                                    <div class="bench-stream-url">${s.url}</div>
+                                    <div class="bench-stream-url">${actualUrl || 'No direct URL provided'}</div>
                                 </div>
                                 <div class="bench-stream-actions" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                                     <span class="tag-pill-badge" style="background: rgba(16,185,129,0.12); color: #34d399; font-weight: 700; font-size: 11px;">🟢 FAST</span>
-                                    <a href="${playUrl}" target="_blank" rel="noopener noreferrer" class="pill-btn pill-btn-glass" style="padding: 4px 10px; font-size: 11px; text-decoration: none;" title="${hasHeaders ? 'Streams via Header Proxy' : 'Direct Stream'}">▶️ Open / Test</a>
+                                    ${actualUrl ? `<a href="${playUrl}" target="_blank" rel="noopener noreferrer" class="pill-btn pill-btn-glass" style="padding: 4px 10px; font-size: 11px; text-decoration: none;" title="${hasHeaders ? 'Streams via Header Proxy' : 'Direct Stream'}">▶️ Open / Test</a>` : ''}
                                 </div>
                             </div>`;
                         }).join('');

@@ -4,7 +4,7 @@ const { parseTorrentTitle, cleanReleaseNoise } = require('./torrentParser');
 const { ingestStream, normalizeInfoHash, parseSizeToBytes, formatBytesToSize, extractCleanProvider } = require('./streamIngest');
 const { formatStreamCard, formatProviderChain } = require('./streamFormatter');
 
-const TIMEOUT_MS = (typeof process !== 'undefined' && process.env.VERCEL) ? 800 : 1200;
+const TIMEOUT_MS = 1200;
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
 // High-speed domain latency memoization to avoid probing identical CDNs 50+ times
@@ -294,14 +294,39 @@ function getStreamFingerprint(stream) {
                 return `url:${parsed.protocol}//${parsed.host}${parsed.pathname}${cleanQuery}`.toLowerCase();
             }
         } catch (e) {}
-        return `raw:${rawUrl.trim().toLowerCase()}`;
     }
 
-    // 3. Fallback: Release signature match (identical normalized title + resolution + size)
+    // 3. Smart Semantic Mirror Fingerprinting (for Direct/Hoster links across different CDNs / mirrors)
     const meta = parseStreamMetadata(stream);
-    const titleNorm = (stream.title || stream.description || stream.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-    if (titleNorm && meta.resolution && meta.size) {
-        return `release:${titleNorm}:${meta.resolution}:${meta.size}`;
+    const candidateTitle = meta.cleanTitle || (stream.behaviorHints && stream.behaviorHints.filename) || stream.title || stream.description || stream.name || '';
+    const cleanTitle = String(candidateTitle)
+        .toLowerCase()
+        .replace(/^(?:\[[^\]]+\]|\([^\)]+\)|www\.[a-z0-9.-]+\.[a-z]{2,4}[\s._-]*)/gi, '')
+        .replace(/[^a-z0-9]/g, '');
+
+    const res = meta.resolution || 'unknown';
+    const quality = (meta.quality || '').toLowerCase();
+    const group = (meta.releaseGroup || '').toLowerCase();
+    const seasonEp = meta.season ? `s${String(meta.season).padStart(2, '0')}e${String(meta.episode || 0).padStart(2, '0')}` : '';
+
+    let sizeBucket = '';
+    if (meta.sizeBytes && meta.sizeBytes > 1024 * 1024) {
+        // Round to nearest 150MB chunk so minor byte variances match across mirror providers
+        const chunk150mb = 150 * 1024 * 1024;
+        sizeBucket = `b${Math.round(meta.sizeBytes / chunk150mb) * 150}m`;
+    }
+
+    if (cleanTitle && res !== 'unknown') {
+        if (group && group !== 'nuvio' && group !== 'flux') {
+            return `mirror:${cleanTitle}:${seasonEp}:${res}:${quality}:${group}`;
+        }
+        if (sizeBucket) {
+            return `mirror:${cleanTitle}:${seasonEp}:${res}:${quality}:${sizeBucket}`;
+        }
+    }
+
+    if (rawUrl && typeof rawUrl === 'string') {
+        return `raw:${rawUrl.trim().toLowerCase()}`;
     }
 
     return null;
@@ -319,7 +344,14 @@ function deduplicateAndMergeStreams(streams, enabled = true) {
         const pName = cleanProviderName(stream.originalProvider || stream.name);
 
         if (!fingerprint) {
-            const copy = { ...stream, providers: pName ? [pName] : ['Stream'] };
+            const copy = { 
+                ...stream, 
+                provider: stream.provider || pName || 'Stream',
+                originalProvider: stream.originalProvider || pName || 'Stream',
+                providers: pName ? [pName] : ['Stream'],
+                mirrors: stream.url ? [{ url: stream.url, provider: pName, headers: stream.headers }] : [],
+                mirrorCount: 1
+            };
             result.push(copy);
             continue;
         }
@@ -334,6 +366,25 @@ function deduplicateAndMergeStreams(streams, enabled = true) {
             if (pName && !existing.providers.includes(pName)) {
                 existing.providers.push(pName);
             }
+            if (!existing.provider) {
+                existing.provider = existing.providers[0];
+            }
+            if (!existing.originalProvider) {
+                existing.originalProvider = existing.providers[0];
+            }
+
+            // Maintain stacked mirror list for Smart Mirror Stacking & Failover
+            if (!existing.mirrors) {
+                existing.mirrors = [{ url: existing.url, provider: existing.providers[0] || 'Stream', headers: existing.headers }];
+            }
+            if (stream.url && !existing.mirrors.some(m => m.url === stream.url)) {
+                existing.mirrors.push({
+                    url: stream.url,
+                    provider: pName || 'Mirror',
+                    headers: stream.headers
+                });
+            }
+            existing.mirrorCount = existing.mirrors.length;
 
             // Merge seeders (preserve highest seeders count)
             const metaExisting = parseStreamMetadata(existing);
@@ -356,7 +407,14 @@ function deduplicateAndMergeStreams(streams, enabled = true) {
                 existing.behaviorHints = { ...(existing.behaviorHints || {}), ...(stream.behaviorHints || {}) };
             }
         } else {
-            const copy = { ...stream, providers: pName ? [pName] : ['Stream'] };
+            const copy = { 
+                ...stream, 
+                provider: stream.provider || pName || 'Stream',
+                originalProvider: stream.originalProvider || pName || 'Stream',
+                providers: pName ? [pName] : ['Stream'],
+                mirrors: stream.url ? [{ url: stream.url, provider: pName, headers: stream.headers }] : [],
+                mirrorCount: 1
+            };
             mergedMap.set(fingerprint, copy);
             result.push(copy);
         }
@@ -379,7 +437,10 @@ function parseStreamMetadata(stream) {
 }
 
 function formatStreamLabels(stream, latency = 150, isP2P = false, isDead = false, showSeeders = true, config = {}) {
-    const target = stream._rawStream || stream;
+    const target = {
+        ...(stream._rawStream || {}),
+        ...stream
+    };
     const ingested = ingestStream(target, config);
     if (!ingested) return { name: stream.name || 'Stream', title: stream.title || '' };
     if (stream._preparsedMeta) {
@@ -505,12 +566,20 @@ function getSeederScore(stream) {
 async function testStream(stream, showSeeders = true, config = {}) {
     const startTime = Date.now();
     const originalName = stream.name || 'Stream';
-    const providerName = cleanProviderName(originalName);
+    const scraperProvider = stream._scraperName || stream.originalProvider || stream.provider;
+    const providerName = (scraperProvider && scraperProvider !== 'Stream' && !/\(\d{4}\)/.test(scraperProvider))
+        ? scraperProvider
+        : cleanProviderName(originalName);
 
     const rawSnapshot = stream._rawStream || {
+        ...stream,
         name: stream.name,
         title: stream.title,
-        filename: stream.behaviorHints?.filename
+        filename: stream.behaviorHints?.filename,
+        provider: stream.provider || providerName,
+        originalProvider: stream.originalProvider || providerName,
+        _scraperName: stream._scraperName || providerName,
+        _scraperId: stream._scraperId
     };
     stream._rawStream = rawSnapshot;
     const initialMeta = stream._preparsedMeta || parseStreamMetadata(rawSnapshot);
@@ -591,22 +660,29 @@ async function testStream(stream, showSeeders = true, config = {}) {
             isDead: isDead,
             statusCategory: statusCategory,
             originalProvider: providerName,
+            provider: stream.provider || providerName.toLowerCase().replace(/[^a-z0-9]/g, ''),
             _rawStream: rawSnapshot,
             _preparsedMeta: initialMeta
         };
     }
 
-    // Handle external links or YouTube links
-    if (stream.externalUrl || stream.ytId) {
-        const labels = formatStreamLabels(stream, 100, true, false, showSeeders, config);
+    // Handle YouTube links or external links without playable stream.url
+    if (stream.ytId || (!stream.url && stream.externalUrl)) {
+        if (!stream.url && stream.externalUrl) {
+            stream.url = stream.externalUrl;
+        }
+        const labels = formatStreamLabels(stream, 100, false, false, showSeeders, config);
         return {
             ...stream,
+            url: stream.url,
             name: labels.name,
-            title: labels.title, description: labels.description,
+            title: labels.title,
+            description: labels.description,
             latency: 100,
             isDead: false,
             statusCategory: 'fast',
             originalProvider: providerName,
+            provider: stream.provider || providerName.toLowerCase().replace(/[^a-z0-9]/g, ''),
             _rawStream: rawSnapshot,
             _preparsedMeta: initialMeta
         };
@@ -698,50 +774,6 @@ async function testStream(stream, showSeeders = true, config = {}) {
         const urlObj = new URL(stream.url);
         const origin = urlObj.origin;
 
-        // High-Speed Domain Latency Memoization: If origin CDN was already tested in this batch, reuse probe result immediately
-        if (origin && domainLatencyCache.has(origin)) {
-            const cachedDomain = domainLatencyCache.get(origin);
-            const labels = formatStreamLabels(stream, cachedDomain.latency, false, cachedDomain.isDead, showSeeders, config);
-            return {
-                ...stream,
-                name: labels.name,
-                title: labels.title, description: labels.description,
-                latency: cachedDomain.latency,
-                isDead: cachedDomain.isDead,
-                statusCategory: cachedDomain.statusCategory,
-                originalProvider: providerName,
-                _rawStream: rawSnapshot,
-                _preparsedMeta: initialMeta
-            };
-        }
-
-        // If another stream for this origin CDN is currently in-flight probing, await its result
-        if (origin && domainLatencyPending.has(origin)) {
-            try {
-                const cachedDomain = await domainLatencyPending.get(origin);
-                if (cachedDomain) {
-                    const labels = formatStreamLabels(stream, cachedDomain.latency, false, cachedDomain.isDead, showSeeders, config);
-                    return {
-                        ...stream,
-                        name: labels.name,
-                        title: labels.title, description: labels.description,
-                        latency: cachedDomain.latency,
-                        isDead: cachedDomain.isDead,
-                        statusCategory: cachedDomain.statusCategory,
-                        originalProvider: providerName,
-                        _rawStream: rawSnapshot,
-                        _preparsedMeta: initialMeta
-                    };
-                }
-            } catch (e) {}
-        }
-
-        let resolveDomainProbe;
-        if (origin && !domainLatencyPending.has(origin)) {
-            const probePromise = new Promise(resolve => { resolveDomainProbe = resolve; });
-            domainLatencyPending.set(origin, probePromise);
-        }
-
         const probeHeaders = {
             'User-Agent': customHeaders['User-Agent'] || customHeaders['user-agent'] || USER_AGENT,
             ...(customHeaders['Referer'] || customHeaders['referer'] ? { 'Referer': customHeaders['Referer'] || customHeaders['referer'] } : {}),
@@ -751,6 +783,7 @@ async function testStream(stream, showSeeders = true, config = {}) {
         // Specific per-stream check for HubCloud links (detect if this specific file was removed)
         if (stream.url.includes('hubcloud.')) {
             try {
+                const hcStart = Date.now();
                 const hcRes = await axios.get(stream.url, { 
                     timeout: TIMEOUT_MS, 
                     headers: probeHeaders,
@@ -758,6 +791,7 @@ async function testStream(stream, showSeeders = true, config = {}) {
                     httpsAgent: dohHttpsAgent,
                     validateStatus: () => true 
                 });
+                const hcLatency = Math.max(30, Date.now() - hcStart);
                 const data = typeof hcRes.data === 'string' ? hcRes.data.toLowerCase() : '';
                 if (data.includes('file deleted') || data.includes('file not found') || data.includes('file was deleted') || data.includes('page not found') || hcRes.status === 404 || hcRes.status === 410) {
                     const labels = formatStreamLabels(stream, 99999, false, true, showSeeders, config);
@@ -773,6 +807,21 @@ async function testStream(stream, showSeeders = true, config = {}) {
                         _preparsedMeta: initialMeta
                     };
                 }
+
+                // If file is valid and alive, return with actual measured round-trip ping
+                const statusCategory = hcLatency < 800 ? 'fast' : 'slow';
+                const labels = formatStreamLabels(stream, hcLatency, false, false, showSeeders, config);
+                return {
+                    ...stream,
+                    name: labels.name,
+                    title: labels.title, description: labels.description,
+                    latency: hcLatency,
+                    isDead: false,
+                    statusCategory: statusCategory,
+                    originalProvider: providerName,
+                    _rawStream: rawSnapshot,
+                    _preparsedMeta: initialMeta
+                };
             } catch (err) { 
                 // Keep stream alive on transient error
             }
@@ -782,24 +831,63 @@ async function testStream(stream, showSeeders = true, config = {}) {
         let latency = 0;
         let isDead = false;
 
-        try {
-            // 1. Primary probe: Direct HEAD request to stream.url
-            const res = await axios.head(stream.url, {
-                timeout: TIMEOUT_MS,
-                headers: probeHeaders,
-                httpAgent: dohHttpAgent,
-                httpsAgent: dohHttpsAgent,
-                validateStatus: () => true,
-                maxRedirects: 3
-            });
+        const hostname = urlObj.hostname;
+        const cachedDomain = domainLatencyCache.get(hostname);
+        if (cachedDomain && (Date.now() - cachedDomain.time < 180000)) {
+            latency = cachedDomain.latency;
+            isDead = cachedDomain.isDead;
+        } else {
+            const probeStartTime = Date.now();
+            try {
+                // 1. Primary probe: Direct HEAD request to stream.url
+                const res = await axios.head(stream.url, {
+                    timeout: TIMEOUT_MS,
+                    headers: probeHeaders,
+                    httpAgent: dohHttpAgent,
+                    httpsAgent: dohHttpsAgent,
+                    validateStatus: () => true,
+                    maxRedirects: 3
+                });
+                const elapsed = Date.now() - probeStartTime;
 
-            if (res.status === 404 || res.status === 410 || res.status >= 500) {
-                isDead = true;
-                latency = 99999;
-            } else if (res.status === 403) {
-                // If HEAD returns 403, verify with GET Range before assuming dead
+                if (res.status === 404 || res.status === 410 || res.status >= 500) {
+                    isDead = true;
+                    latency = 99999;
+                } else if (res.status === 403) {
+                    // If HEAD returns 403, verify with GET Range before assuming dead
+                    try {
+                        const rangeStart = Date.now();
+                        const rangeRes = await axios.get(stream.url, {
+                            timeout: TIMEOUT_MS,
+                            headers: { ...probeHeaders, 'Range': 'bytes=0-10' },
+                            httpAgent: dohHttpAgent,
+                            httpsAgent: dohHttpsAgent,
+                            validateStatus: () => true,
+                            maxRedirects: 3
+                        });
+                        const rangeElapsed = Date.now() - rangeStart;
+                        if (rangeRes.status === 404 || rangeRes.status === 410 || rangeRes.status >= 500 || rangeRes.status === 403) {
+                            isDead = true;
+                            latency = 99999;
+                        } else {
+                            latency = Math.max(30, rangeElapsed);
+                        }
+                    } catch (rErr) {
+                        if (rErr.code === 'ECONNREFUSED' || rErr.code === 'ENOTFOUND') {
+                            isDead = true;
+                            latency = 99999;
+                        } else {
+                            latency = 850;
+                        }
+                    }
+                } else {
+                    latency = Math.max(30, elapsed);
+                }
+            } catch (headErr) {
+                // HEAD rejected or connection error -> fallback to GET Range probe
                 try {
-                    const rangeRes = await axios.get(stream.url, {
+                    const getStart = Date.now();
+                    const getRes = await axios.get(stream.url, {
                         timeout: TIMEOUT_MS,
                         headers: { ...probeHeaders, 'Range': 'bytes=0-10' },
                         httpAgent: dohHttpAgent,
@@ -807,98 +895,29 @@ async function testStream(stream, showSeeders = true, config = {}) {
                         validateStatus: () => true,
                         maxRedirects: 3
                     });
-                    if (rangeRes.status === 404 || rangeRes.status === 410 || rangeRes.status >= 500) {
-                        isDead = true;
-                        latency = 99999;
-                    } else if (rangeRes.status === 403) {
-                        // Both HEAD and GET Range returned 403: verify if server origin is reachable
-                        try {
-                            await axios.head(origin, {
-                                timeout: TIMEOUT_MS,
-                                headers: probeHeaders,
-                                httpAgent: dohHttpAgent,
-                                httpsAgent: dohHttpsAgent,
-                                validateStatus: (status) => status >= 200 && status < 400
-                            });
-                            latency = Math.max(2, Date.now() - startTime);
-                        } catch (oErr) {
-                            isDead = true;
-                            latency = 99999;
-                        }
-                    } else {
-                        latency = Math.max(35, Date.now() - startTime);
-                    }
-                } catch (rErr) {
-                    if (rErr.code === 'ECONNREFUSED' || rErr.code === 'ENOTFOUND') {
-                        isDead = true;
-                        latency = 99999;
-                    } else {
-                        latency = 850;
-                    }
-                }
-            } else {
-                latency = Math.max(35, Date.now() - startTime);
-            }
-        } catch (headErr) {
-            // HEAD rejected or connection error -> fallback to GET Range probe
-            try {
-                const getRes = await axios.get(stream.url, {
-                    timeout: TIMEOUT_MS,
-                    headers: { ...probeHeaders, 'Range': 'bytes=0-10' },
-                    httpAgent: dohHttpAgent,
-                    httpsAgent: dohHttpsAgent,
-                    validateStatus: () => true,
-                    maxRedirects: 3
-                });
+                    const getElapsed = Date.now() - getStart;
 
-                if (getRes.status === 404 || getRes.status === 410 || getRes.status >= 500) {
-                    isDead = true;
-                    latency = 99999;
-                } else if (getRes.status === 403) {
-                    try {
-                        await axios.head(origin, {
-                            timeout: TIMEOUT_MS,
-                            headers: probeHeaders,
-                            httpAgent: dohHttpAgent,
-                            httpsAgent: dohHttpsAgent,
-                            validateStatus: (status) => status >= 200 && status < 400
-                        });
-                        latency = Math.max(50, Date.now() - startTime);
-                    } catch (oErr) {
+                    if (getRes.status === 404 || getRes.status === 410 || getRes.status >= 500 || getRes.status === 403) {
                         isDead = true;
                         latency = 99999;
+                    } else {
+                        latency = Math.max(30, getElapsed);
                     }
-                } else {
-                    latency = Math.max(2, Date.now() - startTime);
-                }
-            } catch (getErr) {
-                if (getErr.code === 'ECONNREFUSED' || getErr.code === 'ENOTFOUND') {
-                    isDead = true;
-                    latency = 99999;
-                } else {
-                    try {
-                        await axios.head(origin, {
-                            timeout: TIMEOUT_MS,
-                            headers: probeHeaders,
-                            httpAgent: dohHttpAgent,
-                            httpsAgent: dohHttpsAgent,
-                            validateStatus: (status) => status < 500
-                        });
-                        latency = Math.max(60, Date.now() - startTime);
-                    } catch (oErr) {
+                } catch (getErr) {
+                    if (getErr.code === 'ECONNREFUSED' || getErr.code === 'ENOTFOUND') {
+                        isDead = true;
+                        latency = 99999;
+                    } else {
                         latency = 850;
                     }
                 }
+            }
+            if (hostname) {
+                domainLatencyCache.set(hostname, { latency, isDead, time: Date.now() });
             }
         }
 
         if (isDead || latency >= 90000) {
-            const entry = { latency: 99999, isDead: true, statusCategory: 'dead' };
-            if (origin) {
-                domainLatencyCache.set(origin, entry);
-                domainLatencyPending.delete(origin);
-                if (resolveDomainProbe) resolveDomainProbe(entry);
-            }
             const labels = formatStreamLabels(stream, 99999, false, true, showSeeders, config);
             return {
                 ...stream,
@@ -914,12 +933,6 @@ async function testStream(stream, showSeeders = true, config = {}) {
         }
 
         const statusCategory = latency < 800 ? 'fast' : 'slow';
-        const entry = { latency, isDead: false, statusCategory };
-        if (origin) {
-            domainLatencyCache.set(origin, entry);
-            domainLatencyPending.delete(origin);
-            if (resolveDomainProbe) resolveDomainProbe(entry);
-        }
         const labels = formatStreamLabels(stream, latency, false, false, showSeeders, config);
 
         return {
@@ -935,10 +948,6 @@ async function testStream(stream, showSeeders = true, config = {}) {
         };
 
     } catch (err) {
-        if (typeof origin !== 'undefined' && origin) {
-            domainLatencyPending.delete(origin);
-            if (typeof resolveDomainProbe === 'function') resolveDomainProbe(null);
-        }
         const labels = formatStreamLabels(stream, 1200, false, false, showSeeders, config);
         return {
             ...stream,
@@ -1184,19 +1193,32 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
         }
     }
 
-    // Run tests concurrently, but track which ones finished
-    const testPromises = uniqueStreams.map(async stream => {
+    // Run tests concurrently with controlled pool of 12 workers to prevent socket starvation
+    async function mapConcurrent(items, limit, fn) {
+        const results = new Array(items.length);
+        let index = 0;
+        const workers = new Array(Math.min(limit, items.length)).fill(0).map(async () => {
+            while (index < items.length) {
+                const i = index++;
+                results[i] = await fn(items[i], i);
+            }
+        });
+        await Promise.all(workers);
+        return results;
+    }
+
+    // Run tests concurrently with controlled pool of 32 workers for high throughput
+    const testingPromise = mapConcurrent(uniqueStreams, 32, async (stream) => {
         const result = await testStream(stream, showSeeders, config);
         stream._testedResult = result;
         return result;
     });
 
-    const testingPromise = Promise.all(testPromises);
-
     let testedStreams;
     if (config.maxTestDuration) {
+        let globalTimer;
         const globalTimeoutPromise = new Promise(resolve => {
-            setTimeout(() => {
+            globalTimer = setTimeout(() => {
                 console.warn(`[StreamTester] Global testing timeout reached (${config.maxTestDuration}ms). Bailing out to prevent 504.`);
                 const mixed = uniqueStreams.map(s => {
                     if (s._testedResult) return s._testedResult; // Use real result if finished
@@ -1210,6 +1232,7 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
             }, config.maxTestDuration);
         });
         testedStreams = await Promise.race([testingPromise, globalTimeoutPromise]);
+        if (globalTimer) clearTimeout(globalTimer);
     } else {
         testedStreams = await testingPromise;
     }
@@ -1232,11 +1255,47 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
 
     // Filter
     let filteredStreams = testedStreams;
+
+    // Safety filter: Strictly purge streams from disabled scrapers that may have leaked
+    const rawDisabled = [
+        ...(Array.isArray(config && config.disabled) ? config.disabled : []),
+        ...(Array.isArray(config && config.disabledProviders) ? config.disabledProviders : [])
+    ].map(d => String(d || '').trim().toLowerCase()).filter(Boolean);
+    if (rawDisabled.length > 0) {
+        filteredStreams = filteredStreams.filter(s => {
+            const raw = s._rawStream || {};
+            const textToCheck = [
+                s.originalProvider,
+                s.provider,
+                s._scraperName,
+                s._scraperId,
+                s.name,
+                s.title,
+                raw.provider,
+                raw.name,
+                raw.title,
+                Array.isArray(s.providers) ? s.providers.join(' ') : ''
+            ].filter(Boolean).join(' ').toLowerCase();
+            const cleanText = textToCheck.replace(/[^a-z0-9]/g, '');
+
+            return !rawDisabled.some(d => {
+                if (!d) return false;
+                const cleanD = d.replace(/[^a-z0-9]/g, '');
+                return textToCheck.includes(d) || (cleanD && cleanText.includes(cleanD));
+            });
+        });
+    }
+
     if (config && config.hideDead) {
         filteredStreams = filteredStreams.filter(s => s.statusCategory !== 'dead');
     }
     if (config && config.hideSlow) {
-        filteredStreams = filteredStreams.filter(s => s.statusCategory !== 'slow');
+        filteredStreams = filteredStreams.filter(s => {
+            const isSlow = s.statusCategory === 'slow' 
+                || (typeof s.latency === 'number' && s.latency >= 800)
+                || (s.name && (s.name.includes('SLOW') || s.name.includes('🟡')));
+            return !isSlow;
+        });
     }
     // Auto-Hide CAM, TeleSync, and Screener theater recordings
     if (config && (config.hideCam || config.blockCam)) {
@@ -1245,9 +1304,17 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
             return !meta.isCam;
         });
     }
+    // Auto-Hide P2P Torrent streams (uncached magnets)
+    if (config && (config.hideP2P || config.blockP2P || config.disableP2P)) {
+        filteredStreams = filteredStreams.filter(s => {
+            const isMagnet = (s.url && s.url.startsWith('magnet:')) || Boolean(s.infoHash);
+            const isP2P = Boolean(s.isP2P || isMagnet);
+            return !isP2P || Boolean(s.isDebridCached);
+        });
+    }
 
-    // Safety fallback: if strict filters leave 0 streams, retain all tested streams
-    if (filteredStreams.length === 0 && testedStreams.length > 0) {
+    // Safety fallback: if speed filters leave 0 streams, retain all tested streams (never restore blocked scrapers/P2P)
+    if (filteredStreams.length === 0 && testedStreams.length > 0 && !config?.hideP2P && !config?.blockP2P && rawDisabled.length === 0) {
         filteredStreams = testedStreams;
     }
 
@@ -1275,6 +1342,17 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
         const debridB = Boolean(b.isDebridCached);
         if (debridA !== debridB) {
             return debridA ? -1 : 1;
+        }
+
+        // 2.5. Playability priority for Nuvio: If user has NO Debrid configured,
+        // rank directly playable HTTP/HLS streams ABOVE raw BitTorrent magnets
+        const hasDebrid = Boolean(config && config.debridApiKey && config.debridProvider && config.debridProvider !== 'none');
+        if (!hasDebrid) {
+            const isRawP2PA = (a.url && a.url.startsWith('magnet:')) || Boolean(a.infoHash) || Boolean(a.isP2P && !a.isDebridCached);
+            const isRawP2PB = (b.url && b.url.startsWith('magnet:')) || Boolean(b.infoHash) || Boolean(b.isP2P && !b.isDebridCached);
+            if (isRawP2PA !== isRawP2PB) {
+                return isRawP2PA ? 1 : -1;
+            }
         }
 
         const rankA = categoryRank[a.statusCategory] || 2;
@@ -1436,18 +1514,18 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
                 return rankA - rankB;
             }
 
-            // 2. Exact latency (lowest ms first) — STRICT PRIMARY sort in speed mode
-            if (latA !== latB) {
-                return latA - latB;
-            }
-
-            // 3. Multi-Language / Preferred Audio (tie-breaker for exact same latency)
+            // 2. Multi-Language / Preferred Audio (if configured)
             if (hasAudioPref) {
                 const audioA = getAudioScore(a, prefLanguages, config?.prioritizeHindi);
                 const audioB = getAudioScore(b, prefLanguages, config?.prioritizeHindi);
                 if (audioA !== audioB) {
                     return audioB - audioA;
                 }
+            }
+
+            // 3. Exact latency (lowest ms first) — STRICT PRIMARY sort in speed mode
+            if (latA !== latB) {
+                return latA - latB;
             }
 
             // 4. Higher resolution & quality as tie-breaker
@@ -1491,6 +1569,62 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
             ...(stremioStream.behaviorHints || {}),
             filename: synthFilename
         };
+
+        const customHeaders = {
+            ...(stremioStream.headers || {}),
+            ...(stremioStream.behaviorHints?.proxyHeaders?.request || {})
+        };
+        const hasCustomHeaders = Object.keys(customHeaders).length > 0;
+        const fallbackUrls = (Array.isArray(stremioStream.mirrors) ? stremioStream.mirrors : [])
+            .map(m => m.url)
+            .filter(u => u && u !== stremioStream.url && typeof u === 'string' && u.startsWith('http'));
+        const hasFallbacks = fallbackUrls.length > 0;
+
+        if (hasFallbacks) {
+            stremioStream.mirrorUrls = fallbackUrls;
+            stremioStream.behaviorHints.mirrors = fallbackUrls;
+            stremioStream.behaviorHints.mirrorCount = stremioStream.mirrors.length;
+        }
+
+        if (hasCustomHeaders) {
+            stremioStream.behaviorHints.proxyHeaders = {
+                ...(stremioStream.behaviorHints.proxyHeaders || {}),
+                request: {
+                    ...(stremioStream.behaviorHints.proxyHeaders?.request || {}),
+                    ...customHeaders
+                }
+            };
+        }
+
+        // Auto-route through /proxy/stream when:
+        // 1. S3/R2 presigned URL (to prevent ExoPlayer/VLC 403 on HEAD probes)
+        // 2. Custom headers are required (Referer/Origin)
+        // 3. Fallback mirrors exist (for self-healing)
+        // 4. User config enableStreamProxy is true
+        const isS3Presigned = Boolean(
+            stremioStream.url && (
+                stremioStream.url.includes('X-Amz-Signature') || 
+                stremioStream.url.includes('X-Amz-Algorithm') || 
+                stremioStream.url.includes('cloudflarestorage.com') || 
+                stremioStream.url.includes('r2.dev') ||
+                stremioStream.url.includes('hubcloud.') ||
+                stremioStream.url.includes('/drive/')
+            )
+        );
+
+        if (config.addonHost && stremioStream.url && stremioStream.url.startsWith('http') && (isS3Presigned || hasCustomHeaders || hasFallbacks || config.enableStreamProxy === true)) {
+            const protocol = config.addonProtocol || 'http';
+            const params = new URLSearchParams();
+            params.set('url', stremioStream.url);
+            if (hasFallbacks) {
+                params.set('fallbacks', JSON.stringify(fallbackUrls));
+            }
+            if (hasCustomHeaders) {
+                params.set('headers', JSON.stringify(customHeaders));
+            }
+            const proxyFilename = synthFilename || 'video.mp4';
+            stremioStream.url = `${protocol}://${config.addonHost}/proxy/stream/${encodeURIComponent(proxyFilename)}?${params.toString()}`;
+        }
 
         const target = (config && config.target) || {};
         const mediaType = target.type === 'series' || target.type === 'tv' ? 'series' : 'movie';
@@ -1542,10 +1676,39 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
             }
         };
 
-        // Clean up internal properties so they never leak into the response
+        stremioStream.behaviorHints = {
+            ...(stremioStream.behaviorHints || {}),
+            filename: synthFilename,
+            bingeGroup: `cholebhature|${meta.resolution || '1080p'}|${meta.quality || 'WEB-DL'}`
+        };
+
+        if (hasCustomHeaders) {
+            stremioStream.behaviorHints.proxyHeaders = {
+                ...(stremioStream.behaviorHints?.proxyHeaders || {}),
+                request: customHeaders
+            };
+        }
+
+        if (!stremioStream.quality && meta.resolution) {
+            stremioStream.quality = meta.resolution;
+        }
+        if (!stremioStream.size && (meta.size || meta.sizeBytes)) {
+            stremioStream.size = meta.size || meta.sizeBytes;
+        }
+        if (!stremioStream.provider) {
+            stremioStream.provider = (Array.isArray(stremioStream.providers) && stremioStream.providers.length > 0)
+                ? stremioStream.providers[0]
+                : (stremioStream.originalProvider || cleanProviderName(stremioStream.name || 'Stream'));
+        }
+
+        // Clean up internal temporary engine properties so they never leak into the response
         delete stremioStream._rawStream;
         delete stremioStream._preparsedMeta;
         delete stremioStream._rawFilename;
+        delete stremioStream._testedResult;
+        if (stremioStream.url) {
+            delete stremioStream.externalUrl;
+        }
 
         return stremioStream;
     });

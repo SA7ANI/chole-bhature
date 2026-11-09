@@ -53,8 +53,19 @@ async function resolveDoH(hostname, providerKey = currentProvider) {
         return { address: normHost, family: ipType };
     }
 
-    // 2. Local / internal domains fallback
-    if (normHost === 'localhost' || normHost.endsWith('.local') || normHost.endsWith('.internal')) {
+    // 2. Bypass DoH for local domains, GitHub, jsDelivr, Codeberg, and TMDB
+    // Major CDNs already have geolocated Edge routing (Fastly, Cloudflare, Akamai).
+    // Forcing DoH on raw.githubusercontent.com routes to blocked US IPs on Indian ISPs causing 10s timeouts.
+    if (
+        normHost.includes('github') ||
+        normHost.includes('jsdelivr') ||
+        normHost.includes('codeberg') ||
+        normHost.includes('themoviedb.org') ||
+        normHost.includes('tmdb.org') ||
+        normHost === 'localhost' ||
+        normHost.endsWith('.local') ||
+        normHost.endsWith('.internal')
+    ) {
         return new Promise((resolve, reject) => {
             dns.lookup(normHost, (err, address, family) => {
                 if (err) return reject(err);

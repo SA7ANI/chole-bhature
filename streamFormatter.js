@@ -1,22 +1,100 @@
 /**
  * AIOStreams Multi-Preset Stream Card Formatter
  * Formats stream.name and stream.title for Stremio without destroying or hallucinating metadata.
+ * Strictly adheres to the Stream Card Presentation Studio standard.
  */
 
-function formatProviderChain(providers, fallback = 'Stream') {
-    if (!providers || !Array.isArray(providers) || providers.length === 0) {
-        if (typeof fallback === 'string' && (fallback.includes('Telegram') || fallback.includes('PencariMovie'))) {
-            return '⚡ Telegram';
-        }
-        return fallback;
+const CANONICAL_PROVIDERS = {
+    'moviebox': 'MovieBox',
+    'multimovies': 'MultiMovies',
+    'vegamovies': 'VegaMovies',
+    'moviesdrive': 'MoviesDrive',
+    '4khdhub': '4KHDHub',
+    'hdhub4u': 'HDHub4u',
+    'castle': 'Castle',
+    'redflix': 'RedFlix',
+    'kurage': 'Kurage',
+    'anizone': 'AniZone',
+    'desiflix': 'DesiFlix',
+    'dahmermovies': 'DahmerMovies',
+    'dahmermovies-tv': 'DahmerMovies-TV',
+    'moviesmod': 'MoviesMod',
+    'movix': 'Movix VF',
+    'movix-vf': 'Movix VF',
+    'movix vf': 'Movix VF',
+    'playimdb': 'PlayIMDb',
+    'vidrock': 'VidRock',
+    'topcartoons': 'TopCartoons',
+    'reanime': 'ReAnime',
+    'animeworld': 'AnimeWorld',
+    'animesalt': 'AnimeSalt',
+    'anizen': 'AniZen',
+    'netmirror': 'NetMirror',
+    'anikage': 'AniKage',
+    'toonstream': 'ToonStream',
+    'puretoons': 'PureToons',
+    'einthusan': 'Einthusan',
+    'karnis': 'Karnis',
+    'bollyflix': 'BollyFlix',
+    'katmoviehd': 'KatMovieHD',
+    'net52': 'Net52',
+    'animepahe': 'AnimePahe',
+    'gogoanime': 'GogoAnime',
+    'uhdmovies': 'UHDMovies',
+    'hindilinks4u': 'HindiLinks4u',
+    'pencarimovie': 'PencariMovie',
+    'topmovies': 'TopMovies',
+    'cinevood': 'CineVood',
+    'animedekho': 'AnimeDekho',
+    'torrentio': 'Torrentio',
+    'mediafusion': 'MediaFusion',
+    'comet': 'Comet',
+    'stremthru': 'StremThru',
+    'knightcrawler': 'KnightCrawler',
+    'streamwish': 'StreamWish',
+    'filelions': 'FileLions',
+    'hubcloud': 'HubCloud',
+    'pixeldrain': 'PixelDrain',
+    'gofile': 'Gofile',
+    'vidsrc': 'VidSrc',
+    'superembed': 'SuperEmbed',
+    '2embed': '2Embed'
+};
+
+function formatProviderName(name) {
+    if (!name || typeof name !== 'string') return name;
+    let clean = name.replace(/^(?:CB Provider Repo|CB-Providers|Nuvio Repo|Chole Bhature|All-in-One-Nuvio)\s*•\s*/i, '').trim();
+    if (clean.includes('Telegram') || clean.includes('PencariMovie')) return '⚡ Telegram';
+    const key = clean.toLowerCase();
+    if (CANONICAL_PROVIDERS[key]) return CANONICAL_PROVIDERS[key];
+    if (/^[a-z0-9_-]+$/.test(clean) && clean.length > 2) {
+        return clean.charAt(0).toUpperCase() + clean.slice(1);
     }
-    const cleanList = [...new Set(providers.filter(Boolean))].map(p => {
-        if (typeof p === 'string' && (p.includes('Telegram') || p.includes('PencariMovie'))) {
-            return '⚡ Telegram';
+    return clean;
+}
+
+function formatProviderChain(providers, fallback = 'Stream') {
+    const cleanFallback = formatProviderName(fallback);
+    const resolvedFallback = (cleanFallback === 'Stream' || cleanFallback === 'Direct') ? 'Direct Stream' : cleanFallback;
+
+    if (!providers || !Array.isArray(providers) || providers.length === 0) {
+        return resolvedFallback;
+    }
+    let cleanList = [...new Set(providers.filter(Boolean))].map(p => {
+        if (typeof p === 'string') {
+            return formatProviderName(p);
         }
         return p;
-    });
-    if (cleanList.length === 0) return fallback;
+    }).filter(p => p && p !== 'Stream' && p !== 'Direct' && p !== 'Direct Stream');
+
+    // Deduplicate if an entry is a substring of another entry
+    if (cleanList.length > 1) {
+        cleanList = cleanList.filter((item, idx) => {
+            return !cleanList.some((other, oIdx) => idx !== oIdx && other.toLowerCase().includes(item.toLowerCase()));
+        });
+    }
+
+    if (cleanList.length === 0) return resolvedFallback;
     if (cleanList.length === 1) return cleanList[0];
     if (cleanList.length === 2) return `${cleanList[0]} + ${cleanList[1]}`;
     if (cleanList.length === 3) return `${cleanList[0]} + ${cleanList[1]} + ${cleanList[2]}`;
@@ -34,7 +112,7 @@ function getDebridBadge(ingested, config = {}) {
             if (provider === 'premiumize') return '⚡ [PM+] Instant';
             return '⚡ [RD+] Instant';
         }
-        return '⚡ [Cached] Instant'; // Upstream cached, but we don't know which service
+        return '⚡ Instant';
     }
     
     if (ingested.isP2P && hasKey && provider) {
@@ -52,6 +130,80 @@ function getSeederBadge(seeders, show = true) {
     if (seeders >= 25) return `🟢 ${seeders} Seeders`;
     if (seeders >= 5) return `🟡 ${seeders} Seeders`;
     return `🔴 ${seeders} Seeder${seeders === 1 ? '' : 's'}`;
+}
+
+/**
+ * Concise audio tag for Header line (Presentation Studio Standard)
+ */
+function formatConciseAudioTag(parsed) {
+    const audioList = Array.isArray(parsed.audio) ? parsed.audio : [];
+    const hasAtmos = audioList.some(a => /atmos/i.test(a));
+    if (hasAtmos) return 'Atmos';
+    if (audioList.some(a => /truehd|true-hd/i.test(a))) return 'TrueHD';
+    if (audioList.some(a => /dts-?x/i.test(a))) return 'DTS:X';
+    if (audioList.some(a => /dts-?hd/i.test(a))) return 'DTS-HD';
+    if (audioList.some(a => /\bdts\b/i.test(a))) return 'DTS';
+    if (audioList.some(a => /ddp|dd\+|eac3/i.test(a))) {
+        return parsed.channels ? `DDP ${parsed.channels}` : 'DDP 5.1';
+    }
+    if (audioList.some(a => /\bdd\b|ac3/i.test(a))) {
+        return parsed.channels ? `DD ${parsed.channels}` : 'DD 5.1';
+    }
+    if (audioList.some(a => /flac/i.test(a))) return 'FLAC';
+    if (audioList.some(a => /aac/i.test(a))) return 'AAC';
+    if (audioList.some(a => /opus/i.test(a))) return 'Opus';
+    if (parsed.isDualAudio) return 'Dual-Audio';
+    if (parsed.isMultiAudio) return 'Multi-Audio';
+    return null;
+}
+
+/**
+ * Concise HDR / DV tag for Header line (Presentation Studio Standard)
+ */
+function formatConciseHdrTag(parsed) {
+    const hdrList = Array.isArray(parsed.hdr) ? parsed.hdr : [];
+    if (hdrList.includes('Dolby Vision') || parsed.dvProfile) return 'DV';
+    if (hdrList.includes('HDR10+')) return 'HDR10+';
+    if (hdrList.includes('HDR10')) return 'HDR10';
+    if (hdrList.includes('HDR')) return 'HDR';
+    if (hdrList.includes('HLG')) return 'HLG';
+    return null;
+}
+
+/**
+ * Detailed audio badge for Body Line 3 (Diamond row)
+ */
+function formatDetailedAudioBadge(parsed) {
+    const audioList = Array.isArray(parsed.audio) ? parsed.audio : [];
+    const hasAtmos = audioList.some(a => /atmos/i.test(a));
+    const hasTrueHD = audioList.some(a => /truehd|true-hd/i.test(a));
+    const hasDDP = audioList.some(a => /ddp|dd\+|eac3|dolby[\s._-]?digital[\s._-]?plus/i.test(a));
+    const hasDD = audioList.some(a => /\bdd\b|ac3|dolby[\s._-]?digital/i.test(a)) && !hasDDP;
+    const hasDTSX = audioList.some(a => /dts-?x/i.test(a));
+    const hasDTSHD = audioList.some(a => /dts-?hd/i.test(a));
+    const hasDTS = audioList.some(a => /\bdts\b/i.test(a)) && !hasDTSHD && !hasDTSX;
+    const hasFLAC = audioList.some(a => /flac/i.test(a));
+    const hasAAC = audioList.some(a => /aac/i.test(a));
+    const hasOpus = audioList.some(a => /opus/i.test(a));
+
+    const chan = parsed.channels || (hasTrueHD || hasDTSX || hasDTSHD ? '7.1' : (hasDDP || hasDD ? '5.1' : (hasFLAC ? '2.0' : null)));
+
+    if (hasAtmos) {
+        if (hasTrueHD) return `Dolby Atmos TrueHD ${chan || '7.1'}`;
+        if (hasDDP) return `Dolby Digital Plus ${chan || '5.1'} Atmos`;
+        return `Dolby Atmos ${chan || ''}`.trim();
+    }
+    if (hasTrueHD) return `TrueHD ${chan || '7.1'}`;
+    if (hasDTSX) return `DTS:X ${chan || '7.1'}`;
+    if (hasDTSHD) return `DTS-HD MA ${chan || '7.1'}`;
+    if (hasDTS) return `DTS ${chan || '5.1'}`;
+    if (hasDDP) return `Dolby Digital Plus ${chan || '5.1'}`;
+    if (hasDD) return `Dolby Digital ${chan || '5.1'}`;
+    if (hasFLAC) return `FLAC ${chan || '2.0'} Lossless`;
+    if (hasAAC) return `AAC ${chan || '2.0'}`;
+    if (hasOpus) return `Opus ${chan || '2.0'}`;
+    if (parsed.channels) return `Audio ${parsed.channels}`;
+    return null;
 }
 
 /**
@@ -73,134 +225,77 @@ function formatStreamCard(ingested, options = {}) {
     const debridBadge = getDebridBadge(ingested, config);
     const seederBadge = getSeederBadge(ingested.seeders, config.showSeeders !== false);
 
-    // Language badge for header line
-    let langTopBadge = null;
-    const realLangs = (parsed.languages || []).filter(l => l !== 'Dual-Audio' && l !== 'Multi-Audio');
-    if (parsed.isMultiAudio || (parsed.languages && parsed.languages.includes('Multi-Audio')) || realLangs.length >= 3) {
-        langTopBadge = 'Multi Audio';
-    } else if (parsed.isDualAudio || (parsed.languages && parsed.languages.includes('Dual-Audio')) || realLangs.length === 2) {
-        langTopBadge = 'Dual Audio';
-    } else if (realLangs.length === 1) {
-        if (realLangs[0] !== 'English') {
-            langTopBadge = realLangs[0];
-        }
-    }
-
     // 1. Build Header Line (stream.name)
-    const audioBadge = (() => {
-        const audioList = Array.isArray(parsed.audio) ? parsed.audio : [];
-        const hasAtmos = audioList.some(a => /atmos/i.test(a));
-        let base = null;
-        if (audioList.some(a => /truehd|true-hd/i.test(a))) base = 'TrueHD';
-        else if (audioList.some(a => /dts-hd\s*ma|dtshd\s*ma/i.test(a))) base = 'DTS-HD';
-        else if (audioList.some(a => /dts-x|dtsx/i.test(a))) base = 'DTS-X';
-        else if (audioList.some(a => /\bdts\b/i.test(a))) base = 'DTS';
-        else if (audioList.some(a => /ddp|dd\+|eac3/i.test(a))) base = 'DD+';
-        else if (audioList.some(a => /\bdd\b|ac3/i.test(a))) base = 'DD';
-        else if (audioList.some(a => /flac/i.test(a))) base = 'FLAC';
-        else if (audioList.some(a => /pcm|lpcm/i.test(a))) base = 'PCM';
-        else if (audioList.some(a => /aac/i.test(a))) base = 'AAC';
-        else if (audioList.some(a => /opus/i.test(a))) base = 'Opus';
-
-        let tag = '';
-        if (base && hasAtmos) tag = `${base} Atmos`;
-        else if (base) tag = base;
-        else if (hasAtmos) tag = 'Atmos';
-
-        if (!tag) return parsed.channels ? `Audio ${parsed.channels}` : null;
-        if (parsed.channels) return `${tag} ${parsed.channels}`;
-        return tag;
-    })();
-
-    const sizeTopBadge = (ingested.sizeFormatted && config.showFileSize !== false) ? `💾 ${ingested.sizeFormatted}` : null;
-    const imaxBadge = (parsed.special && (parsed.special.includes('IMAX Enhanced') || parsed.special.includes('IMAX'))) ? 'IMAX' : null;
-    const is3dBadge = (parsed.special && parsed.special.includes('3D')) ? '3D' : null;
-    const editionBadge = parsed.edition ? parsed.edition : null;
-    const repackBadge = (parsed.isRepack || (parsed.special && parsed.special.includes('REPACK'))) ? 'REPACK' : ((parsed.isProper || (parsed.special && parsed.special.includes('PROPER'))) ? 'PROPER' : null);
-
-    const bitDepthBadge = (parsed.bitDepth === '12-bit' || parsed.bitDepth === '12bit') ? '12bit' : ((parsed.bitDepth === '10bit' || parsed.bitDepth === '10-bit' || (parsed.special && parsed.special.some(s => /10bit|10-bit/i.test(s)))) ? '10bit' : null);
-    const hfrBadge = (parsed.special && parsed.special.includes('60fps')) ? '60fps' : null;
-
-    const codecBadge = (() => {
-        if (!parsed.codec) return null;
-        const c = parsed.codec.toUpperCase();
-        if (c === 'HEVC') return 'HEVC';
-        if (c === 'AV1') return 'AV1';
-        if (c === 'H.264' || c === 'AVC') return 'AVC';
-        if (c === 'VP9') return 'VP9';
-        if (c === 'VC-1') return 'VC-1';
-        return parsed.codec;
-    })();
-
-    const dvHdrBadges = [];
-    if (parsed.hdr && parsed.hdr.length > 0) {
-        parsed.hdr.forEach(h => {
-            if (h === 'Dolby Vision' && parsed.dvProfile) {
-                dvHdrBadges.push(`Dolby Vision ${parsed.dvProfile}`);
-            } else {
-                dvHdrBadges.push(h);
-            }
-        });
-    }
-
-    let topBadges = [];
-    if (config.cleanTitles !== false) {
-        // Modern Minimalist Header (Stream Card Presentation Studio)
-        topBadges = [
-            debridBadge,
-            parsed.resolution === '2160p' ? '4K UHD' : (parsed.resolution === '1080p' ? '1080p FHD' : (parsed.resolution === '720p' ? '720p HD' : parsed.resolution)),
-            ...dvHdrBadges,
-            audioBadge
-        ].filter(Boolean);
-    } else {
-        // Legacy Detailed Header
-        topBadges = [
-            debridBadge,
-            parsed.resolution === '2160p' ? '4K UHD' : (parsed.resolution === '1080p' ? '1080p FHD' : (parsed.resolution === '720p' ? '720p HD' : parsed.resolution)),
-            ...dvHdrBadges,
-            imaxBadge,
-            is3dBadge,
-            (parsed.special && parsed.special.includes('REMUX')) ? 'REMUX' : (parsed.quality || null),
-            editionBadge,
-            repackBadge,
-            codecBadge,
-            bitDepthBadge,
-            hfrBadge,
-            audioBadge,
-            sizeTopBadge,
-            langTopBadge
-        ].filter(Boolean);
-    }
-
-    const uniqueTopBadges = [...new Set(topBadges)];
-    const topBadgeStr = uniqueTopBadges.length > 0 ? ` • ${uniqueTopBadges.slice(0, 10).join(' • ')}` : '';
-
-    let nameLine = '';
+    const isInstant = (latency <= 30 && (ingested.isDebridCached || latency === 0));
+    let latencyBadge = '';
     if (isDead) {
-        nameLine = `🔴 DEAD • ${providerLabel}${topBadgeStr}`;
+        latencyBadge = '🔴 DEAD';
     } else if (ingested.isP2P && !debridBadge) {
-        nameLine = `🧲 P2P • ${providerLabel}${topBadgeStr}`;
+        latencyBadge = '🧲 P2P';
     } else if (
         providerLabel.includes('Telegram') || 
         providerLabel.includes('PencariMovie') || 
         (ingested.originalProvider && ingested.originalProvider.includes('Telegram'))
     ) {
-        nameLine = `${providerLabel}${topBadgeStr}`;
+        latencyBadge = null;
+    } else if (isInstant) {
+        latencyBadge = `⚡ INSTANT (${latency}ms)`;
     } else {
         const statusEmoji = latency < 800 ? '🟢' : '🟡';
         const statusTag = latency < 800 ? 'FAST' : 'SLOW';
-        nameLine = `${statusEmoji} ${statusTag} (${latency}ms) • ${providerLabel}${topBadgeStr}`;
+        latencyBadge = `${statusEmoji} ${statusTag} (${latency}ms)`;
     }
+
+    let headerTags = [];
+    if (config.cleanTitles !== false) {
+        // Modern Minimalist Header (Stream Card Presentation Studio)
+        const resTag = parsed.resolution === '2160p' ? '4K UHD' : (parsed.resolution === '1080p' ? '1080p FHD' : (parsed.resolution === '720p' ? '720p HD' : (parsed.resolution || null)));
+        const hdrTag = formatConciseHdrTag(parsed);
+        const audTag = formatConciseAudioTag(parsed);
+        const instantTag = (ingested.isDebridCached && !audTag) ? 'Instant Play' : null;
+
+        headerTags = [
+            isInstant ? null : debridBadge,
+            resTag,
+            hdrTag,
+            audTag,
+            instantTag
+        ].filter(Boolean);
+    } else {
+        // Legacy Detailed Header
+        const dvHdrBadges = [];
+        if (parsed.hdr && parsed.hdr.length > 0) {
+            parsed.hdr.forEach(h => {
+                if (h === 'Dolby Vision' && parsed.dvProfile) {
+                    dvHdrBadges.push(`Dolby Vision ${parsed.dvProfile}`);
+                } else {
+                    dvHdrBadges.push(h);
+                }
+            });
+        }
+        headerTags = [
+            debridBadge,
+            parsed.resolution === '2160p' ? '4K UHD' : (parsed.resolution === '1080p' ? '1080p FHD' : (parsed.resolution === '720p' ? '720p HD' : parsed.resolution)),
+            ...dvHdrBadges,
+            (parsed.special && parsed.special.includes('REMUX')) ? 'REMUX' : (parsed.quality || null),
+            parsed.codec || null,
+            formatConciseAudioTag(parsed)
+        ].filter(Boolean);
+    }
+
+    const uniqueHeaderTags = [...new Set(headerTags)];
+    const topBadgeStr = uniqueHeaderTags.length > 0 ? ` • ${uniqueHeaderTags.join(' • ')}` : '';
+
+    let nameLine = latencyBadge ? `${latencyBadge} • ${providerLabel}${topBadgeStr}` : `${providerLabel}${topBadgeStr}`;
 
     // 2. Build Card Description (stream.title)
-    // If cleanTitles is disabled, show raw scene name cleanly with stats row
-    if (config.cleanTitles === false) {
+    if (config.cleanTitles === false || preset === 'torrentio') {
         const lines = [ingested.rawFilename];
         const stats = [];
-        if (ingested.sizeFormatted && config.showFileSize !== false) stats.push(`💾 ${ingested.sizeFormatted}`);
+        if (ingested.sizeFormatted && config.showFileSize !== false) stats.push(`📦 ${ingested.sizeFormatted}`);
         if (seederBadge && config.showSeeders !== false) stats.push(seederBadge);
-        stats.push(`⚙️ ${providerLabel}`);
-        lines.push(stats.join(' '));
+        stats.push(`🔗 ${providerLabel}`);
+        lines.push(stats.join(' • '));
         return {
             name: nameLine,
             title: lines.join('\n'),
@@ -208,26 +303,11 @@ function formatStreamCard(ingested, options = {}) {
         };
     }
 
-    // Torrentio Classic Preset
-    if (preset === 'torrentio') {
-        const lines = [ingested.rawFilename];
-        const stats = [];
-        if (ingested.sizeFormatted && config.showFileSize !== false) stats.push(`💾 ${ingested.sizeFormatted}`);
-        if (seederBadge && config.showSeeders !== false) stats.push(seederBadge);
-        stats.push(`⚙️ ${providerLabel}`);
-        lines.push(stats.join(' '));
-        return {
-            name: nameLine,
-            title: lines.join('\n'),
-            description: lines.join('\n')
-        };
-    }
-
-    // AIOStreams Modern Preset (Default)
+    // AIOStreams Stream Card Presentation Studio Layout
     const cardLines = [];
 
-    // Line 1: Header (Title, Year, Episode, Main Release Specs)
-    const titleHeaderParts = [];
+    // Line 1: Header (Title, Year, Episode, Codec Tags)
+    // Format: 🎬 Title (Year) [4K UHD • REMUX • HEVC • 10-bit]
     const resolvedTitle = (config.target && config.target.title)
         ? config.target.title
         : (parsed.title || ingested.rawFilename);
@@ -243,143 +323,195 @@ function formatStreamCard(ingested, options = {}) {
         resolvedSeasonEpisode = `S${reqS}E${reqE}`;
     }
 
-    if (resolvedTitle) {
-        let titleHeader = resolvedTitle;
-        if (resolvedYear) titleHeader += ` (${resolvedYear})`;
-        if (resolvedSeasonEpisode) titleHeader += ` • ${resolvedSeasonEpisode}`;
-        titleHeaderParts.push(titleHeader);
+    let mediaEmoji = '🎬';
+    if (parsed.isAnime || (config.target && config.target.type === 'anime') || /anime/i.test(ingested.rawFilename)) {
+        mediaEmoji = '🌸';
+    } else if (config.target?.type === 'series' || config.target?.type === 'tv' || resolvedSeasonEpisode || /S\d+/i.test(ingested.rawFilename)) {
+        mediaEmoji = '📺';
     }
 
-    const qualitySpecs = [
-        parsed.resolution ? (parsed.resolution === '2160p' ? '4K UHD' : parsed.resolution === '1080p' ? '1080p FHD' : parsed.resolution === '720p' ? '720p HD' : parsed.resolution) : null,
-        (parsed.special && parsed.special.includes('REMUX')) ? 'REMUX' : (parsed.quality || null),
-        (parsed.special && parsed.special.includes('IMAX Enhanced')) ? 'IMAX Enhanced' : ((parsed.special && parsed.special.includes('IMAX')) ? 'IMAX' : null),
-        (parsed.special && parsed.special.includes('3D')) ? '3D' : null,
-        parsed.edition || null,
-        parsed.codec || null,
-        parsed.bitDepth || null
+    let titleHeader = resolvedTitle;
+    if (resolvedYear) titleHeader += ` (${resolvedYear})`;
+    if (resolvedSeasonEpisode) titleHeader += ` ${resolvedSeasonEpisode}`;
+
+    // Codec Tags
+    const resString = parsed.resolution === '2160p' ? '4K UHD' : (parsed.resolution === '1080p' ? '1080p FHD' : (parsed.resolution === '720p' ? '720p HD' : (parsed.resolution || null)));
+    const qualityString = (parsed.special && parsed.special.includes('REMUX')) ? 'REMUX' : (parsed.quality || null);
+    const codecString = (() => {
+        if (!parsed.codec) return null;
+        const c = parsed.codec.toLowerCase();
+        if (c === 'x265' || c === 'h.265' || c === 'hevc') return 'HEVC';
+        if (c === 'x264' || c === 'h.264' || c === 'avc') return 'H.264';
+        if (c === 'av1' || c === 'av01') return 'AV1';
+        return parsed.codec;
+    })();
+    const bitDepthString = parsed.bitDepth ? (parsed.bitDepth === '10bit' || parsed.bitDepth === '10-bit' ? '10-bit' : (parsed.bitDepth === '8bit' || parsed.bitDepth === '8-bit' ? '8-bit' : parsed.bitDepth)) : null;
+
+    const codecTags = [
+        resString,
+        qualityString,
+        codecString,
+        bitDepthString
     ].filter(Boolean);
 
-    if (qualitySpecs.length > 0) {
-        titleHeaderParts.push(`[${qualitySpecs.join(' • ')}]`);
-    }
-    if (titleHeaderParts.length > 0) {
-        cardLines.push(`🎬 ${titleHeaderParts.join(' ')}`);
-    }
+    const codecTagStr = codecTags.length > 0 ? ` [${[...new Set(codecTags)].join(' • ')}]` : '';
+    cardLines.push(`${mediaEmoji} ${titleHeader}${codecTagStr}`);
 
-    // Original Stream File Title (if enabled)
+    // Line 2: Original Scene Release Filename
     const rawTitleToDisplay = ingested.originalTitle || ingested.rawFilename;
     if (config.includeOriginalTitle !== false && rawTitleToDisplay) {
-        const cleanRaw = String(rawTitleToDisplay).replace(/[🎬💎🌐📦🟢🟡🔴🧲⚡⚙️🔗🏷️]/g, '').trim();
+        const cleanRaw = String(rawTitleToDisplay).replace(/^[🎬📺🌸💎🌐📦🟢🟡🔴🧲⚡⚙️🔗🏷️📄💬\s]+/g, '').trim();
         const isGeneric = !cleanRaw || cleanRaw.toLowerCase() === 'stream' || cleanRaw.toLowerCase() === 'video';
-        if (!isGeneric) {
+        const isDuplicateOfHeader = resolvedTitle && cleanRaw.toLowerCase() === resolvedTitle.toLowerCase();
+        if (!isGeneric && !isDuplicateOfHeader) {
             cardLines.push(`📄 ${cleanRaw}`);
         }
     }
 
-    // Line 2: Visual & Audio Studio Badges
-    const avBadges = [];
-    if (parsed.special && parsed.special.includes('IMAX Enhanced')) {
-        avBadges.push('IMAX Enhanced');
-    } else if (parsed.special && parsed.special.includes('IMAX')) {
-        avBadges.push('IMAX');
-    }
-    if (parsed.special && parsed.special.includes('3D')) {
-        avBadges.push('3D');
-    }
-    if (parsed.edition) {
-        avBadges.push(parsed.edition);
-    }
+    // Line 3: Visual & Audio Studio Badges (Diamond Row)
+    // Format: 💎 Dolby Vision Profile 8 • HDR10+ • Dolby Atmos TrueHD 7.1
+    const hdrBadges = [];
     if (parsed.hdr && parsed.hdr.length > 0) {
-        parsed.hdr.forEach(h => {
-            if (h === 'Dolby Vision' && parsed.dvProfile) avBadges.push(`Dolby Vision ${parsed.dvProfile}`);
-            else avBadges.push(h);
-        });
-    }
-    if (parsed.audio && parsed.audio.length > 0) {
-        const audioStr = parsed.audio.map(a => a === 'DDP' ? 'DD+' : a).join(' + ');
-        const chanStr = parsed.channels ? ` ${parsed.channels}` : '';
-        avBadges.push(`${audioStr}${chanStr}`);
-    } else if (parsed.channels) {
-        avBadges.push(`Audio ${parsed.channels}`);
-    }
-    if (avBadges.length > 0) {
-        cardLines.push(`💎 ${avBadges.join(' • ')}`);
+        if (parsed.hdr.includes('Dolby Vision') || parsed.dvProfile) {
+            let dvProf = parsed.dvProfile;
+            if (!dvProf) {
+                // Infer standard DV profile from release type if not parsed explicitly
+                if (parsed.hdr.includes('HDR10+') || (parsed.special && parsed.special.includes('REMUX'))) {
+                    dvProf = 'Profile 8';
+                } else if (parsed.quality === 'WEB-DL' || parsed.quality === 'WEBRip') {
+                    dvProf = 'Profile 5';
+                } else if (parsed.quality === 'BluRay') {
+                    dvProf = 'Profile 7';
+                } else {
+                    dvProf = 'Profile 8';
+                }
+            }
+            hdrBadges.push(`Dolby Vision ${dvProf}`);
+        }
+        if (parsed.hdr.includes('HDR10+')) {
+            hdrBadges.push('HDR10+');
+        } else if (parsed.hdr.includes('HDR10')) {
+            hdrBadges.push('HDR10');
+        } else if (parsed.hdr.includes('HDR')) {
+            hdrBadges.push('HDR');
+        }
+    } else if (parsed.bitDepth === '10-bit' || parsed.bitDepth === '10bit') {
+        hdrBadges.push('10-bit Color');
     }
 
-    // Line 3: Spoken Languages & Audio Tracks (with accurate country flags)
-    const displayLangs = [];
+    if (parsed.special && parsed.special.includes('IMAX Enhanced')) {
+        hdrBadges.push('IMAX Enhanced');
+    }
+
+    const detailedAudio = formatDetailedAudioBadge(parsed);
+    if (detailedAudio) {
+        hdrBadges.push(detailedAudio);
+    }
+
+    if (hdrBadges.length > 0) {
+        cardLines.push(`💎 ${[...new Set(hdrBadges)].join(' • ')}`);
+    }
+
+    // Line 4: Spoken Languages & Audio Tracks (Strict Studio Layout)
+    // Format: 🌐 🇮🇳 Hindi Dub • 🇬🇧 English • 🌐 Multi-Audio
+    const audioLangs = [];
     const nonGenericLangs = (parsed.languages || []).filter(l => l !== 'Dual-Audio' && l !== 'Multi-Audio');
 
+    const flagMap = {
+        'Hindi': '🇮🇳',
+        'Tamil': '🇮🇳',
+        'Telugu': '🇮🇳',
+        'Malayalam': '🇮🇳',
+        'Kannada': '🇮🇳',
+        'Bengali': '🇮🇳',
+        'Punjabi': '🇮🇳',
+        'Marathi': '🇮🇳',
+        'English': '🇬🇧',
+        'Japanese': '🇯🇵',
+        'Korean': '🇰🇷',
+        'Spanish': '🇪🇸',
+        'French': '🇫🇷',
+        'German': '🇩🇪',
+        'Italian': '🇮🇹',
+        'Portuguese': '🇵🇹',
+        'Russian': '🇷🇺',
+        'Chinese': '🇨🇳',
+        'Arabic': '🇦🇪',
+        'Turkish': '🇹🇷'
+    };
+
+    const isAnimeContent = mediaEmoji === '🌸';
+    const hasMultipleAudioTracks = parsed.isMultiAudio || parsed.isDualAudio || nonGenericLangs.length > 1;
+
+    nonGenericLangs.forEach(l => {
+        const flag = flagMap[l] || '🌐';
+        let label = `${flag} ${l}`;
+        if (l === 'Hindi') {
+            const isDub = hasMultipleAudioTracks || /\bdub(?:bed)?\b/i.test(rawTitleToDisplay) || nonGenericLangs.includes('English');
+            label = isDub ? `${flag} Hindi Dub` : `${flag} Hindi`;
+        } else if (l === 'English') {
+            if (isAnimeContent) {
+                label = `${flag} English Dub`;
+            } else {
+                label = `${flag} English`;
+            }
+        } else if (l === 'Japanese') {
+            if (isAnimeContent) {
+                label = `${flag} Japanese [Original]`;
+            } else {
+                label = `${flag} Japanese Dub`;
+            }
+        }
+        audioLangs.push(label);
+    });
+
     if (parsed.isMultiAudio || (parsed.languages && parsed.languages.includes('Multi-Audio')) || nonGenericLangs.length >= 3) {
-        const langNames = nonGenericLangs.map(l => {
-            if (l === 'English') return '🇬🇧 English';
-            if (l === 'Hindi') return '🇮🇳 Hindi';
-            if (l === 'Tamil') return '🇮🇳 Tamil';
-            if (l === 'Telugu') return '🇮🇳 Telugu';
-            if (l === 'Malayalam') return '🇮🇳 Malayalam';
-            if (l === 'Kannada') return '🇮🇳 Kannada';
-            if (l === 'Japanese') return '🇯🇵 Japanese';
-            if (l === 'Korean') return '🇰🇷 Korean';
-            return l;
-        });
-        const details = langNames.length > 0 ? ` [${[...new Set(langNames)].join(' • ')}]` : '';
-        displayLangs.push(`🌐 Multi-Audio${details}`);
+        audioLangs.push('🌐 Multi-Audio');
     } else if (parsed.isDualAudio || (parsed.languages && parsed.languages.includes('Dual-Audio')) || nonGenericLangs.length === 2) {
-        const langNames = nonGenericLangs.map(l => {
-            if (l === 'English') return '🇬🇧 English';
-            if (l === 'Hindi') return '🇮🇳 Hindi';
-            if (l === 'Tamil') return '🇮🇳 Tamil';
-            if (l === 'Telugu') return '🇮🇳 Telugu';
-            if (l === 'Malayalam') return '🇮🇳 Malayalam';
-            if (l === 'Kannada') return '🇮🇳 Kannada';
-            if (l === 'Japanese') return '🇯🇵 Japanese';
-            if (l === 'Korean') return '🇰🇷 Korean';
-            return l;
-        });
-        const details = langNames.length > 0 ? ` [${[...new Set(langNames)].join(' + ')}]` : '';
-        displayLangs.push(`🌐 Dual-Audio${details}`);
-    } else if (nonGenericLangs.length > 0) {
-        nonGenericLangs.forEach(l => {
-            if (l === 'Hindi') displayLangs.push('🇮🇳 Hindi');
-            else if (l === 'Tamil') displayLangs.push('🇮🇳 Tamil');
-            else if (l === 'Telugu') displayLangs.push('🇮🇳 Telugu');
-            else if (l === 'Malayalam') displayLangs.push('🇮🇳 Malayalam');
-            else if (l === 'Kannada') displayLangs.push('🇮🇳 Kannada');
-            else if (l === 'Japanese') displayLangs.push('🇯🇵 Japanese');
-            else if (l === 'English') displayLangs.push('🇬🇧 English');
-            else if (l === 'Korean') displayLangs.push('🇰🇷 Korean');
-            else displayLangs.push(l);
-        });
-    } else {
-        displayLangs.push('🇬🇧 English');
+        if (!audioLangs.some(a => a.includes('Multi-Audio'))) {
+            audioLangs.push('🌐 Dual-Audio');
+        }
     }
 
-    // Include subtitle tags cleanly if present
-    if (parsed.subtitles && parsed.subtitles.length > 0) {
-        const subTags = parsed.subtitles.map(s => {
-            if (s === 'English') return '🇬🇧 Eng';
-            if (s === 'Hindi') return '🇮🇳 Hin';
-            return s;
-        });
-        displayLangs.push(`💬 Subs: ${[...new Set(subTags)].join(', ')}`);
+    if (audioLangs.length === 0) {
+        audioLangs.push('🇬🇧 English');
     }
 
-    if (displayLangs.length > 0) {
-        cardLines.push(`${[...new Set(displayLangs)].join(' • ')}`);
-    }
+    const uniqueAudioLangs = [...new Set(audioLangs)];
+    cardLines.push(`🌐 ${uniqueAudioLangs.join(' • ')}`);
 
-    // Line 4: Media Specs Row (File Size, Seeders, Release Group, Providers)
+    // Line 5: Metadata Row (Package Box File Size, Seeders, Release Group, Provider)
+    // Format: 📦 48.2 GB • 🟢 145 Seeders • 🏷️ FraMeSToR • 🔗 Torrentio
     const metaRow = [];
     if (ingested.sizeFormatted && config.showFileSize !== false) {
-        metaRow.push(`💾 ${ingested.sizeFormatted}`);
+        const cleanSize = ingested.sizeFormatted
+            .replace(/^💾\s*/, '')
+            .replace(/(\.0+)\s*GB/, ' GB')
+            .replace(/(\.\d)0\s*GB/, '$1 GB');
+        metaRow.push(`📦 ${cleanSize}`);
     }
-    if (seederBadge && config.showSeeders !== false) {
+
+    if (ingested.isDebridCached) {
+        const p = (config.debridProvider && config.debridProvider !== 'none')
+            ? config.debridProvider.toLowerCase()
+            : (ingested.originalProvider && /torbox/i.test(ingested.originalProvider) ? 'torbox' : (/realdebrid|rd/i.test(ingested.originalProvider) ? 'realdebrid' : null));
+        if (p === 'torbox') metaRow.push('⚡ Torbox Debrid Cached');
+        else if (p === 'realdebrid') metaRow.push('⚡ RealDebrid Instant Play');
+        else if (p === 'alldebrid') metaRow.push('⚡ AllDebrid Instant Play');
+        else if (p === 'premiumize') metaRow.push('⚡ Premiumize Instant Play');
+        else metaRow.push('⚡ Debrid Instant Play');
+    } else if (seederBadge && config.showSeeders !== false) {
         metaRow.push(seederBadge);
     }
+
     if (parsed.releaseGroup && config.showReleaseGroup !== false) {
         metaRow.push(`🏷️ ${parsed.releaseGroup}`);
     }
+
+    if (ingested.mirrorCount > 1) {
+        metaRow.push(`⚡ ${ingested.mirrorCount} Live Mirrors`);
+    }
+
     metaRow.push(`🔗 ${providerLabel}`);
     if (metaRow.length > 0) {
         cardLines.push(metaRow.join(' • '));
@@ -395,6 +527,7 @@ function formatStreamCard(ingested, options = {}) {
 module.exports = {
     formatStreamCard,
     formatProviderChain,
+    formatProviderName,
     getDebridBadge,
     getSeederBadge
 };

@@ -1,8 +1,29 @@
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
+
+// Auto-load local .env if present
+try {
+    const envPath = path.join(__dirname, '.env');
+    if (fs.existsSync(envPath)) {
+        const lines = fs.readFileSync(envPath, 'utf8').split('\n');
+        for (const line of lines) {
+            const m = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+            if (m) {
+                const key = m[1];
+                let val = (m[2] || '').trim();
+                if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+                    val = val.substring(1, val.length - 1);
+                }
+                if (!process.env[key]) process.env[key] = val;
+            }
+        }
+    }
+} catch (e) {}
+
 const { createClient } = require('@vercel/kv');
 const kv = createClient({ url: process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || process.env.UPSTASH_REDIS_KV_REST_API_URL || '', token: process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || process.env.UPSTASH_REDIS_KV_REST_API_TOKEN || '' });
 const { addonBuilder, serveHTTP } = require('stremio-addon-sdk');
-const path = require('path');
 const providerLoader = require('./providerLoader');
 const { sortAndTagStreams, clearDomainLatencyCache } = require('./streamTester');
 const { setDohEnabled, setDohProvider, getDohConfig, dohHttpsAgent } = require('./dohResolver');
@@ -11,71 +32,16 @@ const { searchPencariMovie } = require('./scrapers/pencarimovie');
 const telegramRouter = require('./routes/telegramStream');
 const streamProxyRouter = require('./routes/streamProxy');
 const axios = require('axios');
-const fs = require('fs');
 const crypto = require('crypto');
 const dns = require('dns').promises;
 const net = require('net');
 
-// Configuration Encryption Setup (AES-256-GCM)
-let SECRET_ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
-if (SECRET_ENCRYPTION_KEY) {
-    SECRET_ENCRYPTION_KEY = crypto.createHash('sha256').update(String(SECRET_ENCRYPTION_KEY)).digest();
-} else {
-    // Generate a secure random volatile key for this session if ENCRYPTION_KEY is not set.
-    // WARNING: This will break all encrypted configurations if the server/lambda restarts!
-    console.warn('================================================================');
-    console.warn('WARNING: ENCRYPTION_KEY environment variable is NOT set!');
-    console.warn('A volatile encryption key is being used for configuration tokens.');
-    console.warn('All encrypted Stremio install links WILL BREAK on server restart.');
-    console.warn('Please set ENCRYPTION_KEY in your environment to a secure string.');
-    console.warn('================================================================');
-    SECRET_ENCRYPTION_KEY = crypto.createHash('sha256').update('nuvio-default-volatile-fallback-key-2026').digest();
-}
-
-function encryptConfigPayload(configObj) {
-    try {
-        const text = JSON.stringify(configObj);
-        return Buffer.from(text, 'utf8').toString('base64url');
-    } catch (e) {
-        console.error('[Encoding Error]', e);
-        return null;
-    }
-}
-
-function decryptConfigPayload(token) {
-    if (!token) return null;
-    try {
-        // Support legacy enc_ prefix temporarily if users still have old AES tokens
-        if (token.startsWith('enc_')) {
-            let parts;
-            if (token.includes('.')) {
-                const withoutPrefix = token.substring(4);
-                parts = withoutPrefix.split('.');
-                if (parts.length !== 3) return null;
-                parts = ['enc', parts[0], parts[1], parts[2]];
-            } else {
-                parts = token.split('_');
-            }
-            if (parts.length !== 4) return null;
-            const iv = Buffer.from(parts[1], 'base64url');
-            const encrypted = parts[2];
-            const authTag = Buffer.from(parts[3], 'base64url');
-            
-            const decipher = crypto.createDecipheriv('aes-256-gcm', SECRET_ENCRYPTION_KEY, iv);
-            decipher.setAuthTag(authTag);
-            
-            let decrypted = decipher.update(encrypted, 'base64url', 'utf8');
-            decrypted += decipher.final('utf8');
-            return JSON.parse(decrypted);
-        }
-        
-        // Base64url token
-        const decrypted = Buffer.from(token, 'base64url').toString('utf8');
-        return JSON.parse(decrypted);
-    } catch (e) {
-        return null;
-    }
-}
+// Configuration Encryption Setup (AES-256-GCM / Base64URL)
+const {
+    SECRET_ENCRYPTION_KEY,
+    encryptConfigPayload,
+    decryptConfigPayload
+} = require('./config/encryption');
 
 // Live Analytics and Quarantine Registries
 const providerAnalytics = new Map();
@@ -131,7 +97,7 @@ async function loadGlobalStateFromKV() {
             kv.get('global_analytics')
         ]);
         
-        if (kvTelemetry) telemetryMetrics = { ...telemetryMetrics, ...kvTelemetry };
+        if (kvTelemetry) Object.assign(telemetryMetrics, kvTelemetry);
         
         if (kvQuarantine && Array.isArray(kvQuarantine)) {
             for (const [k, v] of kvQuarantine) quarantineRegistry.set(k, v);
@@ -174,6 +140,17 @@ if (!fs.existsSync(path.join(__dirname, '.secret')) && !process.env.VERCEL && !p
 }
 
 const app = express();
+
+// Global CORS & TV Client Compatibility Headers (Android TV / Nuvio / Stremio)
+app.use((req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
+    res.setHeader('Access-Control-Allow-Headers', '*');
+    if (req.method === 'OPTIONS') {
+        return res.status(204).end();
+    }
+    next();
+});
 
 // Vercel rewrites a request to the serverless function pathname
 // (/api/index.js). Preserve the original route in vercel.json and restore it
@@ -240,48 +217,12 @@ async function saveUserConfig(configId, config) {
     }
 }
 
-// ============================================================
-// SECRET FIELD DEFINITIONS & MASKING HELPERS
-// These fields contain sensitive credentials that must NEVER
-// be returned to clients via any API endpoint.
-// ============================================================
-const SECRET_FIELDS = [
-    'debridApiKey', 'rdKey', 'adKey', 'tbKey', 'pmKey',
-    'xtreamPassword', 'xtreamUser', 'xtreamServer',
-    'renderApiKey', 'vercelApiToken', 'adminKey'
-];
-
-/**
- * Returns a copy of a config object with all secret fields redacted.
- * Used before sending any config object to the client.
- */
-function redactSecrets(cfg) {
-    if (!cfg || typeof cfg !== 'object') return cfg;
-    const safe = { ...cfg };
-    for (const field of SECRET_FIELDS) {
-        if (safe[field] !== undefined && safe[field] !== null && safe[field] !== '') {
-            safe[field] = '***REDACTED***';
-        }
-    }
-    return safe;
-}
-
-function encodeConfigParam(cfg) {
-    try {
-        if (!cfg || typeof cfg !== 'object') return '';
-        const clean = { ...cfg };
-        delete clean.addonHost;
-        delete clean.addonProtocol;
-        // Never encode secrets into the URL token
-        for (const field of SECRET_FIELDS) {
-            delete clean[field];
-        }
-        if (Object.keys(clean).length === 0) return '';
-        return Buffer.from(JSON.stringify(clean), 'utf8').toString('base64url');
-    } catch (e) {
-        return '';
-    }
-}
+// Secret Field Definitions & Masking Helpers
+const {
+    SECRET_FIELDS,
+    redactSecrets,
+    encodeConfigParam
+} = require('./config/serverSettings');
 
 // Multi-Device Stateless & Persistent Configuration Resolver
 const activeConfigsTracker = new Set();
@@ -438,7 +379,8 @@ app.get('/my-repo/manifest.json', (req, res) => {
 });
 
 app.get('/manifest.json', (req, res, next) => {
-    if (req.query.v || req.query.pwa) {
+    // Only serve PWA webmanifest if explicitly requested with ?pwa=1
+    if (req.query.pwa) {
         res.setHeader('Content-Type', 'application/manifest+json; charset=utf-8');
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Cache-Control', 'public, max-age=86400');
@@ -477,20 +419,55 @@ app.use((req, res, next) => {
 });
 
 // Serve static assets
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 const cbProviderDir = path.join(__dirname, '..', 'cb-providers');
 if (fs.existsSync(cbProviderDir)) {
     app.use('/my-repo', express.static(cbProviderDir));
 }
 
-app.get(['/', '/configure', '/index.html'], (req, res) => {
+function isBrowserHtmlRequest(req) {
+    const userAgent = (req.headers['user-agent'] || '').toLowerCase();
+    const accept = (req.headers['accept'] || '').toLowerCase();
+    if (userAgent.includes('okhttp') || userAgent.includes('nuvio') || userAgent.includes('stremio') || userAgent.includes('exoplayer')) {
+        return false;
+    }
+    if (accept.includes('application/json')) {
+        return false;
+    }
+    return accept.includes('text/html');
+}
+
+app.get(['/', '/configure', '/index.html'], async (req, res) => {
+    if (req.path === '/' && !isBrowserHtmlRequest(req)) {
+        const activeConfig = {};
+        activeConfig.addonHost = req.headers.host;
+        const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+        activeConfig.addonProtocol = protocol.split(',')[0].trim();
+        const defaultAddon = createAddon(activeConfig);
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+        return res.json(defaultAddon.manifest);
+    }
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Serve configure page on configId routes
-app.get(['/c/:configId', '/c/:configId/configure', '/configure/:configId'], (req, res) => {
+app.get(['/c/:configId', '/c/:configId/configure', '/configure/:configId'], async (req, res) => {
+    if (req.path.startsWith('/c/') && !req.path.endsWith('/configure') && !isBrowserHtmlRequest(req)) {
+        let config = await resolveConfig(req.params.configId);
+        if (!config) config = {};
+        config = JSON.parse(JSON.stringify(config));
+        config.configId = req.params.configId;
+        config.addonHost = req.headers.host;
+        const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+        config.addonProtocol = protocol.split(',')[0].trim();
+        const configuredAddon = createAddon(config);
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+        return res.json(configuredAddon.manifest);
+    }
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
@@ -572,12 +549,8 @@ app.post('/api/config/save', async (req, res) => {
             await await saveUserConfig(oldToken, config);
         }
         
-        // Invalidate stream cache for this configuration
-        for (const key of streamCache.keys()) {
-            if (key.includes(configId) || (token && key.includes(token)) || (oldToken && key.includes(oldToken))) {
-                streamCache.delete(key);
-            }
-        }
+        // Invalidate stream cache for this configuration to purge streams from newly disabled providers
+        streamCache.clear();
         
         const maskedId = configId.length > 20 ? configId.substring(0, 8) + '...' + configId.substring(configId.length - 8) : '***';
         console.log(`[Config] Configuration saved & synced for configId: ${maskedId}`);
@@ -638,52 +611,18 @@ const inFlightStreamFetches = new Map();
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 
-// Cloud Platform Auto-Detection (Render Web Service vs Vercel Serverless vs Local Node)
-const isRender = Boolean(process.env.RENDER || process.env.RENDER_SERVICE_ID);
-const isVercel = Boolean(process.env.VERCEL);
-
-// Global Server-Side Configuration (Admin Managed & Enforced)
-const ADMIN_SETTINGS_FILE = isVercel
-    ? path.join('/tmp', 'admin_settings.json')
-    : path.join(__dirname, 'admin_settings.json');
-let globalServerSettings = {
-    globalEcoMode: process.env.GLOBAL_ECO_MODE !== undefined
-        ? (process.env.GLOBAL_ECO_MODE === 'true' || process.env.GLOBAL_ECO_MODE === '1')
-        : false, // Universal: Disabled by default for accurate live stream validation
-    allowClientEcoOverride: false, // Strict server-wide enforcement (Admin page is universal)
-    renderKeepAlive: true,
-    renderPingUrl: process.env.RENDER_PING_URL || null,
-    renderApiKey: process.env.RENDER_API_KEY || null,
-    vercelApiToken: process.env.VERCEL_API_TOKEN || null,
-    globalScraperOverrides: {},
-    localRepo: [],
-    installedRepos: [
-        'https://raw.githubusercontent.com/D3adlyRocket/All-in-One-Nuvio/refs/heads/main/manifest.json',
-        'https://raw.githubusercontent.com/yoruix/nuvio-providers/refs/heads/main/manifest.json',
-        'https://codeberg.org/api/v1/repos/eclipsia/nuvio-plugin/raw/manifest.json'
-    ]
-};
-
-// Universal Server-Wide Admin Directives: Merges global overrides onto any user configuration
-function applyGlobalAdminOverrides(userConfig) {
-    const cfg = { ...(userConfig || {}) };
-    
-    // 1. Universal Eco Mode: Admin setting strictly governs 100% of all addon users
-    if (globalServerSettings.globalEcoMode !== undefined) {
-        cfg.renderEcoMode = Boolean(globalServerSettings.globalEcoMode);
-        cfg.vercelEcoMode = Boolean(globalServerSettings.globalEcoMode);
-    }
-    
-    // 2. Universal Scraper Overrides: Base URL / mirrors / custom headers apply to all users
-    if (globalServerSettings.globalScraperOverrides && typeof globalServerSettings.globalScraperOverrides === 'object') {
-        cfg.scraperOverrides = {
-            ...(cfg.scraperOverrides || {}),
-            ...globalServerSettings.globalScraperOverrides
-        };
-    }
-    
-    return cfg;
-}
+// Cloud Platform Auto-Detection & Global Server Settings
+const {
+    isRender,
+    isVercel,
+    ADMIN_SETTINGS_FILE,
+    globalServerSettings,
+    applyGlobalAdminOverrides,
+    loadAdminSettings,
+    saveAdminSettings,
+    getCbProviderRepoDirs,
+    syncTwoWayCbProviders
+} = require('./config/serverSettings');
 
 const getGithubToken = () => {
     const t = process.env.GITHUB_TOKEN || process.env.GH_TOKEN || process.env.github_token;
@@ -723,58 +662,6 @@ async function commitFileToGitHub(filePath, contentString, commitMessage, branch
     return putRes.data;
 }
 
-function loadAdminSettings() {
-    try {
-        const possibleSettingsFiles = [
-            path.join(__dirname, 'admin_settings.json'),
-            path.join(process.cwd(), 'admin_settings.json'),
-            path.join(__dirname, '..', 'admin_settings.json'),
-            ADMIN_SETTINGS_FILE
-        ];
-        for (const f of possibleSettingsFiles) {
-            if (f && fs.existsSync(f)) {
-                try {
-                    const raw = fs.readFileSync(f, 'utf8');
-                    const data = JSON.parse(raw);
-                    if (data && typeof data === 'object') {
-                        globalServerSettings = { ...globalServerSettings, ...data };
-                        break;
-                    }
-                } catch (_) {}
-            }
-        }
-        if (process.env.RENDER_API_KEY) {
-            globalServerSettings.renderApiKey = process.env.RENDER_API_KEY;
-        }
-        if (process.env.VERCEL_API_TOKEN) {
-            globalServerSettings.vercelApiToken = process.env.VERCEL_API_TOKEN;
-        }
-        if (globalServerSettings.globalScraperOverrides) {
-            providerLoader.setGlobalScraperOverrides(globalServerSettings.globalScraperOverrides);
-        }
-        console.log('[Admin] Loaded server admin settings successfully (Universal EcoMode=' + globalServerSettings.globalEcoMode + ')');
-    } catch (e) {
-        console.error('[Admin] Failed to load admin_settings.json:', e.message);
-    }
-}
-
-function saveAdminSettings() {
-    try {
-        if (globalServerSettings.globalScraperOverrides) {
-            providerLoader.setGlobalScraperOverrides(globalServerSettings.globalScraperOverrides);
-        }
-        fs.writeFileSync(ADMIN_SETTINGS_FILE, JSON.stringify(globalServerSettings, null, 2));
-        const repoSettings = path.join(__dirname, 'admin_settings.json');
-        if (ADMIN_SETTINGS_FILE !== repoSettings && fs.existsSync(repoSettings)) {
-            try { fs.writeFileSync(repoSettings, JSON.stringify(globalServerSettings, null, 2)); } catch (_) {}
-        }
-    } catch (e) {
-        // Safe failover for read-only serverless filesystems
-        console.error('[Admin] Failed to write admin_settings.json:', e.message);
-    }
-}
-loadAdminSettings();
-
 async function ensureCloudLocalRepo() {
     const dirs = getCbProviderRepoDirs();
     if (dirs.length === 0 && (!Array.isArray(globalServerSettings.localRepo) || globalServerSettings.localRepo.length === 0)) {
@@ -800,65 +687,6 @@ async function ensureCloudLocalRepo() {
     }
 }
 
-// CB Providers Repository Discovery & Synchronization Hub
-function getCbProviderRepoDirs() {
-    const candidates = [
-        path.join(__dirname, '..', 'cb-providers'),
-        path.join(process.env.USERPROFILE || process.env.HOME || 'C:\\Users\\vkesh', 'Documents', 'GitHub', 'cb-providers')
-    ];
-    return candidates.filter(dir => fs.existsSync(dir));
-}
-
-function syncTwoWayCbProviders() {
-    try {
-        const dirs = getCbProviderRepoDirs();
-        if (dirs.length < 2) return;
-        const [dirA, dirB] = dirs;
-
-        const provA = path.join(dirA, 'providers');
-        const provB = path.join(dirB, 'providers');
-        if (fs.existsSync(provA) && fs.existsSync(provB)) {
-            const filesA = new Set(fs.readdirSync(provA).filter(f => f.endsWith('.js')));
-            const filesB = new Set(fs.readdirSync(provB).filter(f => f.endsWith('.js')));
-            const allFiles = new Set([...filesA, ...filesB]);
-
-            for (const file of allFiles) {
-                const pathA = path.join(provA, file);
-                const pathB = path.join(provB, file);
-                const hasA = fs.existsSync(pathA);
-                const hasB = fs.existsSync(pathB);
-
-                if (hasA && !hasB) {
-                    fs.copyFileSync(pathA, pathB);
-                } else if (!hasA && hasB) {
-                    fs.copyFileSync(pathB, pathA);
-                } else if (hasA && hasB) {
-                    const mtimeA = fs.statSync(pathA).mtimeMs;
-                    const mtimeB = fs.statSync(pathB).mtimeMs;
-                    if (mtimeA > mtimeB + 1000) {
-                        fs.copyFileSync(pathA, pathB);
-                    } else if (mtimeB > mtimeA + 1000) {
-                        fs.copyFileSync(pathB, pathA);
-                    }
-                }
-            }
-        }
-
-        const manA = path.join(dirA, 'manifest.json');
-        const manB = path.join(dirB, 'manifest.json');
-        if (fs.existsSync(manA) && fs.existsSync(manB)) {
-            const mtimeA = fs.statSync(manA).mtimeMs;
-            const mtimeB = fs.statSync(manB).mtimeMs;
-            if (mtimeA > mtimeB + 1000) {
-                fs.copyFileSync(manA, manB);
-            } else if (mtimeB > mtimeA + 1000) {
-                fs.copyFileSync(manB, manA);
-            }
-        }
-    } catch (e) {
-        console.warn('[Sync] Two-way cb-providers sync warning:', e.message);
-    }
-}
 
 function syncLocalRepoWithManifest() {
     try {
@@ -2542,229 +2370,29 @@ app.get('/api/wakeup', async (req, res) => {
     }
 });
 
-const TMDB_API_KEYS = [
-    '439c478a771f35c05022f9feabcca01c',
-    '1865f43a0549ca50d341dd9ab8b29f49',
-    'e49339e830e014e414c2b9a71b2d4f82',
-    '847a158b5489812f851da8cf02476566',
-    'b025d23315a6b0c266cc6cb221a68134'
-];
+const {
+    getMediaMetadata,
+    getTmdbId,
+    TMDB_API_KEYS
+} = require('./services/metadataService');
 
-async function getMediaMetadata(imdbId, type) {
-    const rawId = imdbId.split(':')[0];
-    let tmdbId = null;
-    let title = null;
-    let originalTitle = null;
-    let year = null;
-
-    if (rawId.startsWith('tmdb:')) {
-        tmdbId = rawId.split(':')[1];
-    } else if (/^\d+$/.test(rawId)) {
-        tmdbId = rawId;
-    }
-
-    // 1. If TMDB ID is directly provided, fetch details from TMDB
-    if (tmdbId) {
-        const tmdbType = (type === 'series' || type === 'tv') ? 'tv' : 'movie';
-        for (const key of TMDB_API_KEYS) {
-            try {
-                const res = await axios.get(`https://api.themoviedb.org/3/${tmdbType}/${tmdbId}?api_key=${key}`, {
-                    timeout: 4000,
-                    httpsAgent: dohHttpsAgent,
-                    headers: { 'Accept': 'application/json' }
-                });
-                if (res.data) {
-                    title = res.data.title || res.data.name;
-                    originalTitle = res.data.original_title || res.data.original_name;
-                    const dateStr = res.data.release_date || res.data.first_air_date;
-                    year = dateStr ? dateStr.split('-')[0] : null;
-                    return { tmdbId, title, originalTitle, year };
-                }
-            } catch (err) {}
-        }
-    }
-
-    // 2. If IMDb ID (tt...), search TMDB by external_source=imdb_id
-    if (rawId.startsWith('tt')) {
-        for (const key of TMDB_API_KEYS) {
-            try {
-                const res = await axios.get(`https://api.themoviedb.org/3/find/${rawId}?api_key=${key}&external_source=imdb_id`, {
-                    timeout: 4000,
-                    httpsAgent: dohHttpsAgent,
-                    headers: { 'Accept': 'application/json' }
-                });
-                if (type === 'movie' && res.data && res.data.movie_results && res.data.movie_results.length > 0) {
-                    const m = res.data.movie_results[0];
-                    return {
-                        tmdbId: m.id.toString(),
-                        title: m.title,
-                        originalTitle: m.original_title,
-                        year: m.release_date ? m.release_date.split('-')[0] : null
-                    };
-                } else if ((type === 'series' || type === 'tv') && res.data && res.data.tv_results && res.data.tv_results.length > 0) {
-                    const t = res.data.tv_results[0];
-                    return {
-                        tmdbId: t.id.toString(),
-                        title: t.name,
-                        originalTitle: t.original_name,
-                        year: t.first_air_date ? t.first_air_date.split('-')[0] : null
-                    };
-                }
-            } catch (err) {}
-        }
-    }
-
-    // 3. Cinemeta Fallback
-    try {
-        const cinemetaType = (type === 'tv' ? 'series' : type);
-        const cRes = await axios.get(`https://v3-cinemeta.strem.io/meta/${cinemetaType}/${rawId}.json`, { timeout: 3000 });
-        if (cRes.data && cRes.data.meta) {
-            return {
-                tmdbId: tmdbId || null,
-                title: cRes.data.meta.name,
-                originalTitle: cRes.data.meta.name,
-                year: (cRes.data.meta.year || cRes.data.meta.releaseInfo) ? String(cRes.data.meta.year || cRes.data.meta.releaseInfo).split('–')[0].trim() : null
-            };
-        }
-    } catch (e) {}
-
-    return { tmdbId, title, originalTitle, year };
-}
-
-async function getTmdbId(imdbId, type) {
-    const meta = await getMediaMetadata(imdbId, type);
-    return meta ? meta.tmdbId : null;
-}
-
-// Debrid Resolver Endpoint
-app.get('/debrid/:service/:apiKey/:hash', async (req, res) => {
-    const { service, apiKey, hash } = req.params;
-    
-    try {
-        if (service === 'realdebrid') {
-            // 1. Add Magnet
-            const addRes = await axios.post('https://api.real-debrid.com/rest/1.0/torrents/addMagnet', `magnet=magnet:?xt=urn:btih:${hash}`, {
-                headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/x-www-form-urlencoded' }
-            });
-            const torrentId = addRes.data.id;
-            
-            // 2. Select Files (All)
-            await axios.post(`https://api.real-debrid.com/rest/1.0/torrents/selectFiles/${torrentId}`, 'files=all', {
-                headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/x-www-form-urlencoded' }
-            });
-            
-            // 3. Get Info and grab the first download link
-            const infoRes = await axios.get(`https://api.real-debrid.com/rest/1.0/torrents/info/${torrentId}`, {
-                headers: { 'Authorization': `Bearer ${apiKey}` }
-            });
-            
-            if (infoRes.data && infoRes.data.links && infoRes.data.links.length > 0) {
-                // 4. Unrestrict link
-                const unrestrictRes = await axios.post('https://api.real-debrid.com/rest/1.0/unrestrict/link', `link=${infoRes.data.links[0]}`, {
-                    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/x-www-form-urlencoded' }
-                });
-                
-                if (unrestrictRes.data && unrestrictRes.data.download) {
-                    return res.redirect(302, unrestrictRes.data.download);
-                }
-            }
-        } else if (service === 'alldebrid') {
-            // 1. Add Magnet
-            const addRes = await axios.get(`https://api.alldebrid.com/v4/magnet/upload?agent=nuvio&apikey=${apiKey}&magnets[]=magnet:?xt=urn:btih:${hash}`);
-            const magnetData = addRes.data?.data?.magnets?.[0];
-            
-            if (magnetData && magnetData.id) {
-                // 2. Wait a moment for processing (in a real app we should poll, but here we do a quick timeout)
-                await new Promise(r => setTimeout(r, 1000));
-                
-                const statusRes = await axios.get(`https://api.alldebrid.com/v4/magnet/status?agent=nuvio&apikey=${apiKey}&id=${magnetData.id}`);
-                const links = statusRes.data?.data?.magnets?.[0]?.links;
-                
-                if (links && links.length > 0) {
-                    // 3. Unrestrict
-                    const unrestrictRes = await axios.get(`https://api.alldebrid.com/v4/link/unlock?agent=nuvio&apikey=${apiKey}&link=${links[0].link}`);
-                    if (unrestrictRes.data && unrestrictRes.data.data && unrestrictRes.data.data.link) {
-                        return res.redirect(302, unrestrictRes.data.data.link);
-                    }
-                }
-            }
-        } else if (service === 'torbox') {
-            // 1. Add torrent by hash
-            const addRes = await axios.post('https://api.torbox.app/v1/api/torrents/createtorrent', 
-                { magnet: `magnet:?xt=urn:btih:${hash}` },
-                { headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' } }
-            );
-            const torrentId = addRes.data?.data?.torrent_id;
-            
-            if (torrentId) {
-                // 2. Poll for readiness (up to 20s)
-                let downloadLink = null;
-                for (let i = 0; i < 10; i++) {
-                    await new Promise(r => setTimeout(r, 2000));
-                    const infoRes = await axios.get(`https://api.torbox.app/v1/api/torrents/mylist?id=${torrentId}`, {
-                        headers: { 'Authorization': `Bearer ${apiKey}` }
-                    });
-                    const torrent = infoRes.data?.data;
-                    if (torrent && torrent.download_state === 'cached' && torrent.files && torrent.files.length > 0) {
-                        // 3. Request download link for the largest file
-                        const sortedFiles = [...torrent.files].sort((a, b) => (b.size || 0) - (a.size || 0));
-                        const fileId = sortedFiles[0].id;
-                        const linkRes = await axios.get(`https://api.torbox.app/v1/api/torrents/requestdl?token=${apiKey}&torrent_id=${torrentId}&file_id=${fileId}&zip_link=false`);
-                        downloadLink = linkRes.data?.data;
-                        break;
-                    }
-                    if (torrent && torrent.download_state === 'cached') break;
-                }
-                if (downloadLink) {
-                    return res.redirect(302, downloadLink);
-                }
-            }
-        } else if (service === 'premiumize') {
-            // 1. Add transfer
-            const addRes = await axios.post('https://www.premiumize.me/api/transfer/create',
-                new URLSearchParams({ apikey: apiKey, src: `magnet:?xt=urn:btih:${hash}` }),
-                { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
-            );
-            const transferId = addRes.data?.id;
-            
-            if (transferId) {
-                // 2. Poll for completion (up to 20s)
-                let directLink = null;
-                for (let i = 0; i < 10; i++) {
-                    await new Promise(r => setTimeout(r, 2000));
-                    const listRes = await axios.get(`https://www.premiumize.me/api/transfer/list?apikey=${apiKey}`);
-                    const transfer = (listRes.data?.transfers || []).find(t => t.id === transferId);
-                    if (transfer && transfer.status === 'finished' && transfer.folder_id) {
-                        // 3. List folder and grab largest file
-                        const folderRes = await axios.get(`https://www.premiumize.me/api/folder/list?apikey=${apiKey}&id=${transfer.folder_id}`);
-                        const files = (folderRes.data?.content || []).filter(f => f.type === 'file');
-                        files.sort((a, b) => (b.size || 0) - (a.size || 0));
-                        if (files.length > 0 && files[0].link) {
-                            directLink = files[0].link;
-                        }
-                        break;
-                    }
-                }
-                if (directLink) {
-                    return res.redirect(302, directLink);
-                }
-            }
-        }
-    } catch (err) {
-        console.error('[Debrid Error]', err.response?.data || err.message);
-    }
-    
-    // Fallback: If debrid fails, redirect to a generic error video or just fail
-    res.status(500).send('Debrid resolution failed.');
-});
+// Debrid Resolver Router
+const debridRouter = require('./routes/debridRoutes');
+app.use('/debrid', debridRouter);
 
 
 // Normalized hash for stream configuration to maximize Redis and in-memory cache hit rate
 function getStreamConfigHash(cfg = {}) {
     try {
+        const rawDisabled = [
+            ...(Array.isArray(cfg.disabled) ? cfg.disabled : []),
+            ...(Array.isArray(cfg.disabledProviders) ? cfg.disabledProviders : [])
+        ].map(d => String(d || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '')).filter(Boolean);
+        const disabledSorted = [...new Set(rawDisabled)].sort();
+
         const functional = {
-            p: cfg.provider || '',
-            d: Array.isArray(cfg.disabled) ? [...cfg.disabled].sort() : [],
+            p: cfg.provider ? String(cfg.provider).trim().toLowerCase() : '',
+            d: disabledSorted,
             u: Array.isArray(cfg.urls) ? [...cfg.urls].sort() : (Array.isArray(cfg.repos) ? [...cfg.repos].sort() : (cfg.repoUrl || '')),
             tg: Boolean(cfg.enableTelegram),
             deb: cfg.debridProvider || '',
@@ -2776,7 +2404,8 @@ function getStreamConfigHash(cfg = {}) {
             langs: Array.isArray(cfg.preferredLanguages) ? [...cfg.preferredLanguages].sort() : [],
             hd: Boolean(cfg.hideDead),
             hs: Boolean(cfg.hideSlow),
-            hc: Boolean(cfg.hideCam || cfg.blockCam)
+            hc: Boolean(cfg.hideCam || cfg.blockCam),
+            hp: Boolean(cfg.hideP2P || cfg.blockP2P || cfg.disableP2P)
         };
         return crypto.createHash('md5').update(JSON.stringify(functional)).digest('hex').substring(0, 10);
     } catch (e) {
@@ -2975,7 +2604,7 @@ function createAddon(config) {
 
     const behaviorHints = {
         configurable: true,
-        configurationRequired: !isConfigured
+        configurationRequired: false
     };
     if (configurationUrl) {
         behaviorHints.configurationURL = configurationUrl;
@@ -2983,7 +2612,7 @@ function createAddon(config) {
 
     const builder = new addonBuilder({
         id: addonId,
-        version: '4.4.0',
+        version: '4.5.4',
         name: addonName,
         description: 'High-Performance Stream Meta-Sorter & Discovery Hub for Nuvio & Stremio. Scrapes, verifies, filters dead links, organizes streams by speed/quality/audio, and provides curated Live TV, Indian Cinema, Trending & Anime feeds.',
         logo: addonLogo,
@@ -3026,14 +2655,18 @@ function createAddon(config) {
         
         // Helper to generate the force refresh stream
         const getForceRefreshStream = () => {
-            if (!config.addonHost) return null;
+            if (config.hideForceRefresh === true || config.showForceRefresh === false) return null;
+            const host = config.addonHost || (typeof process !== 'undefined' && process.env.VERCEL_URL ? process.env.VERCEL_URL : 'cholebhature.vercel.app');
+            if (!host) return null;
+            const protocol = config.addonProtocol || (host.includes('localhost') || host.includes('127.0.0.1') ? 'http' : 'https');
             const baseUrl = config.configId
-                ? `${config.addonProtocol || 'http'}://${config.addonHost}/c/${config.configId}`
-                : `${config.addonProtocol || 'http'}://${config.addonHost}/${encodeURIComponent(JSON.stringify(config))}`;
+                ? `${protocol}://${host}/c/${config.configId}`
+                : `${protocol}://${host}`;
             const targetUrl = `${baseUrl}/clear-cache/${type}/${encodeURIComponent(id)}`;
             return {
                 name: '🔄 FORCE REFRESH',
                 title: '⚡ Click to clear cache & fetch fresh streams on reload!',
+                description: 'Clear cache and fetch real-time fresh streams from all providers.',
                 externalUrl: targetUrl
             };
         };
@@ -3046,11 +2679,24 @@ function createAddon(config) {
             let season = null;
             let episode = null;
 
-            if (type === 'series' || type === 'tv' || type === 'anime' || (id && id.includes(':') && !id.startsWith('iptv:') && !id.startsWith('kitsu:'))) {
+            if (id && id.startsWith('tmdb:')) {
+                // Support Nuvio TMDB prefix: tmdb:872585 (movie) or tmdb:1396:1:1 (series)
+                const parts = id.split(':');
+                imdbId = parts[0] + ':' + parts[1];
+                season = parts[2] ? parseInt(parts[2], 10) : null;
+                episode = parts[3] ? parseInt(parts[3], 10) : null;
+            } else if (id && id.startsWith('kitsu:')) {
+                const parts = id.split(':');
+                imdbId = parts[0] + ':' + parts[1];
+                episode = parts[2] ? parseInt(parts[2], 10) : null;
+                season = 1;
+            } else if (id && id.startsWith('iptv:')) {
+                imdbId = id;
+            } else if (type === 'series' || type === 'tv' || type === 'anime' || (id && id.includes(':'))) {
                 const parts = id.split(':');
                 imdbId = parts[0];
-                season = parts[1];
-                episode = parts[2];
+                season = parts[1] ? parseInt(parts[1], 10) : null;
+                episode = parts[2] ? parseInt(parts[2], 10) : null;
             }
 
             const mediaMeta = await getMediaMetadata(imdbId, type);
@@ -3072,48 +2718,103 @@ function createAddon(config) {
             }
             
             if (manifestUrls.length === 0) {
-                manifestUrls = globalServerSettings.installedRepos || [];
+                manifestUrls = (globalServerSettings.installedRepos && globalServerSettings.installedRepos.length > 0) ? [...globalServerSettings.installedRepos] : ['https://raw.githubusercontent.com/SA7ANI/cb-providers/main/manifest.json'];
             }
-            if (globalServerSettings.localRepo && globalServerSettings.localRepo.length > 0) {
-                if (!manifestUrls.includes('local')) {
-                    manifestUrls.unshift('local'); // Prioritize direct local repository!
-                }
+            // Always ensure the core CB-Providers fleet is included unless explicitly blocked
+            const localManifestExists = fs.existsSync(path.join(__dirname, '..', 'cb-providers', 'manifest.json'));
+            if (localManifestExists && !manifestUrls.includes('local')) {
+                manifestUrls.unshift('local');
+            } else if (!localManifestExists && !manifestUrls.some(u => u.includes('cb-providers'))) {
+                manifestUrls.unshift('https://raw.githubusercontent.com/SA7ANI/cb-providers/main/manifest.json');
             }
 
-            let allProviders = [];
-            for (const url of manifestUrls) {
-                try {
-                    const providers = await providerLoader.loadProviders(url);
-                    allProviders = allProviders.concat(providers);
-                } catch (e) {
-                    console.error(`[ProviderLoader] Failed to load from ${url}:`, e.message);
-                }
-            }
+            const providerBatches = await Promise.all(
+                manifestUrls.map(async (url) => {
+                    try {
+                        return await providerLoader.loadProviders(url);
+                    } catch (e) {
+                        console.error(`[ProviderLoader] Failed to load from ${url}:`, e.message);
+                        return [];
+                    }
+                })
+            );
+            let allProviders = providerBatches.flat();
+
+            // Deduplicate providers by ID/Name across multiple repositories
+            const seenProviderKeys = new Set();
+            allProviders = allProviders.filter(p => {
+                const key = (p.id || p.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                if (!key || seenProviderKeys.has(key)) return false;
+                seenProviderKeys.add(key);
+                return true;
+            });
             
-            // Filter providers
+            // Filter providers (Robust case-insensitive matching across name and ID)
+            const rawDisabled = [
+                ...(Array.isArray(config.disabled) ? config.disabled : []),
+                ...(Array.isArray(config.disabledProviders) ? config.disabledProviders : [])
+            ];
+            const disabledSet = new Set(
+                rawDisabled.map(d => String(d || '').trim().toLowerCase()).filter(Boolean)
+            );
+
             if (config.provider) {
-                allProviders = allProviders.filter(p => p.name === config.provider);
-            } else if (config.disabled && Array.isArray(config.disabled)) {
-                allProviders = allProviders.filter(p => !config.disabled.includes(p.name));
+                const target = String(config.provider).trim().toLowerCase();
+                const targetClean = target.replace(/[^a-z0-9]/g, '');
+                allProviders = allProviders.filter(p => {
+                    const nameLower = (p.name || '').toLowerCase().trim();
+                    const idLower = (p.id || '').toLowerCase().trim();
+                    const cleanName = nameLower.replace(/[^a-z0-9]/g, '');
+                    const cleanId = idLower.replace(/[^a-z0-9]/g, '');
+                    return nameLower === target || idLower === target || 
+                           (targetClean && (cleanName === targetClean || cleanId === targetClean));
+                });
+            } else if (disabledSet.size > 0) {
+                allProviders = allProviders.filter(p => {
+                    const nameLower = (p.name || '').toLowerCase().trim();
+                    const idLower = (p.id || '').toLowerCase().trim();
+                    const cleanName = nameLower.replace(/[^a-z0-9]/g, '');
+                    const cleanId = idLower.replace(/[^a-z0-9]/g, '');
+                    const isDisabled = disabledSet.has(nameLower) || 
+                                       disabledSet.has(idLower) ||
+                                       [...disabledSet].some(d => {
+                                           if (!d) return false;
+                                           const cleanD = d.replace(/[^a-z0-9]/g, '');
+                                           return d === nameLower || d === idLower || nameLower.includes(d) || idLower.includes(d) ||
+                                               (cleanD && (cleanD === cleanName || cleanD === cleanId || cleanName.includes(cleanD) || cleanId.includes(cleanD) || cleanD.includes(cleanName) || cleanD.includes(cleanId)));
+                                       });
+                    return !isDisabled;
+                });
             }
 
             let allStreams = [];
             const scrapeStartTime = Date.now();
+
+            // Filter providers by supportedTypes to avoid running TV scrapers on movies or vice-versa
+            let nuvioType = type;
+            if (type === 'series' || type === 'tv') nuvioType = 'tv';
+            else if (type === 'movie') nuvioType = 'movie';
+            else if (type === 'anime') nuvioType = (season && episode) ? 'tv' : 'movie';
+
+            allProviders = allProviders.filter(p => {
+                if (!p.supportedTypes || !Array.isArray(p.supportedTypes) || p.supportedTypes.length === 0) return true;
+                const types = p.supportedTypes.map(t => String(t).toLowerCase());
+                return types.includes(nuvioType) || types.includes(type);
+            });
+
             // High-speed parallel scraper execution timeout to ensure streams return within client limits
             // Universal Server-Wide Admin Enforcement: Admin switch strictly dictates Eco Mode for all users
             const isClientEco = config.renderEcoMode !== undefined ? config.renderEcoMode : config.vercelEcoMode;
             const isEcoMode = globalServerSettings.globalEcoMode !== undefined 
                 ? Boolean(globalServerSettings.globalEcoMode)
-                : (globalServerSettings.allowClientEcoOverride ? Boolean(isClientEco === true) : false); // Default OFF — let scrapers run fully
-            // Vercel maxDuration is set to 60s in vercel.json. Give scrapers as much time as possible.
-            // We leave ~8s buffer for speed-testing after scraping completes.
+                : (globalServerSettings.allowClientEcoOverride ? Boolean(isClientEco === true) : false);
             const isVercel = typeof process !== 'undefined' && Boolean(process.env.VERCEL);
             const PROVIDER_TIMEOUT_MS = isVercel 
-                ? (isEcoMode ? 6000 : 8000)   // Generous Vercel execution: 8s so all scrapers finish without dropping links
-                : (isEcoMode ? 8000 : 10000); // Render/local: 10s
+                ? (isEcoMode ? 5000 : 8000)
+                : (isEcoMode ? 6500 : 9200); 
             const SCRAPE_DEADLINE_MS = isVercel 
-                ? (isEcoMode ? 6500 : 8500) 
-                : (isEcoMode ? 8500 : 10500);
+                ? (isEcoMode ? 6000 : 9000) 
+                : (isEcoMode ? 7500 : 10200);
 
             const tgScrapePromise = (async () => {
                 if (Boolean(config.enableTelegram) && (!config.disabled || (!config.disabled.includes('Telegram') && !config.disabled.includes('Telegram (PencariMovie)')))) {
@@ -3144,7 +2845,7 @@ function createAddon(config) {
             const CONCURRENCY_LIMIT = isVercel ? 60 : 250; // High concurrency for desktop/server to process all in a single batch
             const providerTasks = allProviders.map((provider) => async () => {
                 try {
-                    if (config.enableQuarantine !== false) {
+                    if (config.enableQuarantine === true) {
                         const qRecord = quarantineRegistry.get(provider.name);
                         if (qRecord && qRecord.quarantineUntil > Date.now()) {
                             console.log(`[Quarantine] Skipping provider ${provider.name} (Quarantined)`);
@@ -3193,7 +2894,7 @@ function createAddon(config) {
                         
                     if (!isNetworkError) {
                         // Only quarantine for actual script/parsing errors, not network issues which are common in parallel scraping
-                        if (config.enableQuarantine !== false) {
+                        if (config.enableQuarantine === true) {
                             const qRecord = quarantineRegistry.get(provider.name) || { fails: 0 };
                             qRecord.fails += 1;
                             if (qRecord.fails >= 2) {
@@ -3234,8 +2935,12 @@ function createAddon(config) {
             const currentYear = new Date().getFullYear();
             const isUnreleased = Boolean(type === 'movie' && targetYear && targetYear > currentYear);
 
+            const maxTestingDuration = isVercel
+                ? Math.min(2000, Math.max(800, 9500 - scrapeDurationMs))
+                : Math.min(1800, Math.max(800, 11000 - scrapeDurationMs));
+
             const sortedAndTaggedStreams = await sortAndTagStreams(allStreams, {
-                maxTestDuration: Math.max(5000, 25000 - scrapeDurationMs), // Generous duration to accurately probe stream speeds
+                maxTestDuration: maxTestingDuration,
                 target: {
                     title: mediaMeta?.title || '',
                     originalTitle: mediaMeta?.originalTitle || '',
@@ -3248,6 +2953,9 @@ function createAddon(config) {
                 hideDead: config.hideDead,
                 hideSlow: config.hideSlow,
                 hideCam: config.hideCam || config.blockCam,
+                hideP2P: Boolean(config.hideP2P || config.blockP2P || config.disableP2P),
+                disabled: config.disabled || config.disabledProviders || [],
+                disabledProviders: config.disabledProviders || config.disabled || [],
                 sortBy: config.sortBy || (config.prioritizeQuality ? 'quality' : 'speed'),
                 sortMode: config.sortMode || config.sortBy,
                 prioritizeQuality: config.sortBy === 'quality' || config.prioritizeQuality,
@@ -3280,20 +2988,67 @@ function createAddon(config) {
                 telemetryMetrics.servedBandwidthBytes += Buffer.byteLength(JSON.stringify(sortedAndTaggedStreams), 'utf8');
             } catch (e) {}
 
-            // Save to in-memory cache
-            streamCache.set(cacheKey, { timestamp: Date.now(), streams: sortedAndTaggedStreams });
-
-            // Persist to Upstash KV (Redis) with 30 minutes TTL (1800 seconds)
-            if (isKVEnabledGlobal && Array.isArray(sortedAndTaggedStreams) && sortedAndTaggedStreams.length > 0) {
-                kv.set(kvCacheKey, { timestamp: Date.now(), streams: sortedAndTaggedStreams }, { ex: 1800 })
-                    .then(() => console.log(`[KV] Cached ${sortedAndTaggedStreams.length} streams in Upstash Redis for ${type} ${id} (30m TTL)`))
-                    .catch(err => console.warn('[KV Stream Cache Save Warning]', err.message));
+            // Save to in-memory cache ONLY if valid streams found
+            if (Array.isArray(sortedAndTaggedStreams) && sortedAndTaggedStreams.length > 0) {
+                streamCache.set(cacheKey, { timestamp: Date.now(), streams: sortedAndTaggedStreams });
+                if (isKVEnabledGlobal) {
+                    kv.set(kvCacheKey, { timestamp: Date.now(), streams: sortedAndTaggedStreams }, { ex: 1800 })
+                        .then(() => console.log(`[KV] Cached ${sortedAndTaggedStreams.length} streams in Upstash Redis for ${type} ${id} (30m TTL)`))
+                        .catch(err => console.warn('[KV Stream Cache Save Warning]', err.message));
+                }
             }
 
             return sortedAndTaggedStreams;
         };
 
-        if (cached && Date.now() - cached.timestamp < STALE_TTL_MS) {
+        const filterRuntimeStreams = (streamList) => {
+            if (!Array.isArray(streamList)) return [];
+            let list = streamList;
+            const rawDisabled = [
+                ...(Array.isArray(config.disabled) ? config.disabled : []),
+                ...(Array.isArray(config.disabledProviders) ? config.disabledProviders : [])
+            ];
+            const disabledSet = new Set(
+                rawDisabled.map(d => String(d || '').trim().toLowerCase()).filter(Boolean)
+            );
+            if (disabledSet.size > 0) {
+                list = list.filter(s => {
+                    const pLower = (s.provider || '').toLowerCase();
+                    const nLower = (s.name || '').toLowerCase();
+                    const origLower = (s.originalProvider || s._scraperName || '').toLowerCase();
+                    const idLower = (s._scraperId || '').toLowerCase();
+                    const tLower = (s.title || '').toLowerCase();
+                    const rawP = ((s._rawStream && s._rawStream.provider) || '').toLowerCase();
+                    return ![...disabledSet].some(d => {
+                        const cleanD = d.replace(/[^a-z0-9]/g, '');
+                        if (!cleanD) return false;
+                        const cleanP = pLower.replace(/[^a-z0-9]/g, '');
+                        const cleanN = nLower.replace(/[^a-z0-9]/g, '');
+                        const cleanO = origLower.replace(/[^a-z0-9]/g, '');
+                        const cleanI = idLower.replace(/[^a-z0-9]/g, '');
+                        const cleanT = tLower.replace(/[^a-z0-9]/g, '');
+                        const cleanRawP = rawP.replace(/[^a-z0-9]/g, '');
+                        return pLower.includes(d) || nLower.includes(d) || origLower.includes(d) || idLower.includes(d) || tLower.includes(d) ||
+                            cleanP.includes(cleanD) || cleanD.includes(cleanP) ||
+                            cleanN.includes(cleanD) || cleanD.includes(cleanN) ||
+                            cleanO.includes(cleanD) || cleanD.includes(cleanO) ||
+                            cleanI.includes(cleanD) || cleanD.includes(cleanI) ||
+                            cleanT.includes(cleanD) ||
+                            cleanRawP.includes(cleanD) || cleanD.includes(cleanRawP);
+                    });
+                });
+            }
+            if (config.hideP2P || config.blockP2P || config.disableP2P) {
+                list = list.filter(s => {
+                    const isMagnet = (s.url && s.url.startsWith('magnet:')) || Boolean(s.infoHash);
+                    const isP2P = Boolean(s.isP2P || isMagnet || (s.name && s.name.includes('[P2P]')) || (s.name && s.name.includes('P2P')));
+                    return !isP2P || Boolean(s.isDebridCached);
+                });
+            }
+            return list;
+        };
+
+        if (cached && Array.isArray(cached.streams) && cached.streams.length > 0 && Date.now() - cached.timestamp < STALE_TTL_MS) {
             console.log(`[Stremio] Serving cached results for ${type} ${id}`);
             
             telemetryMetrics.cacheHits++;
@@ -3308,16 +3063,18 @@ function createAddon(config) {
                 fetchAndCacheStreams().catch(e => console.error('[Background Fetch Error]', e));
             }
             
+            const filteredCached = filterRuntimeStreams(cached.streams);
             const frStream = getForceRefreshStream();
-            return { streams: frStream ? [frStream, ...cached.streams] : cached.streams };
+            return { streams: frStream ? [frStream, ...filteredCached] : filteredCached };
         }
 
         // Deduplicate in-flight requests for the exact same stream
         if (inFlightStreamFetches.has(cacheKey)) {
             console.log(`[Stremio] Awaiting in-flight fetch for ${type} ${id}`);
             const inFlightResult = await inFlightStreamFetches.get(cacheKey);
+            const filteredInFlight = filterRuntimeStreams(inFlightResult);
             const frStream = getForceRefreshStream();
-            return { streams: frStream ? [frStream, ...inFlightResult] : inFlightResult };
+            return { streams: frStream ? [frStream, ...filteredInFlight] : filteredInFlight };
         }
 
         const fetchPromise = fetchAndCacheStreams();
@@ -3895,6 +3652,9 @@ app.use((req, res, next) => {
             }
 
             const activeConfig = {};
+            activeConfig.addonHost = req.headers.host;
+            const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+            activeConfig.addonProtocol = protocol.split(',')[0].trim();
             const defaultAddon = createAddon(activeConfig);
             const router = getRouter(defaultAddon);
             return router(req, res, next);
@@ -3910,7 +3670,7 @@ if (!process.env.VERCEL) {
     const server = app.listen(PORT, '0.0.0.0', () => {
         console.log(`
 ========================================================================
-  🌶️  CHOLE BHATURE • Meta-Sorter & Priority Engine v4.4.0
+  🌶️  CHOLE BHATURE • Meta-Sorter & Priority Engine v4.5.4
   ⚡  Created by SA7ANI | https://github.com/SA7ANI/chole-bhature
   🛡️  Licensed under GNU AGPL-3.0 • Attribution Required
 ========================================================================

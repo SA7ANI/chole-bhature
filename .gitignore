@@ -9,4 +9,15 @@ test_suite.js
 scratch/
 state/
 *.lock
+*.txt
+*.diff
+*.log
+*.mp4
+fix*.js
+sync*.js
+test*.js
+apply*.js
+animedekho_app.js
+hide_translate_dropdown.js
+make_patch.js
 
