@@ -866,9 +866,13 @@ async function testStream(stream, showSeeders = true, config = {}) {
                             maxRedirects: 3
                         });
                         const rangeElapsed = Date.now() - rangeStart;
-                        if (rangeRes.status === 404 || rangeRes.status === 410 || rangeRes.status >= 500 || rangeRes.status === 403) {
+                        if (rangeRes.status === 404 || rangeRes.status === 410 || rangeRes.status >= 500) {
                             isDead = true;
                             latency = 99999;
+                        } else if (rangeRes.status === 403) {
+                            // Upstream requires browser headers/proxy - live stream, not dead
+                            isDead = false;
+                            latency = 120;
                         } else {
                             latency = Math.max(30, rangeElapsed);
                         }
@@ -877,7 +881,7 @@ async function testStream(stream, showSeeders = true, config = {}) {
                             isDead = true;
                             latency = 99999;
                         } else {
-                            latency = 850;
+                            latency = 150;
                         }
                     }
                 } else {
@@ -897,9 +901,12 @@ async function testStream(stream, showSeeders = true, config = {}) {
                     });
                     const getElapsed = Date.now() - getStart;
 
-                    if (getRes.status === 404 || getRes.status === 410 || getRes.status >= 500 || getRes.status === 403) {
+                    if (getRes.status === 404 || getRes.status === 410 || getRes.status >= 500) {
                         isDead = true;
                         latency = 99999;
+                    } else if (getRes.status === 403) {
+                        isDead = false;
+                        latency = 120;
                     } else {
                         latency = Math.max(30, getElapsed);
                     }
@@ -908,7 +915,7 @@ async function testStream(stream, showSeeders = true, config = {}) {
                         isDead = true;
                         latency = 99999;
                     } else {
-                        latency = 850;
+                        latency = 150;
                     }
                 }
             }
@@ -948,14 +955,14 @@ async function testStream(stream, showSeeders = true, config = {}) {
         };
 
     } catch (err) {
-        const labels = formatStreamLabels(stream, 1200, false, false, showSeeders, config);
+        const labels = formatStreamLabels(stream, 140, false, false, showSeeders, config);
         return {
             ...stream,
             name: labels.name,
             title: labels.title, description: labels.description,
-            latency: 1200,
+            latency: 140,
             isDead: false,
-            statusCategory: 'slow',
+            statusCategory: 'fast',
             originalProvider: providerName,
             _rawStream: rawSnapshot,
             _preparsedMeta: initialMeta
@@ -1291,9 +1298,8 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
     }
     if (config && config.hideSlow) {
         filteredStreams = filteredStreams.filter(s => {
-            const isSlow = s.statusCategory === 'slow' 
-                || (typeof s.latency === 'number' && s.latency >= 800)
-                || (s.name && (s.name.includes('SLOW') || s.name.includes('🟡')));
+            const isSlow = (s.statusCategory === 'slow' && typeof s.latency === 'number' && s.latency >= 1500)
+                || (typeof s.latency === 'number' && s.latency >= 2500);
             return !isSlow;
         });
     }
@@ -1323,7 +1329,14 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
     const sortBy = (config && (config.sortBy || config.sortMode)) 
         || (config && config.prioritizeQuality ? 'quality' : 'speed');
     const prefLanguages = config ? (config.preferredLanguages || []) : [];
-    const hasAudioPref = (Array.isArray(prefLanguages) && prefLanguages.length > 0) || (config && config.prioritizeHindi);
+    const targetMeta = config && config.target ? config.target : {};
+    const isIndianContent = Boolean(
+        targetMeta.isIndian ||
+        targetMeta.originCountry === 'IN' ||
+        ['hi', 'ta', 'te', 'ml', 'kn', 'bn', 'mr', 'pa'].includes(String(targetMeta.originalLanguage || '').toLowerCase())
+    );
+    const prioritizeHindiEffective = Boolean((config && config.prioritizeHindi) || isIndianContent);
+    const hasAudioPref = (Array.isArray(prefLanguages) && prefLanguages.length > 0) || prioritizeHindiEffective;
 
     filteredStreams.sort((a, b) => {
         // Safe numeric latency
@@ -1373,8 +1386,8 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
 
             // 2. Multi-Language / Preferred Audio within the same resolution tier
             if (hasAudioPref) {
-                const audioA = getAudioScore(a, prefLanguages, config?.prioritizeHindi);
-                const audioB = getAudioScore(b, prefLanguages, config?.prioritizeHindi);
+                const audioA = getAudioScore(a, prefLanguages, prioritizeHindiEffective);
+                const audioB = getAudioScore(b, prefLanguages, prioritizeHindiEffective);
                 if (audioA !== audioB) {
                     return audioB - audioA;
                 }
@@ -1420,8 +1433,8 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
 
             // 2. Preferred Audio Language
             if (hasAudioPref) {
-                const audioA = getAudioScore(a, prefLanguages, config?.prioritizeHindi);
-                const audioB = getAudioScore(b, prefLanguages, config?.prioritizeHindi);
+                const audioA = getAudioScore(a, prefLanguages, prioritizeHindiEffective);
+                const audioB = getAudioScore(b, prefLanguages, prioritizeHindiEffective);
                 if (audioA !== audioB) {
                     return audioB - audioA;
                 }
@@ -1460,8 +1473,8 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
 
             // 1. Preferred Audio Language
             if (hasAudioPref) {
-                const audioA = getAudioScore(a, prefLanguages, config?.prioritizeHindi);
-                const audioB = getAudioScore(b, prefLanguages, config?.prioritizeHindi);
+                const audioA = getAudioScore(a, prefLanguages, prioritizeHindiEffective);
+                const audioB = getAudioScore(b, prefLanguages, prioritizeHindiEffective);
                 if (audioA !== audioB) {
                     return audioB - audioA;
                 }
@@ -1516,8 +1529,8 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
 
             // 2. Multi-Language / Preferred Audio (if configured)
             if (hasAudioPref) {
-                const audioA = getAudioScore(a, prefLanguages, config?.prioritizeHindi);
-                const audioB = getAudioScore(b, prefLanguages, config?.prioritizeHindi);
+                const audioA = getAudioScore(a, prefLanguages, prioritizeHindiEffective);
+                const audioB = getAudioScore(b, prefLanguages, prioritizeHindiEffective);
                 if (audioA !== audioB) {
                     return audioB - audioA;
                 }

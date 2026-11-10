@@ -2718,7 +2718,11 @@ function createAddon(config) {
             }
             
             if (manifestUrls.length === 0) {
-                manifestUrls = (globalServerSettings.installedRepos && globalServerSettings.installedRepos.length > 0) ? [...globalServerSettings.installedRepos] : ['https://raw.githubusercontent.com/SA7ANI/cb-providers/main/manifest.json'];
+                if (config.enableCommunityRepos === true && globalServerSettings.installedRepos && globalServerSettings.installedRepos.length > 0) {
+                    manifestUrls = [...globalServerSettings.installedRepos];
+                } else {
+                    manifestUrls = ['https://raw.githubusercontent.com/SA7ANI/cb-providers/main/manifest.json'];
+                }
             }
             // Always ensure the core CB-Providers fleet is included unless explicitly blocked
             const localManifestExists = fs.existsSync(path.join(__dirname, '..', 'cb-providers', 'manifest.json'));
@@ -2936,8 +2940,8 @@ function createAddon(config) {
             const isUnreleased = Boolean(type === 'movie' && targetYear && targetYear > currentYear);
 
             const maxTestingDuration = isVercel
-                ? Math.min(2000, Math.max(800, 9500 - scrapeDurationMs))
-                : Math.min(1800, Math.max(800, 11000 - scrapeDurationMs));
+                ? Math.min(2500, Math.max(1000, 9500 - scrapeDurationMs))
+                : Math.min(3000, Math.max(1200, 12000 - scrapeDurationMs));
 
             const sortedAndTaggedStreams = await sortAndTagStreams(allStreams, {
                 maxTestDuration: maxTestingDuration,

@@ -8523,7 +8523,9 @@
     <!-- ==================== JAVASCRIPT ENGINE ==================== -->
     <script>
         let configId = null;
-        const DEFAULT_REPOS = [];
+        const DEFAULT_REPOS = [
+            'https://raw.githubusercontent.com/SA7ANI/cb-providers/main/manifest.json'
+        ];
         let repos = [...DEFAULT_REPOS];
         try {
             const storedRepos = localStorage.getItem('nuvio_repos');
@@ -11920,11 +11922,12 @@
 
         async function installAddon() {
             triggerHaptic('success');
-            if (repos.length === 0) {
-                showToast("⚠️ <b>No Repositories:</b> Please add at least one repository first.");
-                triggerHaptic('warning');
-                switchTab('tab-sources', document.querySelectorAll('.nav-pill-item')[2]);
-                return;
+            if (!repos || repos.length === 0) {
+                repos = [...DEFAULT_REPOS];
+                try {
+                    localStorage.setItem('nuvio_repos', JSON.stringify(repos));
+                } catch (_) {}
+                if (typeof renderRepoList === 'function') renderRepoList();
             }
 
             isInstalled = true;
@@ -11933,6 +11936,15 @@
             await saveConfigurationToServer(false);
             const urls = buildAddonUrls();
             showFallback(urls.httpUrl);
+
+            // Auto-copy manifest URL to clipboard
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(urls.httpUrl);
+                    showToast("📋 <b>Manifest Copied!</b> Launching Stremio...");
+                }
+            } catch (_) {}
+
             window.location.href = urls.stremioUrl;
         }
 
@@ -11945,12 +11957,22 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        function copyLink() {
+        async function copyLink() {
             triggerHaptic('success');
             const copyText = document.getElementById("generatedUrl");
+            if (!copyText) return;
             copyText.select();
-            document.execCommand("copy");
-            showToast("📋 <b>Copied:</b> Manifest URL copied to clipboard!");
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(copyText.value);
+                } else {
+                    document.execCommand("copy");
+                }
+                showToast("📋 <b>Copied:</b> Manifest URL copied to clipboard!");
+            } catch (_) {
+                document.execCommand("copy");
+                showToast("📋 <b>Copied:</b> Manifest URL copied to clipboard!");
+            }
         }
 
         function toggleAnalytics() {
