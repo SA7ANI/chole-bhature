@@ -74,6 +74,9 @@ async function getMediaMetadata(rawInputId, type) {
                             const originCountry = origCountries[0] || prodCountries[0] || null;
                             const isIndian = ['hi', 'ta', 'te', 'ml', 'kn', 'bn', 'mr', 'pa', 'gu', 'or'].includes(String(origLang).toLowerCase()) ||
                                              origCountries.includes('IN') || prodCountries.includes('IN');
+                            const genres = (res.data.genres || []).map(g => (typeof g === 'object' ? (g.name || '') : String(g)).toLowerCase());
+                            const isAnimation = genres.some(g => g.includes('animation') || g.includes('anime'));
+                            const isAnime = origLang === 'ja' || (isAnimation && (origLang === 'ja' || originCountry === 'JP'));
 
                             const result = {
                                 tmdbId,
@@ -83,7 +86,9 @@ async function getMediaMetadata(rawInputId, type) {
                                 type: tmdbType,
                                 originalLanguage: origLang,
                                 originCountry,
-                                isIndian
+                                isIndian,
+                                isAnime,
+                                isAnimation
                             };
                             metadataMemoryCache.set(cacheKey, { timestamp: Date.now(), data: result });
                             return result;
@@ -128,6 +133,8 @@ async function getMediaMetadata(rawInputId, type) {
                         const origLang = m.original_language || '';
                         const isIndian = ['hi', 'ta', 'te', 'ml', 'kn', 'bn', 'mr', 'pa', 'gu', 'or'].includes(String(origLang).toLowerCase()) ||
                                          (Array.isArray(m.origin_country) && m.origin_country.includes('IN'));
+                        const isAnimation = Array.isArray(m.genre_ids) && m.genre_ids.includes(16);
+                        const isAnime = origLang === 'ja' || (isAnimation && (origLang === 'ja' || (Array.isArray(m.origin_country) && m.origin_country.includes('JP'))));
                         const result = {
                             tmdbId: m.id.toString(),
                             title: m.title,
@@ -135,7 +142,9 @@ async function getMediaMetadata(rawInputId, type) {
                             year: m.release_date ? m.release_date.split('-')[0] : null,
                             originalLanguage: origLang,
                             originCountry: (Array.isArray(m.origin_country) && m.origin_country[0]) || (isIndian ? 'IN' : null),
-                            isIndian
+                            isIndian,
+                            isAnime,
+                            isAnimation
                         };
                         metadataMemoryCache.set(cacheKey, { timestamp: Date.now(), data: result });
                         return result;
@@ -144,6 +153,8 @@ async function getMediaMetadata(rawInputId, type) {
                         const origLang = t.original_language || '';
                         const isIndian = ['hi', 'ta', 'te', 'ml', 'kn', 'bn', 'mr', 'pa', 'gu', 'or'].includes(String(origLang).toLowerCase()) ||
                                          (Array.isArray(t.origin_country) && t.origin_country.includes('IN'));
+                        const isAnimation = Array.isArray(t.genre_ids) && t.genre_ids.includes(16);
+                        const isAnime = origLang === 'ja' || (isAnimation && (origLang === 'ja' || (Array.isArray(t.origin_country) && t.origin_country.includes('JP'))));
                         const result = {
                             tmdbId: t.id.toString(),
                             title: t.name,
@@ -151,7 +162,9 @@ async function getMediaMetadata(rawInputId, type) {
                             year: t.first_air_date ? t.first_air_date.split('-')[0] : null,
                             originalLanguage: origLang,
                             originCountry: (Array.isArray(t.origin_country) && t.origin_country[0]) || (isIndian ? 'IN' : null),
-                            isIndian
+                            isIndian,
+                            isAnime,
+                            isAnimation
                         };
                         metadataMemoryCache.set(cacheKey, { timestamp: Date.now(), data: result });
                         return result;

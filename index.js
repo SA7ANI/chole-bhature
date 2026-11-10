@@ -2803,7 +2803,30 @@ function createAddon(config) {
             else if (type === 'movie') nuvioType = 'movie';
             else if (type === 'anime') nuvioType = (season && episode) ? 'tv' : 'movie';
 
+            // Distinguish Anime/Cartoons vs Standard Live-Action to avoid stalling on irrelevant scrapers
+            const isAnimeOrCartoons = Boolean(
+                type === 'anime' ||
+                mediaMeta?.isAnime ||
+                mediaMeta?.isAnimation ||
+                mediaMeta?.originalLanguage === 'ja' ||
+                (String(id || '').startsWith('kitsu:'))
+            );
+
+            const ANIME_ONLY_SCRAPERS = new Set([
+                'kurage', 'anizone', 'animeworld', 'anikage', 'animesalt', 
+                'anizen', 'reanime', 'toonstream', 'puretoons', 'topcartoons'
+            ]);
+
             allProviders = allProviders.filter(p => {
+                const pId = String(p.id || '').toLowerCase();
+                const pName = String(p.name || '').toLowerCase();
+                const isAnimeScraper = ANIME_ONLY_SCRAPERS.has(pId) || pId.includes('anime') || pName.includes('anime') || pName.includes('cartoon') || pName.includes('toons');
+                
+                // If it is regular live-action cinema (e.g. Oppenheimer, Breaking Bad), don't query pure anime scrapers
+                if (!isAnimeOrCartoons && isAnimeScraper) {
+                    return false;
+                }
+
                 if (!p.supportedTypes || !Array.isArray(p.supportedTypes) || p.supportedTypes.length === 0) return true;
                 const types = p.supportedTypes.map(t => String(t).toLowerCase());
                 return types.includes(nuvioType) || types.includes(type);
@@ -2816,12 +2839,24 @@ function createAddon(config) {
                 ? Boolean(globalServerSettings.globalEcoMode)
                 : (globalServerSettings.allowClientEcoOverride ? Boolean(isClientEco === true) : false);
             const isVercel = typeof process !== 'undefined' && Boolean(process.env.VERCEL);
+            
+            // Ultra-snappy scraper deadlines: 3800ms max per provider, 4500ms hard ceiling
             const PROVIDER_TIMEOUT_MS = isVercel 
-                ? (isEcoMode ? 5000 : 8000)
-                : (isEcoMode ? 6500 : 9200); 
+                ? (isEcoMode ? 3500 : 4500)
+                : (isEcoMode ? 3200 : 4000); 
             const SCRAPE_DEADLINE_MS = isVercel 
-                ? (isEcoMode ? 6000 : 9000) 
-                : (isEcoMode ? 7500 : 10200);
+                ? (isEcoMode ? 4200 : 5000) 
+                : (isEcoMode ? 3800 : 4500);
+
+            // Fast early yield: as soon as we have enough good streams, proceed to sorting immediately
+            let earlyResolve;
+            const earlyYieldPromise = new Promise(resolve => { earlyResolve = resolve; });
+            const checkEarlyYield = () => {
+                const elapsed = Date.now() - scrapeStartTime;
+                if ((allStreams.length >= 25 && elapsed >= 1800) || (allStreams.length >= 40 && elapsed >= 1400)) {
+                    if (typeof earlyResolve === 'function') earlyResolve();
+                }
+            };
 
             const tgScrapePromise = (async () => {
                 if (Boolean(config.enableTelegram) && (!config.disabled || (!config.disabled.includes('Telegram') && !config.disabled.includes('Telegram (PencariMovie)')))) {
@@ -2887,6 +2922,7 @@ function createAddon(config) {
                             }
                         });
                         allStreams = allStreams.concat(streams);
+                        checkEarlyYield();
                     }
                 } catch (e) {
                     const isNetworkError = e.message === 'Scrape Timeout' 
@@ -2932,7 +2968,8 @@ function createAddon(config) {
             
             await Promise.race([
                 Promise.all([tgScrapePromise, ...results]),
-                scrapeTimeoutPromise
+                scrapeTimeoutPromise,
+                earlyYieldPromise
             ]);
             const scrapeDurationMs = Date.now() - scrapeStartTime;
 
@@ -2942,9 +2979,10 @@ function createAddon(config) {
             const currentYear = new Date().getFullYear();
             const isUnreleased = Boolean(type === 'movie' && targetYear && targetYear > currentYear);
 
+            // Snappy stream testing duration (max 1200ms) to ensure instant player response
             const maxTestingDuration = isVercel
-                ? Math.min(2500, Math.max(1000, 9500 - scrapeDurationMs))
-                : Math.min(3000, Math.max(1200, 12000 - scrapeDurationMs));
+                ? Math.min(1200, Math.max(600, 5000 - scrapeDurationMs))
+                : Math.min(1200, Math.max(700, 5500 - scrapeDurationMs));
 
             const sortedAndTaggedStreams = await sortAndTagStreams(allStreams, {
                 maxTestDuration: maxTestingDuration,
