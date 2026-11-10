@@ -2717,18 +2717,21 @@ function createAddon(config) {
                 manifestUrls = [config.url];
             }
             
+            const localManifestExists = fs.existsSync(path.join(__dirname, '..', 'cb-providers', 'manifest.json'));
             if (manifestUrls.length === 0) {
                 if (config.enableCommunityRepos === true && globalServerSettings.installedRepos && globalServerSettings.installedRepos.length > 0) {
                     manifestUrls = [...globalServerSettings.installedRepos];
                 } else {
-                    manifestUrls = ['https://raw.githubusercontent.com/SA7ANI/cb-providers/main/manifest.json'];
+                    manifestUrls = [localManifestExists ? 'local' : 'https://raw.githubusercontent.com/SA7ANI/cb-providers/main/manifest.json'];
                 }
             }
             // Always ensure the core CB-Providers fleet is included unless explicitly blocked
-            const localManifestExists = fs.existsSync(path.join(__dirname, '..', 'cb-providers', 'manifest.json'));
-            if (localManifestExists && !manifestUrls.includes('local')) {
-                manifestUrls.unshift('local');
-            } else if (!localManifestExists && !manifestUrls.some(u => u.includes('cb-providers'))) {
+            if (localManifestExists) {
+                manifestUrls = manifestUrls.filter(u => !u.includes('SA7ANI/cb-providers'));
+                if (!manifestUrls.includes('local')) {
+                    manifestUrls.unshift('local');
+                }
+            } else if (!manifestUrls.some(u => u.includes('cb-providers'))) {
                 manifestUrls.unshift('https://raw.githubusercontent.com/SA7ANI/cb-providers/main/manifest.json');
             }
 
