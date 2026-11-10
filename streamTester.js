@@ -500,15 +500,51 @@ function getQualityScore(stream) {
     return score;
 }
 
+const INTERNATIONAL_LANGUAGE_ALIASES = {
+    'french': /\b(french|francais|truefrench|vff|vfq|vf|vostfr|fr)\b/i,
+    'spanish': /\b(spanish|espanol|español|castellano|castilian|latino|esp|es)\b/i,
+    'german': /\b(german|deutsch|ger|deu|de)\b/i,
+    'italian': /\b(italian|italiano|ita|it)\b/i,
+    'portuguese': /\b(portuguese|portugues|português|pt-br|ptbr|pt-pt|por|pt)\b/i,
+    'japanese': /\b(japanese|nihongo|jap|jpn|jp)\b/i,
+    'korean': /\b(korean|hangul|kor|ko)\b/i,
+    'chinese': /\b(chinese|mandarin|cantonese|chi|zho|zh|chn)\b/i,
+    'russian': /\b(russian|rus|ru)\b/i,
+    'dutch': /\b(dutch|nederlands|dut|nld|nl)\b/i,
+    'polish': /\b(polish|polski|pol|pl)\b/i,
+    'english': /\b(english|eng|en)\b/i,
+    'arabic': /\b(arabic|ara|ar)\b/i,
+    'turkish': /\b(turkish|tur|tr)\b/i,
+    'hindi': /\b(hindi|hin|hi)\b/i,
+    'tamil': /\b(tamil|tam|ta)\b/i,
+    'telugu': /\b(telugu|tel|te)\b/i,
+    'malayalam': /\b(malayalam|mal|ml)\b/i,
+    'kannada': /\b(kannada|kan|kn)\b/i,
+    'bengali': /\b(bengali|bangla|ben|bn)\b/i,
+    'punjabi': /\b(punjabi|panjabi|pun|pa)\b/i,
+    'marathi': /\b(marathi|mar|mr)\b/i,
+    'gujarati': /\b(gujarati|guj|gu)\b/i,
+    'vietnamese': /\b(vietnamese|viet|vie|vn)\b/i,
+    'thai': /\b(thai|tha|th)\b/i,
+    'indonesian': /\b(indonesian|indo|ind|id)\b/i
+};
+
 function getAudioScore(stream, preferredLanguages = [], prioritizeHindi = false) {
     if (!stream) return 0;
     const meta = parseStreamMetadata(stream);
     const langs = (meta.languages || []).map(l => l.toLowerCase());
     const text = [stream.name || '', stream.title || '', stream.description || ''].join(' ').toLowerCase();
 
-    const list = Array.isArray(preferredLanguages) && preferredLanguages.length > 0
-        ? preferredLanguages.map(l => l.toLowerCase())
-        : (prioritizeHindi ? ['hindi', 'dual-audio'] : []);
+    let list = [];
+    if (Array.isArray(preferredLanguages) && preferredLanguages.length > 0) {
+        list = preferredLanguages.map(l => l.toLowerCase());
+    } else if (Array.isArray(prioritizeHindi) && prioritizeHindi.length > 0) {
+        list = prioritizeHindi.map(l => l.toLowerCase());
+    } else if (typeof prioritizeHindi === 'string' && prioritizeHindi) {
+        list = [prioritizeHindi.toLowerCase(), 'dual-audio', 'multi-audio'];
+    } else if (prioritizeHindi === true) {
+        list = ['hindi', 'dual-audio', 'multi-audio'];
+    }
 
     if (list.length === 0) return 0;
 
@@ -525,23 +561,8 @@ function getAudioScore(stream, preferredLanguages = [], prioritizeHindi = false)
                 score += Math.max(50, Math.floor(weight / 4));
             }
         } else {
-            // Match specific languages (e.g. hindi, tamil, telugu, english, japanese, etc.)
-            let regexPattern = `\\b${pref}\\b`;
-            if (pref === 'portuguese') {
-                regexPattern = `\\b(portuguese|pt\\-?br|pt)\\b`;
-            } else if (pref === 'japanese') {
-                regexPattern = `\\b(japanese|jap)\\b`;
-            } else if (pref === 'english') {
-                regexPattern = `\\b(english|eng|en)\\b`;
-            } else if (pref === 'vietnamese') {
-                regexPattern = `\\b(vietnamese|viet|vie|vn)\\b`;
-            } else if (pref === 'chinese') {
-                regexPattern = `\\b(chinese|mandarin|zh|chn)\\b`;
-            } else if (pref === 'indonesian') {
-                regexPattern = `\\b(indonesian|indo|id)\\b`;
-            }
-
-            const matched = langs.includes(pref) || new RegExp(regexPattern, 'i').test(text);
+            const aliasPattern = INTERNATIONAL_LANGUAGE_ALIASES[pref] || new RegExp(`\\b${pref}\\b`, 'i');
+            const matched = langs.includes(pref) || aliasPattern.test(text);
             if (matched) {
                 score += weight;
                 matchedSpecific = true;
@@ -1328,15 +1349,56 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
     const categoryRank = { 'fast': 1, 'slow': 2, 'dead': 3 };
     const sortBy = (config && (config.sortBy || config.sortMode)) 
         || (config && config.prioritizeQuality ? 'quality' : 'speed');
+    
+    // Universal & International Language Auto-Resolution:
+    // 1. Explicit user preferred languages take absolute priority.
+    // 2. If user explicitly enabled prioritizeHindi, prioritize Hindi + Multi-Audio.
+    // 3. Otherwise, automatically adapt to the media's native original language
+    //    (e.g. Japanese for anime, French for French cinema, Spanish, Korean, German, Italian, etc.)
+    const ISO_TO_LANG_MAP = {
+        'en': 'english',
+        'fr': 'french',
+        'es': 'spanish',
+        'de': 'german',
+        'it': 'italian',
+        'ja': 'japanese',
+        'ko': 'korean',
+        'zh': 'chinese',
+        'hi': 'hindi',
+        'ta': 'tamil',
+        'te': 'telugu',
+        'ml': 'malayalam',
+        'kn': 'kannada',
+        'bn': 'bengali',
+        'mr': 'marathi',
+        'pa': 'punjabi',
+        'gu': 'gujarati',
+        'pt': 'portuguese',
+        'ru': 'russian',
+        'ar': 'arabic',
+        'tr': 'turkish',
+        'nl': 'dutch',
+        'pl': 'polish',
+        'id': 'indonesian',
+        'vi': 'vietnamese',
+        'th': 'thai'
+    };
+
     const prefLanguages = config ? (config.preferredLanguages || []) : [];
     const targetMeta = config && config.target ? config.target : {};
-    const isIndianContent = Boolean(
-        targetMeta.isIndian ||
-        targetMeta.originCountry === 'IN' ||
-        ['hi', 'ta', 'te', 'ml', 'kn', 'bn', 'mr', 'pa'].includes(String(targetMeta.originalLanguage || '').toLowerCase())
-    );
-    const prioritizeHindiEffective = Boolean((config && config.prioritizeHindi) || isIndianContent);
-    const hasAudioPref = (Array.isArray(prefLanguages) && prefLanguages.length > 0) || prioritizeHindiEffective;
+    const origLangCode = String(targetMeta.originalLanguage || '').toLowerCase();
+    const nativeLang = ISO_TO_LANG_MAP[origLangCode] || null;
+
+    let effectiveLanguages = [];
+    if (Array.isArray(prefLanguages) && prefLanguages.length > 0) {
+        effectiveLanguages = prefLanguages;
+    } else if (config && config.prioritizeHindi) {
+        effectiveLanguages = ['hindi', 'dual-audio', 'multi-audio'];
+    } else if (nativeLang) {
+        effectiveLanguages = [nativeLang, 'dual-audio', 'multi-audio'];
+    }
+
+    const hasAudioPref = effectiveLanguages.length > 0;
 
     filteredStreams.sort((a, b) => {
         // Safe numeric latency
@@ -1386,8 +1448,8 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
 
             // 2. Multi-Language / Preferred Audio within the same resolution tier
             if (hasAudioPref) {
-                const audioA = getAudioScore(a, prefLanguages, prioritizeHindiEffective);
-                const audioB = getAudioScore(b, prefLanguages, prioritizeHindiEffective);
+                const audioA = getAudioScore(a, effectiveLanguages);
+                const audioB = getAudioScore(b, effectiveLanguages);
                 if (audioA !== audioB) {
                     return audioB - audioA;
                 }
@@ -1473,8 +1535,8 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
 
             // 1. Preferred Audio Language
             if (hasAudioPref) {
-                const audioA = getAudioScore(a, prefLanguages, prioritizeHindiEffective);
-                const audioB = getAudioScore(b, prefLanguages, prioritizeHindiEffective);
+                const audioA = getAudioScore(a, effectiveLanguages);
+                const audioB = getAudioScore(b, effectiveLanguages);
                 if (audioA !== audioB) {
                     return audioB - audioA;
                 }
@@ -1529,8 +1591,8 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
 
             // 2. Multi-Language / Preferred Audio (if configured)
             if (hasAudioPref) {
-                const audioA = getAudioScore(a, prefLanguages, prioritizeHindiEffective);
-                const audioB = getAudioScore(b, prefLanguages, prioritizeHindiEffective);
+                const audioA = getAudioScore(a, effectiveLanguages);
+                const audioB = getAudioScore(b, effectiveLanguages);
                 if (audioA !== audioB) {
                     return audioB - audioA;
                 }

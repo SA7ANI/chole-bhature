@@ -2614,7 +2614,7 @@ function createAddon(config) {
         id: addonId,
         version: '4.5.4',
         name: addonName,
-        description: 'High-Performance Stream Meta-Sorter & Discovery Hub for Nuvio & Stremio. Scrapes, verifies, filters dead links, organizes streams by speed/quality/audio, and provides curated Live TV, Indian Cinema, Trending & Anime feeds.',
+        description: 'High-Performance Global Stream Meta-Sorter & Priority Engine for Stremio & Nuvio. Scrapes, verifies, filters dead links, organizes streams by speed, resolution (4K HDR/DV), and language (Multi-Audio, European Dubs, Anime & Worldwide Cinema), supporting Real-Debrid, AllDebrid, and DoH ISP bypass.',
         logo: addonLogo,
         catalogs: enabledCatalogs,
         resources: resources,
