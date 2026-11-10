@@ -2951,6 +2951,9 @@ function createAddon(config) {
                 target: {
                     title: mediaMeta?.title || '',
                     originalTitle: mediaMeta?.originalTitle || '',
+                    originalLanguage: mediaMeta?.originalLanguage || '',
+                    originCountry: mediaMeta?.originCountry || '',
+                    isIndian: mediaMeta?.isIndian || false,
                     year: mediaMeta?.year || null,
                     isUnreleased: isUnreleased,
                     type: type,

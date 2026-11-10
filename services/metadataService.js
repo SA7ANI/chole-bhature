@@ -67,7 +67,24 @@ async function getMediaMetadata(rawInputId, type) {
                             originalTitle = res.data.original_title || res.data.original_name;
                             const dateStr = res.data.release_date || res.data.first_air_date;
                             year = dateStr ? dateStr.split('-')[0] : null;
-                            const result = { tmdbId, title, originalTitle, year, type: tmdbType };
+
+                            const origLang = res.data.original_language || '';
+                            const origCountries = Array.isArray(res.data.origin_country) ? res.data.origin_country : [];
+                            const prodCountries = (res.data.production_countries || []).map(c => c.iso_3166_1);
+                            const originCountry = origCountries[0] || prodCountries[0] || null;
+                            const isIndian = ['hi', 'ta', 'te', 'ml', 'kn', 'bn', 'mr', 'pa', 'gu', 'or'].includes(String(origLang).toLowerCase()) ||
+                                             origCountries.includes('IN') || prodCountries.includes('IN');
+
+                            const result = {
+                                tmdbId,
+                                title,
+                                originalTitle,
+                                year,
+                                type: tmdbType,
+                                originalLanguage: origLang,
+                                originCountry,
+                                isIndian
+                            };
                             metadataMemoryCache.set(cacheKey, { timestamp: Date.now(), data: result });
                             return result;
                         }
@@ -108,21 +125,33 @@ async function getMediaMetadata(rawInputId, type) {
                     });
                     if (type === 'movie' && res.data && res.data.movie_results && res.data.movie_results.length > 0) {
                         const m = res.data.movie_results[0];
+                        const origLang = m.original_language || '';
+                        const isIndian = ['hi', 'ta', 'te', 'ml', 'kn', 'bn', 'mr', 'pa', 'gu', 'or'].includes(String(origLang).toLowerCase()) ||
+                                         (Array.isArray(m.origin_country) && m.origin_country.includes('IN'));
                         const result = {
                             tmdbId: m.id.toString(),
                             title: m.title,
                             originalTitle: m.original_title,
-                            year: m.release_date ? m.release_date.split('-')[0] : null
+                            year: m.release_date ? m.release_date.split('-')[0] : null,
+                            originalLanguage: origLang,
+                            originCountry: (Array.isArray(m.origin_country) && m.origin_country[0]) || (isIndian ? 'IN' : null),
+                            isIndian
                         };
                         metadataMemoryCache.set(cacheKey, { timestamp: Date.now(), data: result });
                         return result;
                     } else if ((type === 'series' || type === 'tv') && res.data && res.data.tv_results && res.data.tv_results.length > 0) {
                         const t = res.data.tv_results[0];
+                        const origLang = t.original_language || '';
+                        const isIndian = ['hi', 'ta', 'te', 'ml', 'kn', 'bn', 'mr', 'pa', 'gu', 'or'].includes(String(origLang).toLowerCase()) ||
+                                         (Array.isArray(t.origin_country) && t.origin_country.includes('IN'));
                         const result = {
                             tmdbId: t.id.toString(),
                             title: t.name,
                             originalTitle: t.original_name,
-                            year: t.first_air_date ? t.first_air_date.split('-')[0] : null
+                            year: t.first_air_date ? t.first_air_date.split('-')[0] : null,
+                            originalLanguage: origLang,
+                            originCountry: (Array.isArray(t.origin_country) && t.origin_country[0]) || (isIndian ? 'IN' : null),
+                            isIndian
                         };
                         metadataMemoryCache.set(cacheKey, { timestamp: Date.now(), data: result });
                         return result;

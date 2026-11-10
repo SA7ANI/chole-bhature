@@ -877,7 +877,7 @@ async function testStream(stream, showSeeders = true, config = {}) {
                             latency = Math.max(30, rangeElapsed);
                         }
                     } catch (rErr) {
-                        if (rErr.code === 'ECONNREFUSED' || rErr.code === 'ENOTFOUND') {
+                        if (rErr.code === 'ECONNREFUSED' || rErr.code === 'ENOTFOUND' || rErr.code === 'ECONNABORTED' || rErr.code === 'ETIMEDOUT' || (rErr.message && rErr.message.includes('timeout'))) {
                             isDead = true;
                             latency = 99999;
                         } else {
@@ -911,7 +911,7 @@ async function testStream(stream, showSeeders = true, config = {}) {
                         latency = Math.max(30, getElapsed);
                     }
                 } catch (getErr) {
-                    if (getErr.code === 'ECONNREFUSED' || getErr.code === 'ENOTFOUND') {
+                    if (getErr.code === 'ECONNREFUSED' || getErr.code === 'ENOTFOUND' || getErr.code === 'ECONNABORTED' || getErr.code === 'ETIMEDOUT' || (getErr.message && getErr.message.includes('timeout'))) {
                         isDead = true;
                         latency = 99999;
                     } else {
@@ -1293,7 +1293,7 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
         });
     }
 
-    if (config && config.hideDead) {
+    if (config && (config.hideDead || config.filterDead)) {
         filteredStreams = filteredStreams.filter(s => s.statusCategory !== 'dead');
     }
     if (config && config.hideSlow) {
@@ -1319,8 +1319,8 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
         });
     }
 
-    // Safety fallback: if speed filters leave 0 streams, retain all tested streams (never restore blocked scrapers/P2P)
-    if (filteredStreams.length === 0 && testedStreams.length > 0 && !config?.hideP2P && !config?.blockP2P && rawDisabled.length === 0) {
+    // Safety fallback: if speed filters leave 0 streams, retain all tested streams (never restore blocked scrapers, P2P, or explicitly hidden dead streams)
+    if (filteredStreams.length === 0 && testedStreams.length > 0 && !config?.hideDead && !config?.filterDead && !config?.hideP2P && !config?.blockP2P && rawDisabled.length === 0) {
         filteredStreams = testedStreams;
     }
 
