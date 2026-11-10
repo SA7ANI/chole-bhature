@@ -2840,23 +2840,13 @@ function createAddon(config) {
                 : (globalServerSettings.allowClientEcoOverride ? Boolean(isClientEco === true) : false);
             const isVercel = typeof process !== 'undefined' && Boolean(process.env.VERCEL);
             
-            // Ultra-snappy scraper deadlines: 3800ms max per provider, 4500ms hard ceiling
+            // Robust scraper deadlines to collect all available links from enabled providers
             const PROVIDER_TIMEOUT_MS = isVercel 
-                ? (isEcoMode ? 3500 : 4500)
-                : (isEcoMode ? 3200 : 4000); 
+                ? (isEcoMode ? 4500 : 7000)
+                : (isEcoMode ? 5500 : 8500); 
             const SCRAPE_DEADLINE_MS = isVercel 
-                ? (isEcoMode ? 4200 : 5000) 
-                : (isEcoMode ? 3800 : 4500);
-
-            // Fast early yield: as soon as we have enough good streams, proceed to sorting immediately
-            let earlyResolve;
-            const earlyYieldPromise = new Promise(resolve => { earlyResolve = resolve; });
-            const checkEarlyYield = () => {
-                const elapsed = Date.now() - scrapeStartTime;
-                if ((allStreams.length >= 25 && elapsed >= 1800) || (allStreams.length >= 40 && elapsed >= 1400)) {
-                    if (typeof earlyResolve === 'function') earlyResolve();
-                }
-            };
+                ? (isEcoMode ? 5000 : 7500) 
+                : (isEcoMode ? 6000 : 9000);
 
             const tgScrapePromise = (async () => {
                 if (Boolean(config.enableTelegram) && (!config.disabled || (!config.disabled.includes('Telegram') && !config.disabled.includes('Telegram (PencariMovie)')))) {
@@ -2922,7 +2912,6 @@ function createAddon(config) {
                             }
                         });
                         allStreams = allStreams.concat(streams);
-                        checkEarlyYield();
                     }
                 } catch (e) {
                     const isNetworkError = e.message === 'Scrape Timeout' 
@@ -2968,8 +2957,7 @@ function createAddon(config) {
             
             await Promise.race([
                 Promise.all([tgScrapePromise, ...results]),
-                scrapeTimeoutPromise,
-                earlyYieldPromise
+                scrapeTimeoutPromise
             ]);
             const scrapeDurationMs = Date.now() - scrapeStartTime;
 
@@ -2979,10 +2967,10 @@ function createAddon(config) {
             const currentYear = new Date().getFullYear();
             const isUnreleased = Boolean(type === 'movie' && targetYear && targetYear > currentYear);
 
-            // Snappy stream testing duration (max 1200ms) to ensure instant player response
+            // Balanced stream testing duration to accurately test all collected links
             const maxTestingDuration = isVercel
-                ? Math.min(1200, Math.max(600, 5000 - scrapeDurationMs))
-                : Math.min(1200, Math.max(700, 5500 - scrapeDurationMs));
+                ? Math.min(2200, Math.max(800, 9500 - scrapeDurationMs))
+                : Math.min(2800, Math.max(1000, 11000 - scrapeDurationMs));
 
             const sortedAndTaggedStreams = await sortAndTagStreams(allStreams, {
                 maxTestDuration: maxTestingDuration,

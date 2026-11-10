@@ -1410,12 +1410,19 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
     }
 
     if (config && (config.hideDead || config.filterDead)) {
-        filteredStreams = filteredStreams.filter(s => s.statusCategory !== 'dead');
+        filteredStreams = filteredStreams.filter(s => {
+            const isDead = s.statusCategory === 'dead'
+                || s.isDead === true
+                || (typeof s.latency === 'number' && s.latency >= 90000)
+                || (typeof s.name === 'string' && /🔴\s*DEAD|\bDEAD\b/i.test(s.name));
+            return !isDead;
+        });
     }
     if (config && config.hideSlow) {
         filteredStreams = filteredStreams.filter(s => {
-            const isSlow = (s.statusCategory === 'slow' && typeof s.latency === 'number' && s.latency >= 1500)
-                || (typeof s.latency === 'number' && s.latency >= 2500);
+            const isSlow = s.statusCategory === 'slow'
+                || (typeof s.latency === 'number' && s.latency >= 800)
+                || (typeof s.name === 'string' && /🟡\s*SLOW|\bSLOW\b/i.test(s.name));
             return !isSlow;
         });
     }
@@ -1435,8 +1442,8 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
         });
     }
 
-    // Safety fallback: if speed filters leave 0 streams, retain all tested streams (never restore blocked scrapers, P2P, or explicitly hidden dead streams)
-    if (filteredStreams.length === 0 && testedStreams.length > 0 && !config?.hideDead && !config?.filterDead && !config?.hideP2P && !config?.blockP2P && rawDisabled.length === 0) {
+    // Safety fallback: if speed filters leave 0 streams, retain all tested streams (never restore blocked scrapers, P2P, or explicitly hidden dead/slow streams)
+    if (filteredStreams.length === 0 && testedStreams.length > 0 && !config?.hideDead && !config?.filterDead && !config?.hideSlow && !config?.hideP2P && !config?.blockP2P && rawDisabled.length === 0) {
         filteredStreams = testedStreams;
     }
 
@@ -1809,7 +1816,10 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
             mediaType: mediaType,
             mediaId: target.id || null,
             mediaOnlyId: target.id ? target.id.split(':')[0] : null,
-            title: target.title || meta.cleanTitle || 'Video',
+            title: stremioStream.title || target.title || meta.cleanTitle || 'Video',
+            formattedTitle: stremioStream.title,
+            name: stremioStream.name,
+            description: stremioStream.description || stremioStream.title,
             season: seasonNum,
             episode: episodeNum,
             isCached: Boolean(s.isDebridCached),
@@ -1849,6 +1859,7 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
         stremioStream.behaviorHints = {
             ...(stremioStream.behaviorHints || {}),
             filename: synthFilename,
+            videoSize: meta.sizeBytes || undefined,
             bingeGroup: `cholebhature|${meta.resolution || '1080p'}|${meta.quality || 'WEB-DL'}`
         };
 
