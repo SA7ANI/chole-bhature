@@ -124,6 +124,57 @@ function extractTitleKeywords(title) {
     return norm.split(' ').filter(w => w.length > 0 && !STOP_WORDS.has(w));
 }
 
+function isStreamLikelyAnime(stream, rawStreamText = '', sceneDetails = null) {
+    const text = (rawStreamText || [
+        stream.title || '',
+        stream.name || '',
+        stream.description || '',
+        stream.url || ''
+    ].join(' ')).toLowerCase();
+
+    // 1. Anime scraper/provider origins
+    const addon = (stream.addonName || stream._provider || stream.provider || '').toLowerCase();
+    const animeProviders = [
+        'kurage', 'anizone', 'animeworld', 'anikage', 'animesalt', 
+        'anizen', 'reanime', 'toonstream', 'puretoons', 'topcartoons',
+        'animepahe', 'gogoanime', 'crunchyroll', 'zoro', 'kaido', 'nyaa'
+    ];
+    if (animeProviders.some(p => addon.includes(p))) {
+        return true;
+    }
+
+    // 2. Known Anime / Cartoon release groups (bracketed or scene release groups)
+    const animeGroupsRegex = /\[(?:ToonsHub|Erai-raws|SubsPlease|Judas|HorribleSubs|EMBER|ASW|NanDesuKa|Golumpa|Tsundere|PAS|Coalgirls|Commie|Cleo|Toonworld|Kitsune|AnimeRG|Nep_Blanc|DKB|BlurayDesu|Mini-Anime|Moozzi2|Beatrice-Raws|ReinForce|Ohys-Raws|Leopard-Raws|Zero-Raws|VipAnime|DarkDream|Kira-Fansub|Nekomoe|SweetSub|Anime\s*Time|LostYears)\]/i;
+    if (animeGroupsRegex.test(text)) {
+        return true;
+    }
+
+    if (sceneDetails && sceneDetails.releaseGroup) {
+        const rg = String(sceneDetails.releaseGroup).toLowerCase();
+        const animeRGs = [
+            'toonshub', 'erai-raws', 'subsplease', 'judas', 'horriblesubs',
+            'ember', 'asw', 'nandesuka', 'golumpa', 'tsundere', 'coalgirls',
+            'commie', 'cleo', 'toonworld', 'kitsune', 'animerg', 'moozzi2',
+            'beatrice-raws', 'reinforce', 'ohys-raws', 'leopard-raws', 'lostyears'
+        ];
+        if (animeRGs.includes(rg)) {
+            return true;
+        }
+    }
+
+    // 3. Anime / Animation explicit markers
+    if (/\b(anime|animation|animated|donghua|aweeb|fansub|crunchyroll|funimation|hidive)\b/i.test(text)) {
+        return true;
+    }
+
+    // 4. Japanese romanized titles for specific webtoon/manhwa adaptations (e.g. The Remarried Empress anime)
+    if (/(saikon\s*shounin|saikon\s*shōnin|youkyuu\s*shimasu|再婚承認)/i.test(text)) {
+        return true;
+    }
+
+    return false;
+}
+
 function isStreamMatchingTarget(stream, target) {
     if (!target || !target.title) return true; // Don't block if target metadata is unavailable
 
@@ -139,9 +190,41 @@ function isStreamMatchingTarget(stream, target) {
     
     // Discard placeholder/dummy streams
     if (cleanStreamTitle.toLowerCase().includes('anime title') || (stream.title || '').toLowerCase().includes('anime title')) {
+        stream._fatalMismatch = true;
         return false;
     }
 
+    // A. Format Segregation: Anime/Cartoon vs Live-Action
+    const isTargetLiveAction = !target.isAnimation && !target.isAnime;
+    const isTargetAnime = Boolean(target.isAnimation || target.isAnime);
+    const streamIsAnime = isStreamLikelyAnime(stream, rawStreamText, sceneDetails);
+
+    // If target is Live-Action (e.g. KDrama like The Remarried Empress), strictly PURGE any anime/cartoon stream
+    if (isTargetLiveAction && streamIsAnime) {
+        stream._fatalMismatch = true;
+        return false;
+    }
+
+    // If target is a Korean Drama (originalLanguage === 'ko' and live-action), purge Japanese anime titles/dubs
+    if (isTargetLiveAction && target.originalLanguage === 'ko') {
+        const textLow = rawStreamText.toLowerCase();
+        if (/(saikon|shounin|youkyuu|再婚承認)/i.test(textLow)) {
+            stream._fatalMismatch = true;
+            return false;
+        }
+        if (/\b(japanese|ja|jpn)\b/i.test(textLow) && !/\b(korean|ko|kor|재혼)\b/i.test(textLow) && streamIsAnime) {
+            stream._fatalMismatch = true;
+            return false;
+        }
+    }
+
+    // If target is Anime/Animation, purge live-action adaptation streams
+    if (isTargetAnime && /\b(live[\s\-_.]?action)\b/i.test(rawStreamText)) {
+        stream._fatalMismatch = true;
+        return false;
+    }
+
+    // B. Keyword Matching
     const rawNormalizedStream = normalizeTitleForMatching(rawStreamText);
     const targetKeywords = extractTitleKeywords(target.title);
     const altKeywords = target.originalTitle ? extractTitleKeywords(target.originalTitle) : [];
@@ -171,7 +254,7 @@ function isStreamMatchingTarget(stream, target) {
         return false;
     }
 
-    // 2. Year & Unreleased Movie Validation
+    // C. Year & Unreleased Movie Validation
     if (target.type === 'movie' && target.year) {
         const tYear = parseInt(target.year, 10);
         const yearMatch = rawStreamText.match(/\b(19\d{2}|20\d{2})\b/);
@@ -179,17 +262,19 @@ function isStreamMatchingTarget(stream, target) {
         
         // Strict year drift check (must be within 1 year of target release)
         if (sYear && !isNaN(tYear) && !isNaN(sYear) && Math.abs(tYear - sYear) > 1) {
+            stream._fatalMismatch = true;
             return false;
         }
 
         // Future unreleased movies (scheduled beyond current calendar year) have no digital releases yet
         const currentYear = new Date().getFullYear();
         if (!isNaN(tYear) && tYear > currentYear && target.isUnreleased) {
+            stream._fatalMismatch = true;
             return false;
         }
     }
 
-    // 3. Series / Episode Validation (for TV series)
+    // D. Series / Episode Validation (for TV series)
     if ((target.type === 'series' || target.type === 'tv') && target.season && target.episode) {
         const reqS = parseInt(target.season, 10);
         const reqE = parseInt(target.episode, 10);
@@ -201,6 +286,7 @@ function isStreamMatchingTarget(stream, target) {
                 const sNum = parseInt(epMatch[1], 10);
                 const eNum = parseInt(epMatch[2], 10);
                 if (sNum !== reqS || eNum !== reqE) {
+                    stream._fatalMismatch = true;
                     return false;
                 }
             } else {
@@ -209,6 +295,7 @@ function isStreamMatchingTarget(stream, target) {
                     const startS = parseInt(seasonOnlyMatch[1], 10);
                     const endS = seasonOnlyMatch[2] ? parseInt(seasonOnlyMatch[2], 10) : startS;
                     if (reqS < startS || reqS > endS) {
+                        stream._fatalMismatch = true;
                         return false;
                     }
                 }
@@ -1174,18 +1261,26 @@ function buildNuvioSceneFilename(meta, target = {}) {
 async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
     if (!streams || streams.length === 0) return [];
 
-    // Filter out streams that do not match the target media title / year / episode
+    // Filter out streams that do not match the target media title / year / episode / format
     let validStreams = streams;
     if (config && config.target && config.target.title) {
         const filtered = streams.filter(s => isStreamMatchingTarget(s, config.target));
         if (filtered.length > 0) {
             const rejectedCount = streams.length - filtered.length;
             if (rejectedCount > 0) {
-                console.log(`[MetaSorter] Purged ${rejectedCount} mismatched/wrong-title streams for "${config.target.title}"`);
+                console.log(`[MetaSorter] Purged ${rejectedCount} mismatched/wrong-title/anime streams for "${config.target.title}"`);
             }
             validStreams = filtered;
         } else {
-            console.log(`[MetaSorter] Target filter matched 0 streams for "${config.target.title}", keeping all ${streams.length} streams as fallback`);
+            // NEVER restore streams that suffered a fatal format or season/episode mismatch
+            const nonFatalFallback = streams.filter(s => !s._fatalMismatch);
+            if (nonFatalFallback.length > 0) {
+                console.log(`[MetaSorter] Target keyword filter matched 0 streams for "${config.target.title}", keeping ${nonFatalFallback.length} non-fatal streams as fallback`);
+                validStreams = nonFatalFallback;
+            } else {
+                console.log(`[MetaSorter] All ${streams.length} streams fatally mismatched format/season/episode for "${config.target.title}". Purging all to prevent wrong playback.`);
+                validStreams = [];
+            }
         }
     }
 

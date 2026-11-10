@@ -113,6 +113,20 @@ async function getMediaMetadata(rawInputId, type) {
                     title = attrs.canonicalTitle || (attrs.titles && (attrs.titles.en || attrs.titles.en_jp));
                     originalTitle = attrs.titles ? attrs.titles.ja_jp : title;
                     year = attrs.startDate ? attrs.startDate.split('-')[0] : null;
+
+                    const result = {
+                        tmdbId: null,
+                        title,
+                        originalTitle,
+                        year,
+                        originalLanguage: 'ja',
+                        originCountry: 'JP',
+                        isIndian: false,
+                        isAnime: true,
+                        isAnimation: true
+                    };
+                    metadataMemoryCache.set(cacheKey, { timestamp: Date.now(), data: result });
+                    return result;
                 }
             } catch (_) {}
         }
@@ -179,9 +193,14 @@ async function getMediaMetadata(rawInputId, type) {
         const cinemetaType = (type === 'tv' ? 'series' : type);
         const cRes = await axios.get(`https://v3-cinemeta.strem.io/meta/${cinemetaType}/${cleanId}.json`, { timeout: 2500, httpsAgent: dohHttpsAgent });
         if (cRes.data && cRes.data.meta) {
-            title = cRes.data.meta.name;
-            originalTitle = cRes.data.meta.name;
-            year = (cRes.data.meta.year || cRes.data.meta.releaseInfo) ? String(cRes.data.meta.year || cRes.data.meta.releaseInfo).split('–')[0].trim() : null;
+            const metaObj = cRes.data.meta;
+            title = metaObj.name;
+            originalTitle = metaObj.name;
+            year = (metaObj.year || metaObj.releaseInfo) ? String(metaObj.year || metaObj.releaseInfo).split('–')[0].trim() : null;
+            const genres = Array.isArray(metaObj.genres) ? metaObj.genres.map(g => String(g).toLowerCase()) : [];
+            const isAnimation = genres.some(g => g.includes('animation') || g.includes('anime'));
+            const country = String(metaObj.country || '').toLowerCase();
+            const isAnime = isAnimation && (country.includes('japan') || /japanese|anime/i.test(metaObj.description || ''));
 
             // Resolve TMDB ID from Title if find failed
             if (!tmdbId && title) {
@@ -205,7 +224,9 @@ async function getMediaMetadata(rawInputId, type) {
                 tmdbId: tmdbId || null,
                 title,
                 originalTitle,
-                year
+                year,
+                isAnime,
+                isAnimation
             };
             metadataMemoryCache.set(cacheKey, { timestamp: Date.now(), data: result });
             return result;

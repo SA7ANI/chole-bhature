@@ -2992,6 +2992,8 @@ function createAddon(config) {
                     originalLanguage: mediaMeta?.originalLanguage || '',
                     originCountry: mediaMeta?.originCountry || '',
                     isIndian: mediaMeta?.isIndian || false,
+                    isAnime: Boolean(mediaMeta?.isAnime),
+                    isAnimation: Boolean(mediaMeta?.isAnimation),
                     year: mediaMeta?.year || null,
                     isUnreleased: isUnreleased,
                     type: type,
