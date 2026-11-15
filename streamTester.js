@@ -4,7 +4,7 @@ const { parseTorrentTitle, cleanReleaseNoise } = require('./torrentParser');
 const { ingestStream, normalizeInfoHash, parseSizeToBytes, formatBytesToSize, extractCleanProvider } = require('./streamIngest');
 const { formatStreamCard, formatProviderChain } = require('./streamFormatter');
 
-const TIMEOUT_MS = 1200;
+const TIMEOUT_MS = 3500;
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
 // High-speed domain latency memoization to avoid probing identical CDNs 50+ times
@@ -206,22 +206,34 @@ function isStreamMatchingTarget(stream, target) {
     }
 
     // If target is a Korean Drama (originalLanguage === 'ko' and live-action), purge Japanese anime titles/dubs
-    if (isTargetLiveAction && target.originalLanguage === 'ko') {
+    if (isTargetLiveAction && (target.originalLanguage === 'ko' || target.originCountry === 'KR')) {
         const textLow = rawStreamText.toLowerCase();
         if (/(saikon|shounin|youkyuu|再婚承認)/i.test(textLow)) {
             stream._fatalMismatch = true;
             return false;
         }
-        if (/\b(japanese|ja|jpn)\b/i.test(textLow) && !/\b(korean|ko|kor|재혼)\b/i.test(textLow) && streamIsAnime) {
+        // If stream has Japanese audio/tags and lacks Korean audio/tags, it is the anime adaptation -> PURGE
+        if (/\b(japanese|ja|jpn)\b/i.test(textLow) && !/\b(korean|ko|kor|재혼|황후)\b/i.test(textLow)) {
+            stream._fatalMismatch = true;
+            return false;
+        }
+        if (streamIsAnime) {
             stream._fatalMismatch = true;
             return false;
         }
     }
 
-    // If target is Anime/Animation, purge live-action adaptation streams
-    if (isTargetAnime && /\b(live[\s\-_.]?action)\b/i.test(rawStreamText)) {
-        stream._fatalMismatch = true;
-        return false;
+    // If target is Anime/Animation, purge live-action Korean/foreign adaptations
+    if (isTargetAnime) {
+        const textLow = rawStreamText.toLowerCase();
+        if (/\b(live[\s\-_.]?action)\b/i.test(textLow)) {
+            stream._fatalMismatch = true;
+            return false;
+        }
+        if (target.originalLanguage === 'ja' && /\b(korean|ko|kor|재혼|황후)\b/i.test(textLow) && !/\b(japanese|ja|jpn)\b/i.test(textLow)) {
+            stream._fatalMismatch = true;
+            return false;
+        }
     }
 
     // B. Keyword Matching
@@ -234,7 +246,8 @@ function isStreamMatchingTarget(stream, target) {
         if (!keywords || keywords.length === 0) return false;
         let matched = 0;
         for (const kw of keywords) {
-            const kwRegex = new RegExp('(\\b|\\d)' + kw + '(\\b|\\d)', 'i');
+            const escapedKw = kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const kwRegex = new RegExp('(\\b|\\d)' + escapedKw + '(\\b|\\d)', 'i');
             if (kwRegex.test(rawNormalizedStream) || rawNormalizedStream.includes(kw)) {
                 matched++;
             }
@@ -249,9 +262,23 @@ function isStreamMatchingTarget(stream, target) {
 
     const targetMatched = evaluateKeywords(targetKeywords) || evaluateKeywords(altKeywords);
 
-    // If target keywords are not satisfied in the stream title or URL, discard wrong movie
+    // If target keywords are not satisfied in the stream title or URL:
+    // Allow verified direct scrapers that queried by TMDB ID as long as they don't explicitly name a conflicting movie
     if (!targetMatched) {
-        return false;
+        const isDirectScraper = Boolean(
+            stream._scraperId || 
+            (stream.provider && !stream.infoHash && !String(stream.url || '').startsWith('magnet:'))
+        );
+        const parsedTitle = (sceneDetails.cleanTitle || '').toLowerCase().trim();
+        const pNameLow = String(stream.provider || stream.originalProvider || stream._scraperName || stream._scraperId || '').toLowerCase().trim();
+        const genericNames = ['stream', 'direct', 'server', 'video', 'episode', 'hindi', 'english', 'hd', 'fhd', 'uhd', '4k', '1080p', '720p', 'default'];
+        const isGenericLabel = !parsedTitle || 
+            genericNames.some(g => parsedTitle === g || parsedTitle.startsWith(g)) ||
+            (pNameLow && (parsedTitle === pNameLow || parsedTitle.startsWith(pNameLow) || pNameLow.startsWith(parsedTitle)));
+        
+        if (!isDirectScraper || !isGenericLabel) {
+            return false;
+        }
     }
 
     // C. Year & Unreleased Movie Validation
@@ -811,6 +838,36 @@ async function testStream(stream, showSeeders = true, config = {}) {
         };
     }
 
+    // Filter out unplayable dummy HTML web player / iframe embed URLs
+    const rawUrlLow = String(stream.url || '').toLowerCase();
+    const isHtmlEmbed = (
+        rawUrlLow.includes('/embed/') ||
+        rawUrlLow.includes('/e/') ||
+        rawUrlLow.includes('play.xpass.top') ||
+        rawUrlLow.includes('moviesapi.to') ||
+        rawUrlLow.includes('filesforever.link/embed') ||
+        rawUrlLow.includes('rozgarlelo.modiplay.xyz') ||
+        rawUrlLow.includes('iqsmartgames.com') ||
+        rawUrlLow.includes('vidbolt.xyz') ||
+        rawUrlLow.includes('vidout.pages.dev') ||
+        rawUrlLow.includes('moviesnexus.fun')
+    ) && !rawUrlLow.includes('.m3u8') && !rawUrlLow.includes('.mp4') && !rawUrlLow.includes('.mkv');
+
+    if (isHtmlEmbed) {
+        const labels = formatStreamLabels(stream, 99999, false, true, showSeeders, config);
+        return {
+            ...stream,
+            name: labels.name,
+            title: labels.title, description: labels.description,
+            latency: 99999,
+            isDead: true,
+            statusCategory: 'dead',
+            originalProvider: providerName,
+            _rawStream: rawSnapshot,
+            _preparsedMeta: initialMeta
+        };
+    }
+
     // Handle Telegram cloud streams
     if (stream.url && (stream.url.includes('/stream/telegram') || stream.provider === 'Telegram' || providerName.toLowerCase().includes('telegram'))) {
         const tgLatency = (typeof stream.latency === 'number' && stream.latency > 0) 
@@ -940,66 +997,27 @@ async function testStream(stream, showSeeders = true, config = {}) {
         let isDead = false;
 
         const hostname = urlObj.hostname;
-        const cachedDomain = domainLatencyCache.get(hostname);
-        if (cachedDomain && (Date.now() - cachedDomain.time < 180000)) {
-            latency = cachedDomain.latency;
-            isDead = cachedDomain.isDead;
-        } else {
-            const probeStartTime = Date.now();
-            try {
-                // 1. Primary probe: Direct HEAD request to stream.url
-                const res = await axios.head(stream.url, {
-                    timeout: TIMEOUT_MS,
-                    headers: probeHeaders,
-                    httpAgent: dohHttpAgent,
-                    httpsAgent: dohHttpsAgent,
-                    validateStatus: () => true,
-                    maxRedirects: 3
-                });
-                const elapsed = Date.now() - probeStartTime;
+        const probeStartTime = Date.now();
+        try {
+            // 1. Primary probe: Direct HEAD request to stream.url
+            const res = await axios.head(stream.url, {
+                timeout: TIMEOUT_MS,
+                headers: probeHeaders,
+                httpAgent: dohHttpAgent,
+                httpsAgent: dohHttpsAgent,
+                validateStatus: () => true,
+                maxRedirects: 3
+            });
+            const elapsed = Date.now() - probeStartTime;
 
-                if (res.status === 404 || res.status === 410 || res.status >= 500) {
-                    isDead = true;
-                    latency = 99999;
-                } else if (res.status === 403) {
-                    // If HEAD returns 403, verify with GET Range before assuming dead
-                    try {
-                        const rangeStart = Date.now();
-                        const rangeRes = await axios.get(stream.url, {
-                            timeout: TIMEOUT_MS,
-                            headers: { ...probeHeaders, 'Range': 'bytes=0-10' },
-                            httpAgent: dohHttpAgent,
-                            httpsAgent: dohHttpsAgent,
-                            validateStatus: () => true,
-                            maxRedirects: 3
-                        });
-                        const rangeElapsed = Date.now() - rangeStart;
-                        if (rangeRes.status === 404 || rangeRes.status === 410 || rangeRes.status >= 500) {
-                            isDead = true;
-                            latency = 99999;
-                        } else if (rangeRes.status === 403) {
-                            // Upstream requires browser headers/proxy - live stream, not dead
-                            isDead = false;
-                            latency = 120;
-                        } else {
-                            latency = Math.max(30, rangeElapsed);
-                        }
-                    } catch (rErr) {
-                        if (rErr.code === 'ECONNREFUSED' || rErr.code === 'ENOTFOUND' || rErr.code === 'ECONNABORTED' || rErr.code === 'ETIMEDOUT' || (rErr.message && rErr.message.includes('timeout'))) {
-                            isDead = true;
-                            latency = 99999;
-                        } else {
-                            latency = 150;
-                        }
-                    }
-                } else {
-                    latency = Math.max(30, elapsed);
-                }
-            } catch (headErr) {
-                // HEAD rejected or connection error -> fallback to GET Range probe
+            if (res.status === 404 || res.status === 410 || res.status >= 500) {
+                isDead = true;
+                latency = 99999;
+            } else if (res.status === 403) {
+                // If HEAD returns 403, verify with GET Range before assuming dead
                 try {
-                    const getStart = Date.now();
-                    const getRes = await axios.get(stream.url, {
+                    const rangeStart = Date.now();
+                    const rangeRes = await axios.get(stream.url, {
                         timeout: TIMEOUT_MS,
                         headers: { ...probeHeaders, 'Range': 'bytes=0-10' },
                         httpAgent: dohHttpAgent,
@@ -1007,29 +1025,66 @@ async function testStream(stream, showSeeders = true, config = {}) {
                         validateStatus: () => true,
                         maxRedirects: 3
                     });
-                    const getElapsed = Date.now() - getStart;
-
-                    if (getRes.status === 404 || getRes.status === 410 || getRes.status >= 500) {
+                    const rangeElapsed = Date.now() - rangeStart;
+                    if (rangeRes.status === 404 || rangeRes.status === 410 || rangeRes.status >= 500) {
                         isDead = true;
                         latency = 99999;
-                    } else if (getRes.status === 403) {
+                    } else if (rangeRes.status === 403) {
+                        // Upstream requires browser headers/proxy - live stream, not dead
                         isDead = false;
-                        latency = 120;
+                        latency = Math.max(45, rangeElapsed);
                     } else {
-                        latency = Math.max(30, getElapsed);
+                        latency = Math.max(30, rangeElapsed);
                     }
-                } catch (getErr) {
-                    if (getErr.code === 'ECONNREFUSED' || getErr.code === 'ENOTFOUND' || getErr.code === 'ECONNABORTED' || getErr.code === 'ETIMEDOUT' || (getErr.message && getErr.message.includes('timeout'))) {
+                } catch (rErr) {
+                    if (rErr.code === 'ECONNREFUSED' || rErr.code === 'ENOTFOUND') {
                         isDead = true;
                         latency = 99999;
                     } else {
-                        latency = 150;
+                        // Timeout or probe rejection: server is alive, keep stream playable
+                        isDead = false;
+                        latency = Math.max(120, Date.now() - probeStartTime);
                     }
                 }
+            } else {
+                latency = Math.max(30, elapsed);
             }
-            if (hostname) {
-                domainLatencyCache.set(hostname, { latency, isDead, time: Date.now() });
+        } catch (headErr) {
+            // HEAD rejected or connection error -> fallback to GET Range probe
+            try {
+                const getStart = Date.now();
+                const getRes = await axios.get(stream.url, {
+                    timeout: TIMEOUT_MS,
+                    headers: { ...probeHeaders, 'Range': 'bytes=0-10' },
+                    httpAgent: dohHttpAgent,
+                    httpsAgent: dohHttpsAgent,
+                    validateStatus: () => true,
+                    maxRedirects: 3
+                });
+                const getElapsed = Date.now() - getStart;
+
+                if (getRes.status === 404 || getRes.status === 410 || getRes.status >= 500) {
+                    isDead = true;
+                    latency = 99999;
+                } else if (getRes.status === 403) {
+                    isDead = false;
+                    latency = Math.max(45, getElapsed);
+                } else {
+                    latency = Math.max(30, getElapsed);
+                }
+            } catch (getErr) {
+                if (getErr.code === 'ECONNREFUSED' || getErr.code === 'ENOTFOUND') {
+                    isDead = true;
+                    latency = 99999;
+                } else {
+                    // Timeout or range probe rejected: stream host is alive, keep playable
+                    isDead = false;
+                    latency = Math.max(120, Date.now() - probeStartTime);
+                }
             }
+        }
+        if (hostname && !isDead && latency > 0 && latency < 90000) {
+            domainLatencyCache.set(hostname, { latency, isDead: false, time: Date.now() });
         }
 
         if (isDead || latency >= 90000) {
@@ -1442,9 +1497,20 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
         });
     }
 
-    // Safety fallback: if speed filters leave 0 streams, retain all tested streams (never restore blocked scrapers, P2P, or explicitly hidden dead/slow streams)
-    if (filteredStreams.length === 0 && testedStreams.length > 0 && !config?.hideDead && !config?.filterDead && !config?.hideSlow && !config?.hideP2P && !config?.blockP2P && rawDisabled.length === 0) {
-        filteredStreams = testedStreams;
+    // Safety fallback: if speed filters leave 0 streams, preserve the best alive streams so the addon never breaks completely
+    if (filteredStreams.length === 0 && testedStreams.length > 0) {
+        const aliveStreams = testedStreams.filter(s => {
+            const isDead = s.statusCategory === 'dead' || s.isDead === true || s.latency >= 90000;
+            const isP2P = (s.url && s.url.startsWith('magnet:')) || Boolean(s.infoHash);
+            const isBlockedP2P = Boolean(config?.hideP2P || config?.blockP2P || config?.disableP2P) && isP2P && !s.isDebridCached;
+            return !isDead && !isBlockedP2P;
+        });
+        if (aliveStreams.length > 0) {
+            console.log(`[StreamTester] Speed filter purged all streams. Preserving ${aliveStreams.length} best alive streams to prevent blank playback screen.`);
+            filteredStreams = aliveStreams;
+        } else if (!config?.hideDead && !config?.filterDead && !config?.hideSlow && !config?.hideP2P && !config?.blockP2P && rawDisabled.length === 0) {
+            filteredStreams = testedStreams;
+        }
     }
 
     // Sort
@@ -1789,7 +1855,7 @@ async function sortAndTagStreams(streams, config = {}, providerAnalytics) {
             )
         );
 
-        if (config.addonHost && stremioStream.url && stremioStream.url.startsWith('http') && (isS3Presigned || hasCustomHeaders || hasFallbacks || config.enableStreamProxy === true)) {
+        if (config.addonHost && stremioStream.url && stremioStream.url.startsWith('http') && config.enableStreamProxy === true) {
             const protocol = config.addonProtocol || 'http';
             const params = new URLSearchParams();
             params.set('url', stremioStream.url);

@@ -2842,11 +2842,11 @@ function createAddon(config) {
             
             // Robust scraper deadlines to collect all available links from enabled providers
             const PROVIDER_TIMEOUT_MS = isVercel 
-                ? (isEcoMode ? 4500 : 7000)
-                : (isEcoMode ? 5500 : 8500); 
+                ? (isEcoMode ? 5500 : 8500)
+                : (isEcoMode ? 8000 : 15000); 
             const SCRAPE_DEADLINE_MS = isVercel 
-                ? (isEcoMode ? 5000 : 7500) 
-                : (isEcoMode ? 6000 : 9000);
+                ? (isEcoMode ? 6500 : 9500) 
+                : (isEcoMode ? 9000 : 16000);
 
             const tgScrapePromise = (async () => {
                 if (Boolean(config.enableTelegram) && (!config.disabled || (!config.disabled.includes('Telegram') && !config.disabled.includes('Telegram (PencariMovie)')))) {
@@ -2969,8 +2969,8 @@ function createAddon(config) {
 
             // Balanced stream testing duration to accurately test all collected links
             const maxTestingDuration = isVercel
-                ? Math.min(2200, Math.max(800, 9500 - scrapeDurationMs))
-                : Math.min(2800, Math.max(1000, 11000 - scrapeDurationMs));
+                ? Math.min(2500, Math.max(1000, 10000 - scrapeDurationMs))
+                : Math.min(4500, Math.max(1500, 20000 - scrapeDurationMs));
 
             const sortedAndTaggedStreams = await sortAndTagStreams(allStreams, {
                 maxTestDuration: maxTestingDuration,

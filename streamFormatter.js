@@ -362,7 +362,11 @@ function formatStreamCard(ingested, options = {}) {
     if (config.includeOriginalTitle !== false && rawTitleToDisplay) {
         const cleanRaw = String(rawTitleToDisplay).replace(/^[🎬📺🌸💎🌐📦🟢🟡🔴🧲⚡⚙️🔗🏷️📄💬\s]+/g, '').trim();
         const isGeneric = !cleanRaw || cleanRaw.toLowerCase() === 'stream' || cleanRaw.toLowerCase() === 'video';
-        const isDuplicateOfHeader = resolvedTitle && cleanRaw.toLowerCase() === resolvedTitle.toLowerCase();
+        const isDuplicateOfHeader = resolvedTitle && (
+            cleanRaw.toLowerCase() === resolvedTitle.toLowerCase() ||
+            (titleHeader && cleanRaw.toLowerCase() === titleHeader.toLowerCase()) ||
+            (cleanRaw.toLowerCase().startsWith(resolvedTitle.toLowerCase()) && cleanRaw.includes('['))
+        );
         if (!isGeneric && !isDuplicateOfHeader) {
             cardLines.push(`📄 ${cleanRaw}`);
         }
